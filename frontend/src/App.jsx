@@ -66,6 +66,7 @@ const App = () => {
               <Route path="/signin" element={<SignIn />} />
               <Route path="/account-selection" element={<AccountSelection />} />
               <Route path="/verify/:token" element={<VerifyEmailPage />} />
+              <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
               <Route path="/initiate-password-reset" element={<PasswordResetInitiation />} />
               <Route path="/verify/password-reset/:uniqueIdentifier" element={<PasswordReset />} />
               <Route path="/registration-success" element={<RegistrationSuccess />} />
