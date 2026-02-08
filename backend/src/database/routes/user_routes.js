@@ -38,7 +38,7 @@ function getFrontendUrl() {
  */
 async function sendVerificationEmail(email, token) {
   const frontendUrl = getFrontendUrl();
-  const verifyLink = `${frontendUrl}/verify-email/${token}`;
+  const verifyLink = `${frontendUrl}/verify/${token}`;
 
   if (!process.env.SENDGRID_API_KEY) return false;
 
