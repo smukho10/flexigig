@@ -3,9 +3,9 @@ import axios from "axios";
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "./UserContext";
-import FlexygigLogo from "../assets/images/FlexygigLogo.png"
-import ExtraSignInMock from "../assets/images/ExtraSignInMock.png"
-import ChevronLeft from "../assets/images/ChevronLeft.png"
+import FlexygigLogo from "../assets/images/FlexygigLogo.png";
+import ExtraSignInMock from "../assets/images/ExtraSignInMock.png";
+import ChevronLeft from "../assets/images/ChevronLeft.png";
 
 const SignIn = () => {
   const [errorMessage, setErrorMessage] = useState("");
@@ -23,17 +23,24 @@ const SignIn = () => {
 
   const handleSignIn = (e) => {
     e.preventDefault();
-    axios.post(`/api/login`, signInData, { withCredentials: true })
+
+    axios
+      .post(`${process.env.REACT_APP_BACKEND_URL}/api/login`, signInData, {
+        withCredentials: true,
+      })
       .then(async (response) => {
         if (
           response.data.success === false ||
-          response.data.message === "Account not activated. Please check your email for verification."
+          response.data.message ===
+            "Account not activated. Please check your email for verification."
         ) {
           setErrorMessage(response.data.message);
         } else {
           try {
-            // Fetch the full user object including userImage
-            const userRes = await axios.get(`/api/me`, { withCredentials: true });
+            const userRes = await axios.get(
+              `${process.env.REACT_APP_BACKEND_URL}/api/me`,
+              { withCredentials: true }
+            );
 
             localStorage.setItem("user", JSON.stringify(userRes.data));
             setUser(userRes.data);
@@ -46,6 +53,12 @@ const SignIn = () => {
         }
       })
       .catch((error) => {
+        // ✅ Handle already-logged-in-elsewhere case
+        if (error.response?.status === 409) {
+          setErrorMessage(error.response.data.message);
+          return;
+        }
+
         setErrorMessage(
           error.response && error.response.data && error.response.data.message
             ? error.response.data.message
@@ -56,14 +69,20 @@ const SignIn = () => {
 
   return (
     <div className="sign-in-container">
-
-      <button id="back-button" onClick={() => navigate("/")}><img src={ChevronLeft} alt="Back to home" /></button>
+      <button id="back-button" onClick={() => navigate("/")}>
+        <img src={ChevronLeft} alt="Back to home" />
+      </button>
 
       <img id="sign-in-logo" src={FlexygigLogo} alt="logo" />
       <p id="header-1">Login to Your Account</p>
       <p id="header-2">Welcome back!</p>
-      <img id="mock" src={ExtraSignInMock} alt="mock" /> {/* TODO: Add additional login options (Google, Facebook, Apple) */}
-      <Link id="reset-link" to="/initiate-password-reset">Forgot password</Link>
+
+      <img id="mock" src={ExtraSignInMock} alt="mock" />
+
+      <Link id="reset-link" to="/initiate-password-reset">
+        Forgot password
+      </Link>
+
       <form className="form-group" onSubmit={handleSignIn}>
         <div>
           <label htmlFor="signInEmail">Email</label>
@@ -77,6 +96,7 @@ const SignIn = () => {
             placeholder="Enter your email"
           />
         </div>
+
         <div>
           <label htmlFor="signInPassword">Password</label>
           <input
@@ -89,12 +109,17 @@ const SignIn = () => {
             placeholder="••••••••"
           />
         </div>
+
         <div>
           <button type="submit">Sign In</button>
         </div>
       </form>
+
       {errorMessage && <p style={{ color: "#BE0340" }}>{errorMessage}</p>}
-      <Link id="register-link" to="/account-selection">Don't have an account?</Link>
+
+      <Link id="register-link" to="/account-selection">
+        Don't have an account?
+      </Link>
     </div>
   );
 };
