@@ -24,6 +24,8 @@ const ProfilePage = () => {
   const [selectedTraits, setSelectedTraits] = useState([]);
   const [workerExp, setWorkerExp] = useState([]);
   const [selectedExp, setSelectedExp] = useState([]);
+  const [workerProfiles, setWorkerProfiles] = useState([]);
+  const [selectedWorkerId, setSelectedWorkerId] = useState(null);
 
   const navigate = useNavigate();
 
@@ -44,7 +46,10 @@ const ProfilePage = () => {
   useEffect(() => {
     console.log("Profile fetch triggered, user:", user);
     if (user) {
-      axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/profile/${user.id}`, { withCredentials: true })
+axios.get(
+  `${process.env.REACT_APP_BACKEND_URL}/api/profile/${user.id}${selectedWorkerId ? `?workerId=${selectedWorkerId}` : ""}`,
+  { withCredentials: true }
+)
         .then((response) => {
           console.log("Profile data:", response.data);
           setUser((prevUser) => ({
@@ -57,19 +62,22 @@ const ProfilePage = () => {
           console.error("Error fetching user profile:", error);
         });
     }
-  }, [submit]);
+  }, [submit, selectedWorkerId, user?.id]);
 
-  useEffect(() => {
-    if (!user.isbusiness) {
-      axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/profile/worker-id/${user.id}`, { withCredentials: true })
-        .then((response) => {
-          setWorkerId(response.data.id);
-        })
-        .catch((error) => {
-          console.error("Error fetching user profile:", error);
-        });
-    }
-  }, [])
+useEffect(() => {
+  if (!user?.isbusiness) {
+    axios
+      .get(`${process.env.REACT_APP_BACKEND_URL}/api/profile/worker-profiles/${user.id}`, { withCredentials: true })
+      .then((res) => {
+        setWorkerProfiles(res.data);
+        if (res.data.length > 0) {
+          setSelectedWorkerId(res.data[0].id);
+          setWorkerId(res.data[0].id); // keep your existing workerId usage working
+        }
+      })
+      .catch((err) => console.error("Error fetching worker profiles:", err));
+  }
+}, [user]);
 
   useEffect(() => {
     if (!user.isbusiness && workerId != null) {
@@ -749,6 +757,50 @@ const ProfilePage = () => {
           </div>
         ) : (
           <div className="worker-profile">
+              {!user.isbusiness && workerProfiles.length > 0 && (
+                <div style={{ marginBottom: "12px" }}>
+                  <label style={{ marginRight: "8px" }}>Profile:</label>
+                  <select
+                    value={selectedWorkerId || ""}
+                    onChange={(e) => {
+                      const wid = Number(e.target.value);
+                      setSelectedWorkerId(wid);
+                      setWorkerId(wid);
+                    }}
+                  >
+                    {workerProfiles.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.profile_name}
+                      </option>
+                    ))}
+                  </select>
+
+                  <button
+                    style={{ marginLeft: "10px" }}
+                    disabled={workerProfiles.length >= 3}
+                    onClick={async () => {
+                      const name = window.prompt("Enter new profile name:");
+                      if (!name) return;
+
+                      await axios.post(
+                        `${process.env.REACT_APP_BACKEND_URL}/api/profile/create-worker-profile/${user.id}`,
+                        { profileName: name },
+                        { withCredentials: true }
+                      );
+
+                      // refresh list
+                      const res = await axios.get(
+                        `${process.env.REACT_APP_BACKEND_URL}/api/profile/worker-profiles/${user.id}`,
+                        { withCredentials: true }
+                      );
+
+                      setWorkerProfiles(res.data);
+                    }}
+                  >
+                    + Add Profile
+                  </button>
+                </div>
+              )}
             <div className="profile-section">
               <h2>Biography</h2>
               <p>{user.biography || ""}</p>
