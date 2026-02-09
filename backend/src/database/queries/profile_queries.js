@@ -170,6 +170,66 @@ WHERE users.id = $1;`;
     });
 };
 
+const listWorkerProfiles = async (userId) => {
+  const q = `
+    SELECT id, user_id, profile_name, first_name, last_name
+    FROM workers
+    WHERE user_id = $1
+    ORDER BY id ASC;
+  `;
+  const result = await db.query(q, [userId]);
+  return result.rows;
+};
+
+const getProfileByWorkerId = (workerId) => {
+  const query = `
+    SELECT users.id,
+      users.email,
+      users.active,
+      users.signUpDate,
+      users.user_phone_number AS phone_number,
+      workers.id AS worker_id,
+      workers.profile_name,
+      workers.first_name AS firstname,
+      workers.last_name AS lastname,
+      workers.biography,
+      workers.desired_work_radius,
+      workers.desired_pay,
+      locations.streetaddress AS street_address,
+      locations.city,
+      locations.province,
+      locations.postalcode AS postal_code
+    FROM users
+    JOIN workers ON users.id = workers.user_id
+    JOIN locations ON users.user_address = locations.location_id
+    WHERE workers.id = $1;
+  `;
+
+  return db.query(query, [workerId]).then(r => r.rows[0]);
+};
+
+const createWorkerProfile = async (userId, profileName) => {
+  // get existing worker to copy name defaults (minimal UX)
+  const base = await db.query(
+    `SELECT first_name, last_name FROM workers WHERE user_id = $1 ORDER BY id ASC LIMIT 1;`,
+    [userId]
+  );
+
+  if (base.rows.length === 0) return null;
+
+  const firstName = base.rows[0].first_name;
+  const lastName = base.rows[0].last_name;
+
+  const ins = await db.query(
+    `INSERT INTO workers (user_id, profile_name, first_name, last_name)
+     VALUES ($1, $2, $3, $4)
+     RETURNING id, user_id, profile_name, first_name, last_name;`,
+    [userId, profileName, firstName, lastName]
+  );
+
+  return ins.rows[0];
+};
+
 
 module.exports = {
   checkWorkerProfile,
@@ -179,5 +239,8 @@ module.exports = {
   checkBusinessProfile,
   addBusinessProfile,
   getBusinessProfile,
+  listWorkerProfiles,
+  getProfileByWorkerId,
+  createWorkerProfile,
   updateBusinessProfile
 };

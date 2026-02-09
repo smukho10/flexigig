@@ -85,6 +85,7 @@ CREATE TABLE schedule (
 CREATE TABLE workers (
   id SERIAL PRIMARY KEY,
   user_id INT REFERENCES users(id) ON DELETE CASCADE,
+  profile_name VARCHAR(100) NOT NULL DEFAULT 'Profile 1',
   first_name VARCHAR(255) NOT NULL,
   last_name VARCHAR(255) NOT NULL,
   biography TEXT,

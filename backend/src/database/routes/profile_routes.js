@@ -2,6 +2,28 @@ const express = require('express');
 const router = express.Router();
 const profile_queries = require('../queries/profile_queries.js');
 
+router.get("/profile/worker-profiles/:id", async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    // ONLY workers should have multiple profiles
+    // (user.isbusiness=true => employer)
+    const userRow = await require("../connection.js").query(
+      `SELECT isbusiness FROM users WHERE id = $1;`,
+      [userId]
+    );
+
+    if (userRow.rows.length === 0) return res.status(404).json({ message: "User not found" });
+    if (userRow.rows[0].isbusiness) return res.status(403).json({ message: "Employers cannot have profiles" });
+
+    const profiles = await profile_queries.listWorkerProfiles(userId);
+    res.json(profiles);
+  } catch (e) {
+    console.error("Error listing worker profiles:", e);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
 router.get("/profile/worker-id/:id", (req, res) => {
   const userId = req.params.id;
 
@@ -14,24 +36,57 @@ router.get("/profile/worker-id/:id", (req, res) => {
 
 router.get("/profile/:id", (req, res) => {
   const userId = req.params.id;
+  const workerId = req.query.workerId;
 
-  profile_queries.getProfile(userId)
-    .then((profileData) => {
-      var response = {
-        profileData: profileData
-      };
+  const profilePromise = workerId
+    ? profile_queries.getProfileByWorkerId(workerId)
+    : profile_queries.getProfile(userId);
 
-      profile_queries.getBusinessProfile(userId)
-        .then((businessProfile) => {
-          if (businessProfile) {
-            businessProfile["business_id"] = businessProfile["id"];
-            delete businessProfile["id"];
-            response["businessData"] = businessProfile;
-          }
-          res.json(response);
-          return;
-        });
-    });
+  profilePromise.then((profileData) => {
+    const response = { profileData };
+
+    profile_queries.getBusinessProfile(userId)
+      .then((businessProfile) => {
+        if (businessProfile) {
+          businessProfile["business_id"] = businessProfile["id"];
+          delete businessProfile["id"];
+          response["businessData"] = businessProfile;
+        }
+        res.json(response);
+      });
+  });
+});
+
+router.post("/profile/create-worker-profile/:id", async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const { profileName } = req.body;
+
+    if (!profileName || !profileName.trim()) {
+      return res.status(400).json({ message: "profileName is required" });
+    }
+
+    const userRow = await require("../connection.js").query(
+      `SELECT isbusiness FROM users WHERE id = $1;`,
+      [userId]
+    );
+
+    if (userRow.rows.length === 0) return res.status(404).json({ message: "User not found" });
+    if (userRow.rows[0].isbusiness) return res.status(403).json({ message: "Employers cannot have profiles" });
+
+    const existing = await profile_queries.listWorkerProfiles(userId);
+    if (existing.length >= 3) {
+      return res.status(400).json({ message: "Maximum 3 profiles allowed" });
+    }
+
+    const created = await profile_queries.createWorkerProfile(userId, profileName.trim());
+    if (!created) return res.status(400).json({ message: "Worker base profile not found" });
+
+    res.status(201).json(created);
+  } catch (e) {
+    console.error("Error creating worker profile:", e);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 });
 
 router.post("/profile/update/:id", async (req, res) => {
