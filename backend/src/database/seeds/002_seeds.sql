@@ -66,7 +66,11 @@ INSERT INTO skills (skill_name) VALUES
   ('Public Security'),
   ('French'),
   ('Manadrin'),
-  ('Cantonese')
+  ('Cantonese'),
+  ('First Aid'),
+  ('Inventory Management'),
+  ('Delivery Driving'),
+  ('Basic Carpentry')
 ON CONFLICT (skill_name) DO NOTHING;
 
 -- EXPERIENCES
