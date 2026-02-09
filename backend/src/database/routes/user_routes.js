@@ -356,7 +356,6 @@ router.post("/pending-register", async (req, res) => {
  */
 router.post("/login", (req, res) => {
   const { email, password } = req.body;
-
   if (!email || !password) {
     res.status(400).json({ message: "Invalid credentials" });
     return;
@@ -368,8 +367,16 @@ router.post("/login", (req, res) => {
         res.status(400).json({ message: "Invalid credentials" });
         return;
       }
-      req.session.user_id = foundUser.id;
-      res.status(200).json(foundUser);
+
+      // Regenerate session to get a NEW session ID (prevents session fixation)
+      req.session.regenerate((err) => {
+        if (err) {
+          return res.status(500).json({ message: "Login failed" });
+        }
+
+        req.session.user_id = foundUser.id;
+        res.status(200).json(foundUser);
+      });
     })
     .catch((err) => {
       console.error("Error during login:", err);
@@ -470,7 +477,18 @@ router.post("/reset-password", async (req, res) => {
  */
 router.post("/logout", (req, res) => {
   req.session.destroy(err => {
-    if (err) console.error("Error destroying session:", err);
+    if (err) {
+      return res.status(500).json({ error: "Logout failed" });
+    }
+
+    // Clear the cookie INSIDE the callback, after session is destroyed
+    res.clearCookie('connect.sid', {
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+    });
+
     res.status(200).send();
   });
 });
