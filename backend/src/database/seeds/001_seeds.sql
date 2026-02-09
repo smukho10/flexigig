@@ -116,7 +116,11 @@ INSERT INTO skills (skill_name) VALUES
 ('Public Security'),
 ('French'),
 ('Manadrin'),
-('Cantonese');
+('Cantonese'),
+('First Aid'),
+('Inventory Management'),
+('Delivery Driving'),
+('Basic Carpentry');
 
 INSERT INTO workers_skills (workers_id, skill_id) VALUES
 (1, 1),
