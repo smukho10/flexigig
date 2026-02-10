@@ -65,19 +65,20 @@ axios.get(
   }, [submit, selectedWorkerId, user?.id]);
 
 useEffect(() => {
-  if (!user?.isbusiness) {
+  if (!user?.isbusiness && user?.id) {
     axios
       .get(`${process.env.REACT_APP_BACKEND_URL}/api/profile/worker-profiles/${user.id}`, { withCredentials: true })
       .then((res) => {
         setWorkerProfiles(res.data);
-        if (res.data.length > 0) {
+        if (res.data.length > 0 && !selectedWorkerId) {
+          // Only set initial profile if no profile is selected yet
           setSelectedWorkerId(res.data[0].id);
-          setWorkerId(res.data[0].id); // keep your existing workerId usage working
+          setWorkerId(res.data[0].id);
         }
       })
       .catch((err) => console.error("Error fetching worker profiles:", err));
   }
-}, [user]);
+}, [user?.id]);
 
   useEffect(() => {
     if (!user.isbusiness && workerId != null) {
