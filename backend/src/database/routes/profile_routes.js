@@ -149,7 +149,13 @@ router.put("/profile/update-worker-profile/:workerId", async (req, res) => {
       lastname: req.body.lastname,
       profile_name: req.body.profile_name,
       desired_work_radius: req.body.desired_work_radius,
-      desired_pay: req.body.desired_pay
+      desired_pay: req.body.desired_pay,
+      // User-level data (phone and address)
+      phone_number: req.body.worker_phone_number,
+      street_address: req.body.worker_street_address,
+      city: req.body.worker_city,
+      province: req.body.worker_province,
+      postal_code: req.body.worker_postal_code
     };
 
     const updatedProfile = await profile_queries.updateWorkerProfileById(workerId, worker);

@@ -142,6 +142,7 @@ const updateUserProfile = async (userId, worker) => {
 
 const updateWorkerProfileById = async (workerId, worker) => {
   try {
+    // Update the workers table (profile-specific data)
     const updatedWorker = await db.query(
       `UPDATE workers
        SET biography = $2,
@@ -162,6 +163,56 @@ const updateWorkerProfileById = async (workerId, worker) => {
         worker.desired_pay
       ]
     );
+
+    // If phone/address data is provided, update user-level data too
+    if (worker.phone_number || worker.street_address || worker.city || worker.province || worker.postal_code) {
+      // Get the user_id from the worker
+      const workerData = await db.query(
+        `SELECT user_id FROM workers WHERE id = $1;`,
+        [workerId]
+      );
+
+      if (workerData.rows.length > 0) {
+        const userId = workerData.rows[0].user_id;
+
+        // Update phone number in users table
+        if (worker.phone_number) {
+          await db.query(
+            `UPDATE users SET user_phone_number = $1 WHERE id = $2;`,
+            [worker.phone_number, userId]
+          );
+        }
+
+        // Update address in locations table
+        if (worker.street_address || worker.city || worker.province || worker.postal_code) {
+          // Get the location_id for this user
+          const userData = await db.query(
+            `SELECT user_address FROM users WHERE id = $1;`,
+            [userId]
+          );
+
+          if (userData.rows.length > 0 && userData.rows[0].user_address) {
+            const locationId = userData.rows[0].user_address;
+
+            await db.query(
+              `UPDATE locations
+               SET streetaddress = COALESCE($1, streetaddress),
+                   city = COALESCE($2, city),
+                   province = COALESCE($3, province),
+                   postalcode = COALESCE($4, postalcode)
+               WHERE location_id = $5;`,
+              [
+                worker.street_address,
+                worker.city,
+                worker.province,
+                worker.postal_code,
+                locationId
+              ]
+            );
+          }
+        }
+      }
+    }
 
     return updatedWorker.rows[0];
   } catch (error) {

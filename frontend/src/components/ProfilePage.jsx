@@ -39,6 +39,12 @@ const ProfilePage = () => {
       setEditedUser({
         ...user,
         skills: user.skills ? user.skills : [],
+        // Map field names for the form
+        worker_phone_number: user.phone_number,
+        worker_street_address: user.street_address,
+        worker_city: user.city,
+        worker_province: user.province,
+        worker_postal_code: user.postal_code,
       });
     }
   }, [user]);
@@ -257,7 +263,13 @@ useEffect(() => {
           lastname: editedUser.lastname,
           profile_name: editedUser.profile_name || "Profile 1",
           desired_work_radius: editedUser.desired_work_radius,
-          desired_pay: editedUser.desired_pay
+          desired_pay: editedUser.desired_pay,
+          // Include phone and address fields (user-level data)
+          worker_phone_number: editedUser.worker_phone_number,
+          worker_street_address: editedUser.worker_street_address,
+          worker_city: editedUser.worker_city,
+          worker_province: editedUser.worker_province,
+          worker_postal_code: editedUser.worker_postal_code
         },
         { withCredentials: true }
       );
