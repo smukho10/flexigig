@@ -9,7 +9,7 @@ const client = new pg.Client({
   port: Number(process.env.PGPORT) || 5432,
 
   // Required for Render managed Postgres (SSL/TLS)
-  ssl: { rejectUnauthorized: false },
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
 client

@@ -25,6 +25,7 @@ export const UserProvider = ({ children }) => {
         credentials: "include",
       });
 
+      localStorage.removeItem('user')
       setUser(null);
       setWorker?.(null);
       setBusiness?.(null);

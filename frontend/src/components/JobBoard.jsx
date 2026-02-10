@@ -19,7 +19,7 @@ const JobBoard = () => {
     useEffect(() => {
         const fetchJobs = async () => {
             try {
-                const res = await axios.get("api/all-jobs");
+                const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/all-jobs`);
                 setJobs(res.data.filter((job) => job.jobfilled === false).sort(((a, b) => {
                     return a.jobstart.localeCompare(b.jobstart)
                 })));
