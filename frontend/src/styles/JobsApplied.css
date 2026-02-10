@@ -9,8 +9,15 @@
     font-family: "Poppins";
 }
 
+.jobs-applied-container .header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
 .header-container h1 {
-    margin: 0 0 20px;
+    margin: 0;
     color: #0340BE;
     font-size: 24px;
     font-weight: 400;
@@ -18,6 +25,7 @@
 
 .jobs-list {
     padding: 0;
+    list-style: none;
 }
 
 .add-job-button {
@@ -32,6 +40,7 @@
     background-color: white;
     border-radius: 5px;
     border: 1px solid #4EBBC2;
+    cursor: pointer;
 }
 
 .add-job-button:hover {
@@ -49,6 +58,8 @@
     font-family: "Poppins";
     overflow: hidden;
     width: 1114px;
+    margin-bottom: 20px;
+    background-color: white;
 }
 
 .job-item .top {
@@ -56,20 +67,26 @@
     justify-content: space-between;
     width: 100%;
     border-bottom: 0.5px solid #C8CBD9;
+}
 
-    .top-left {
-        padding: 40px 30px;
-        display: flex;
-        flex-direction: column;
-        justify-content: left;
-    }
+.job-item .top .top-left {
+    padding: 40px 30px;
+    display: flex;
+    flex-direction: column;
+    justify-content: left;
+}
 
-    .top-right {
-        padding: 40px 50px;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-    }
+.job-item .title-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.job-item .top .top-right {
+    padding: 40px 50px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .job-item h1 {
@@ -80,10 +97,15 @@
     letter-spacing: 0.5px;
 }
 
+.job-item .action-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 30px;
+}
+
 .job-item .top-left button {
     padding: 0;
     margin: 0;
-    margin-top: 30px;
     width: 103px;
     height: 30px;
     font-family: "Poppins";
@@ -93,6 +115,48 @@
     background-color: #C2554E;
     border-radius: 5px;
     border: none;
+    cursor: pointer;
+}
+
+.job-item .status-dropdown {
+    padding: 0;
+    margin: 0;
+    width: 120px;
+    height: 30px;
+    font-family: "Poppins";
+    font-size: 12px;
+    font-weight: 400;
+    color: black;
+    background-color: white;
+    border-radius: 5px;
+    border: 1px solid #4EBBC2;
+    cursor: pointer;
+    outline: none;
+}
+
+.job-item .status-dropdown:hover {
+    background-color: #f0f9fa;
+}
+
+.job-item .status-dropdown:focus {
+    border-color: #4EBBC2;
+    box-shadow: 0 0 0 2px rgba(78, 187, 194, 0.1);
+}
+
+.job-item .status-badge {
+    display: inline-block;
+}
+
+.job-item .status-badge.rejected {
+    padding: 2px 10px;
+    background-color: transparent;
+    color: #C2554E;
+    border-radius: 3px;
+    font-size: 14px;
+    font-weight: 500;
+    font-style: italic;
+    border: 1px dashed #C2554E;
+    transform: rotate(-2deg);
 }
 
 .job-item .top-right button {
@@ -107,63 +171,63 @@
     font-size: 12px;
     letter-spacing: 0.5px;
     border: none;
+    cursor: pointer;
 }
 
 .job-item .bottom {
     display: flex;
     min-width: 100%;
+}
 
-    .bottom-left {
-        box-sizing: border-box;
-        min-width: 50%;
-        padding: 30px;
-        border-right: 0.5px solid #C8CBD9;
+.job-item .bottom .bottom-left {
+    box-sizing: border-box;
+    min-width: 50%;
+    padding: 30px;
+    border-right: 0.5px solid #C8CBD9;
+}
 
-        .details-div {
-            display: flex;
-            flex-direction: column;
-            height: 100px;
-            justify-content: space-between;
-            margin-bottom: 50px;
+.job-item .bottom .bottom-left .details-div {
+    display: flex;
+    flex-direction: column;
+    height: 100px;
+    justify-content: space-between;
+    margin-bottom: 50px;
+}
 
-            img {
-                margin-right: 15px;
-            }
+.job-item .bottom .bottom-left .details-div img {
+    margin-right: 15px;
+}
 
-            div {
-                display: flex;
-                align-items: center;
-                font-size: 16px;
-                letter-spacing: 0.5px;
-            }
+.job-item .bottom .bottom-left .details-div div {
+    display: flex;
+    align-items: center;
+    font-size: 16px;
+    letter-spacing: 0.5px;
+}
 
-            #calendar-icon {
-                filter: brightness(0) saturate(100%) invert(74%) sepia(32%) saturate(495%) hue-rotate(150deg) brightness(92%) contrast(91%);
-            }
-        }
+.job-item .bottom .bottom-left .details-div #calendar-icon {
+    filter: brightness(0) saturate(100%) invert(74%) sepia(32%) saturate(495%) hue-rotate(150deg) brightness(92%) contrast(91%);
+}
 
-        .location-div {
-            display: flex;
-            flex-direction: column;
+.job-item .bottom .bottom-left .location-div {
+    display: flex;
+    flex-direction: column;
+}
 
-            h1 {
-                margin-bottom: 20px;
-            }
+.job-item .bottom .bottom-left .location-div h1 {
+    margin-bottom: 20px;
+}
 
-            p {
-                margin: 0;
-            }
-        }
-    }
+.job-item .bottom .bottom-left .location-div p {
+    margin: 0;
+}
 
-    .bottom-right {
-        max-height: 500px;
-        box-sizing: border-box;
-        min-width: 50%;
-        padding: 40px 40px 0 50px;
-        overflow-y: scroll;
-        /* scrollbar-width: none; */
-    }
+.job-item .bottom .bottom-right {
+    max-height: 500px;
+    box-sizing: border-box;
+    min-width: 50%;
+    padding: 40px 40px 0 50px;
+    overflow-y: scroll;
 }
 
 .jobs-applied-container .comfirm-removal-container {
@@ -177,45 +241,46 @@
     right: 0;
     bottom: 0;
     left: 0;
+}
 
-    .prompt {
-        background-color: white;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        border-radius: 19px;
-        padding: 10px;
-    }
+.jobs-applied-container .comfirm-removal-container .prompt {
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 19px;
+    padding: 10px;
+}
 
-    .prompt-text {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        margin: 0 0 20px 0;
-    }
+.jobs-applied-container .comfirm-removal-container .prompt-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 0 20px 0;
+}
 
-    .prompt-buttons {
-        display: flex;
+.jobs-applied-container .comfirm-removal-container .prompt-buttons {
+    display: flex;
+}
 
-        button {
-            margin: 0 10px 0;
-            background-color: #4EBBC2;
-            color: white;
-            width: 103px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: 500;
-            border-radius: 5px;
-            border: none;
-        }
+.jobs-applied-container .comfirm-removal-container .prompt-buttons button {
+    margin: 0 10px 0;
+    background-color: #4EBBC2;
+    color: white;
+    width: 103px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+}
 
-        .remove-btn {
-            background-color: #C2554E;
-        }
-    }
+.jobs-applied-container .comfirm-removal-container .prompt-buttons .remove-btn {
+    background-color: #C2554E;
 }
