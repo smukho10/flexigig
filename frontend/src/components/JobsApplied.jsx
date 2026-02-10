@@ -38,7 +38,7 @@ const JobsApplied = () => {
       setRemoving(appliedJobs.find(job => job.job_id.toString() === jobId))
     } else {
       try {
-        await axios.patch(`api/remove-application/${user.id}/job/${jobId}`);
+        await axios.patch(`${process.env.REACT_APP_BACKEND_URL}/api/remove-application/${user.id}/job/${jobId}`);
         setRemoving(false)
         setRefresh(!refresh)
       } catch (error) {
