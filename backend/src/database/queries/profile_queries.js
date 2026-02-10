@@ -140,6 +140,36 @@ const updateUserProfile = async (userId, worker) => {
   }
 };
 
+const updateWorkerProfileById = async (workerId, worker) => {
+  try {
+    const updatedWorker = await db.query(
+      `UPDATE workers
+       SET biography = $2,
+           first_name = $3,
+           last_name = $4,
+           profile_name = $5,
+           desired_work_radius = $6,
+           desired_pay = $7
+       WHERE id = $1
+       RETURNING *;`,
+      [
+        workerId,
+        worker.biography,
+        worker.firstname,
+        worker.lastname,
+        worker.profile_name,
+        worker.desired_work_radius,
+        worker.desired_pay
+      ]
+    );
+
+    return updatedWorker.rows[0];
+  } catch (error) {
+    console.error("Error updating worker profile by ID:", error);
+    throw error;
+  }
+};
+
 const getProfile = (userId) => {
   const query = `SELECT users.id,
   users.email,
@@ -230,11 +260,33 @@ const createWorkerProfile = async (userId, profileName) => {
   return ins.rows[0];
 };
 
+const deleteWorkerProfile = async (workerId) => {
+  try {
+    // First, manually delete associated records from junction tables
+    // (CASCADE isn't set up in the current schema)
+    await db.query(`DELETE FROM workers_skills WHERE workers_id = $1;`, [workerId]);
+    await db.query(`DELETE FROM workers_traits WHERE workers_id = $1;`, [workerId]);
+    await db.query(`DELETE FROM workers_experiences WHERE workers_id = $1;`, [workerId]);
+
+    // Then delete the profile itself
+    const result = await db.query(
+      `DELETE FROM workers WHERE id = $1 RETURNING *;`,
+      [workerId]
+    );
+
+    return result.rows[0];
+  } catch (error) {
+    console.error("Error deleting worker profile:", error);
+    throw error;
+  }
+};
+
 
 module.exports = {
   checkWorkerProfile,
   addUserProfile,
   updateUserProfile,
+  updateWorkerProfileById,
   getProfile,
   checkBusinessProfile,
   addBusinessProfile,
@@ -242,5 +294,6 @@ module.exports = {
   listWorkerProfiles,
   getProfileByWorkerId,
   createWorkerProfile,
+  deleteWorkerProfile,
   updateBusinessProfile
 };

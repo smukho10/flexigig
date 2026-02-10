@@ -89,6 +89,85 @@ router.post("/profile/create-worker-profile/:id", async (req, res) => {
   }
 });
 
+router.delete("/profile/delete-worker-profile/:workerId", async (req, res) => {
+  try {
+    const workerId = parseInt(req.params.workerId, 10);
+
+    if (isNaN(workerId)) {
+      return res.status(400).json({ message: "Invalid worker ID" });
+    }
+
+    // Get the user_id to check profile count
+    const workerCheck = await require("../connection.js").query(
+      `SELECT user_id FROM workers WHERE id = $1;`,
+      [workerId]
+    );
+
+    if (workerCheck.rows.length === 0) {
+      return res.status(404).json({ message: "Profile not found" });
+    }
+
+    const userId = workerCheck.rows[0].user_id;
+
+    // Check if this is the last profile (minimum 1 required)
+    const profileCount = await profile_queries.listWorkerProfiles(userId);
+
+    if (profileCount.length <= 1) {
+      return res.status(400).json({
+        message: "Cannot delete the last profile. At least one profile must remain."
+      });
+    }
+
+    // Delete the profile
+    const deleted = await profile_queries.deleteWorkerProfile(workerId);
+
+    if (!deleted) {
+      return res.status(500).json({ message: "Failed to delete profile" });
+    }
+
+    res.status(200).json({
+      message: "Profile deleted successfully",
+      deletedProfile: deleted
+    });
+  } catch (e) {
+    console.error("Error deleting worker profile:", e);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+router.put("/profile/update-worker-profile/:workerId", async (req, res) => {
+  try {
+    const workerId = parseInt(req.params.workerId, 10);
+
+    if (isNaN(workerId)) {
+      return res.status(400).json({ message: "Invalid worker ID" });
+    }
+
+    const worker = {
+      biography: req.body.biography,
+      firstname: req.body.firstname,
+      lastname: req.body.lastname,
+      profile_name: req.body.profile_name,
+      desired_work_radius: req.body.desired_work_radius,
+      desired_pay: req.body.desired_pay
+    };
+
+    const updatedProfile = await profile_queries.updateWorkerProfileById(workerId, worker);
+
+    if (!updatedProfile) {
+      return res.status(404).json({ message: "Profile not found" });
+    }
+
+    res.status(200).json({
+      message: "Profile updated successfully",
+      profileData: updatedProfile
+    });
+  } catch (e) {
+    console.error("Error updating worker profile:", e);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
 router.post("/profile/update/:id", async (req, res) => {
   const userId = req.params.id;
   const worker = {
