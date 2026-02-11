@@ -39,6 +39,12 @@ const ProfilePage = () => {
       setEditedUser({
         ...user,
         skills: user.skills ? user.skills : [],
+        // Map field names for the form
+        worker_phone_number: user.phone_number,
+        worker_street_address: user.street_address,
+        worker_city: user.city,
+        worker_province: user.province,
+        worker_postal_code: user.postal_code,
       });
     }
   }, [user]);
@@ -65,19 +71,20 @@ axios.get(
   }, [submit, selectedWorkerId, user?.id]);
 
 useEffect(() => {
-  if (!user?.isbusiness) {
+  if (!user?.isbusiness && user?.id) {
     axios
       .get(`${process.env.REACT_APP_BACKEND_URL}/api/profile/worker-profiles/${user.id}`, { withCredentials: true })
       .then((res) => {
         setWorkerProfiles(res.data);
-        if (res.data.length > 0) {
+        if (res.data.length > 0 && !selectedWorkerId) {
+          // Only set initial profile if no profile is selected yet
           setSelectedWorkerId(res.data[0].id);
-          setWorkerId(res.data[0].id); // keep your existing workerId usage working
+          setWorkerId(res.data[0].id);
         }
       })
       .catch((err) => console.error("Error fetching worker profiles:", err));
   }
-}, [user]);
+}, [user?.id]);
 
   useEffect(() => {
     if (!user.isbusiness && workerId != null) {
@@ -245,24 +252,44 @@ useEffect(() => {
     e.preventDefault();
 
     setSubmit(true);
-    if (!editedUser.skills[0]) {
-      return;
-    }
-
 
     try {
-      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/profile/update/${user.id}`, editedUser, { withCredentials: true });
+      // Use the NEW endpoint that updates by workerId instead of userId
+      await axios.put(
+        `${process.env.REACT_APP_BACKEND_URL}/api/profile/update-worker-profile/${selectedWorkerId}`,
+        {
+          biography: editedUser.biography,
+          firstname: editedUser.firstname,
+          lastname: editedUser.lastname,
+          profile_name: editedUser.profile_name || "Profile 1",
+          desired_work_radius: editedUser.desired_work_radius,
+          desired_pay: editedUser.desired_pay,
+          // Include phone and address fields (user-level data)
+          worker_phone_number: editedUser.worker_phone_number,
+          worker_street_address: editedUser.worker_street_address,
+          worker_city: editedUser.worker_city,
+          worker_province: editedUser.worker_province,
+          worker_postal_code: editedUser.worker_postal_code
+        },
+        { withCredentials: true }
+      );
 
-      let merge = {
-        ...user,
-        ...response.data.businessData,
-        ...response.data.profileData,
-      };
+      // Refresh the profile data
+      const profileRes = await axios.get(
+        `${process.env.REACT_APP_BACKEND_URL}/api/profile/${user.id}?workerId=${selectedWorkerId}`,
+        { withCredentials: true }
+      );
+
+      setUser((prevUser) => ({
+        ...prevUser,
+        ...profileRes.data.profileData
+      }));
+
       setIsEditing(false);
-      setUser(merge);
-      setEditedUser(merge);
+      alert("Profile updated successfully!");
     } catch (error) {
       console.error("Update failed:", error.response || error);
+      alert("Failed to update profile. Please try again.");
     }
   };
 
@@ -324,6 +351,48 @@ useEffect(() => {
     }
 
     toggleEditExp();
+  };
+
+  const handleDeleteProfile = async () => {
+    if (workerProfiles.length <= 1) {
+      alert("Cannot delete the last profile. You must have at least one profile.");
+      return;
+    }
+
+    const currentProfile = workerProfiles.find(p => p.id === selectedWorkerId);
+    const profileName = currentProfile ? currentProfile.profile_name : "this profile";
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${profileName}"?\n\nThis will also delete all skills, traits, and experiences associated with this profile.\n\nThis action cannot be undone.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await axios.delete(
+        `${process.env.REACT_APP_BACKEND_URL}/api/profile/delete-worker-profile/${selectedWorkerId}`,
+        { withCredentials: true }
+      );
+
+      // Refresh the profiles list
+      const res = await axios.get(
+        `${process.env.REACT_APP_BACKEND_URL}/api/profile/worker-profiles/${user.id}`,
+        { withCredentials: true }
+      );
+
+      setWorkerProfiles(res.data);
+
+      // Select the first remaining profile
+      if (res.data.length > 0) {
+        setSelectedWorkerId(res.data[0].id);
+        setWorkerId(res.data[0].id);
+      }
+
+      alert("Profile deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting profile:", error);
+      alert("Failed to delete profile. Please try again.");
+    }
   };
 
   const handleSkillSelect = (skillObj) => {
@@ -567,6 +636,20 @@ useEffect(() => {
                     required
                   />
 
+                  <label htmlFor="profile_name" className="form-label">
+                    Profile Name:
+                  </label>
+                  <input
+                    type="text"
+                    id="profile_name"
+                    name="profile_name"
+                    value={editedUser.profile_name || ""}
+                    onChange={handleChange}
+                    className="input-text"
+                    placeholder="e.g., Construction Profile, Hospitality Profile"
+                    required
+                  />
+
                   <label htmlFor="firstname" className="form-label">
                     First Name:
                   </label>
@@ -758,47 +841,106 @@ useEffect(() => {
         ) : (
           <div className="worker-profile">
               {!user.isbusiness && workerProfiles.length > 0 && (
-                <div style={{ marginBottom: "12px" }}>
-                  <label style={{ marginRight: "8px" }}>Profile:</label>
-                  <select
-                    value={selectedWorkerId || ""}
-                    onChange={(e) => {
-                      const wid = Number(e.target.value);
-                      setSelectedWorkerId(wid);
-                      setWorkerId(wid);
-                    }}
-                  >
-                    {workerProfiles.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.profile_name}
-                      </option>
-                    ))}
-                  </select>
+                <div style={{ marginBottom: "20px", padding: "15px", backgroundColor: "#f5f5f5", borderRadius: "8px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+                    <label style={{ fontWeight: "bold", fontSize: "16px" }}>Profile:</label>
+                    <select
+                      value={selectedWorkerId || ""}
+                      onChange={(e) => {
+                        const wid = Number(e.target.value);
+                        setSelectedWorkerId(wid);
+                        setWorkerId(wid);
+                      }}
+                      style={{
+                        padding: "8px 12px",
+                        fontSize: "16px",
+                        borderRadius: "4px",
+                        border: "1px solid #ccc",
+                        flex: "1",
+                        maxWidth: "300px"
+                      }}
+                    >
+                      {workerProfiles.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.profile_name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                  <button
-                    style={{ marginLeft: "10px" }}
-                    disabled={workerProfiles.length >= 3}
-                    onClick={async () => {
-                      const name = window.prompt("Enter new profile name:");
-                      if (!name) return;
+                  <div style={{ display: "flex", gap: "10px" }}>
+                    <button
+                      style={{
+                        backgroundColor: "#4EBBC2",
+                        color: "white",
+                        padding: "8px 16px",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                        fontSize: "14px"
+                      }}
+                      onClick={() => setIsEditing(true)}
+                    >
+                      Edit This Profile
+                    </button>
 
-                      await axios.post(
-                        `${process.env.REACT_APP_BACKEND_URL}/api/profile/create-worker-profile/${user.id}`,
-                        { profileName: name },
-                        { withCredentials: true }
-                      );
+                    <button
+                      style={{
+                        backgroundColor: "#FF6347",
+                        color: "white",
+                        padding: "8px 16px",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: workerProfiles.length <= 1 ? "not-allowed" : "pointer",
+                        fontSize: "14px",
+                        opacity: workerProfiles.length <= 1 ? 0.5 : 1
+                      }}
+                      disabled={workerProfiles.length <= 1}
+                      onClick={handleDeleteProfile}
+                    >
+                      Delete This Profile
+                    </button>
 
-                      // refresh list
-                      const res = await axios.get(
-                        `${process.env.REACT_APP_BACKEND_URL}/api/profile/worker-profiles/${user.id}`,
-                        { withCredentials: true }
-                      );
+                    <button
+                      style={{
+                        backgroundColor: "#4CAF50",
+                        color: "white",
+                        padding: "8px 16px",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: workerProfiles.length >= 3 ? "not-allowed" : "pointer",
+                        fontSize: "14px",
+                        opacity: workerProfiles.length >= 3 ? 0.5 : 1
+                      }}
+                      disabled={workerProfiles.length >= 3}
+                      onClick={async () => {
+                        const name = window.prompt("Enter new profile name:");
+                        if (!name) return;
 
-                      setWorkerProfiles(res.data);
-                    }}
-                  >
-                    + Add Profile
-                  </button>
+                        await axios.post(
+                          `${process.env.REACT_APP_BACKEND_URL}/api/profile/create-worker-profile/${user.id}`,
+                          { profileName: name },
+                          { withCredentials: true }
+                        );
+
+                        // Refresh list
+                        const res = await axios.get(
+                          `${process.env.REACT_APP_BACKEND_URL}/api/profile/worker-profiles/${user.id}`,
+                          { withCredentials: true }
+                        );
+
+                        setWorkerProfiles(res.data);
+                        // Select the newly created profile
+                        if (res.data.length > 0) {
+                          const newProfile = res.data[res.data.length - 1];
+                          setSelectedWorkerId(newProfile.id);
+                          setWorkerId(newProfile.id);
+                        }
+                      }}
+                    >
+                      + Add Profile
+                    </button>
+                  </div>
                 </div>
               )}
             <div className="profile-section">
@@ -838,11 +980,6 @@ useEffect(() => {
             </div>
           </div>
         )}
-        <div className="profile-footer">
-          <button onClick={toggleEdit} className="edit-button">
-            Edit Profile
-          </button>
-        </div>
       </div>
       {!user.isbusiness && (
         <>
