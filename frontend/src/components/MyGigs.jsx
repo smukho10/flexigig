@@ -12,12 +12,23 @@ import MessageBubbles from "../assets/images/MessageBubbles.png";
 const MyGigs = () => {
   const { user } = useUser();
   const [approvedGigs, setApprovedGigs] = useState([]);
+  const [gigStatuses, setGigStatuses] = useState({});
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [currentReviewGig, setCurrentReviewGig] = useState(null);
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [refresh, setRefresh] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     // Fetch approved gigs from localStorage
     const fetchApprovedGigs = () => {
       const storedStatuses = JSON.parse(localStorage.getItem('jobStatuses') || '{}');
+      const storedGigStatuses = JSON.parse(localStorage.getItem('gigStatuses') || '{}');
+      setGigStatuses(storedGigStatuses);
+
       const approvedJobIds = Object.keys(storedStatuses).filter(
         jobId => storedStatuses[jobId] === 'approved'
       );
@@ -50,7 +61,90 @@ const MyGigs = () => {
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [user]);
+  }, [user, refresh]);
+
+  const handleRemove = (jobId) => {
+    // Remove from My Gigs and return to Jobs Applied
+    const storedStatuses = JSON.parse(localStorage.getItem('jobStatuses') || '{}');
+    delete storedStatuses[jobId];
+    localStorage.setItem('jobStatuses', JSON.stringify(storedStatuses));
+
+    // Also remove gig status
+    const storedGigStatuses = JSON.parse(localStorage.getItem('gigStatuses') || '{}');
+    delete storedGigStatuses[jobId];
+    localStorage.setItem('gigStatuses', JSON.stringify(storedGigStatuses));
+
+    // Trigger refresh
+    window.dispatchEvent(new Event('storage'));
+    setRefresh(!refresh);
+  };
+
+  const handleStatusChange = (jobId, newStatus) => {
+    if (newStatus === 'completed') {
+      // Update status to completed first
+      const updatedGigStatuses = {
+        ...gigStatuses,
+        [jobId]: 'completed'
+      };
+      localStorage.setItem('gigStatuses', JSON.stringify(updatedGigStatuses));
+      setGigStatuses(updatedGigStatuses);
+
+      // Then open optional review modal
+      const gig = approvedGigs.find(g => g.job_id === jobId);
+      setCurrentReviewGig(gig);
+      setShowReviewModal(true);
+    } else {
+      // Update status directly for "in_progress"
+      const updatedGigStatuses = {
+        ...gigStatuses,
+        [jobId]: newStatus
+      };
+      localStorage.setItem('gigStatuses', JSON.stringify(updatedGigStatuses));
+      setGigStatuses(updatedGigStatuses);
+    }
+  };
+
+  const handleReviewSubmit = () => {
+    if (!currentReviewGig) return;
+
+    // Only submit review if rating is provided
+    if (rating > 0) {
+      // TODO: Future - Send review to backend API
+      // Example API call structure:
+      // await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/submit-review`, {
+      //   jobId: currentReviewGig.job_id,
+      //   userId: user.id,
+      //   employerId: currentReviewGig.user_id,
+      //   rating: rating,
+      //   comment: reviewComment
+      // }, { withCredentials: true });
+
+      // Show success message
+      setShowSuccessMessage(true);
+
+      // Close modal after 2 seconds
+      setTimeout(() => {
+        setShowSuccessMessage(false);
+        setShowReviewModal(false);
+        setRating(0);
+        setHoverRating(0);
+        setReviewComment("");
+        setCurrentReviewGig(null);
+      }, 2000);
+    } else {
+      // If no rating provided, just close the modal
+      handleCloseModal();
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowReviewModal(false);
+    setRating(0);
+    setHoverRating(0);
+    setReviewComment("");
+    setCurrentReviewGig(null);
+    setShowSuccessMessage(false);
+  };
 
   const findJob = () => {
     navigate("/find-gigs");
@@ -74,6 +168,17 @@ const MyGigs = () => {
     navigate(`/messages`, { state: { partnerId: job.user_id } });
   };
 
+  const getGigStatusBadge = (jobId) => {
+    const status = gigStatuses[jobId];
+    if (status === 'in_progress') {
+      return <span className="in-progress-badge">In Progress</span>;
+    } else if (status === 'completed') {
+      return <span className="completed-badge">Completed</span>;
+    }
+    // If no status, show Approved
+    return <span className="approved-badge">Approved</span>;
+  };
+
   return (
     <div className="my-gigs-container">
       <div className="header-container">
@@ -91,9 +196,23 @@ const MyGigs = () => {
             <li key={job.job_id} className="gig-item">
               <div className="top">
                 <div className="top-left">
-                  <h1>{job.jobtitle}</h1>
-                  <div className="status-badge">
-                    <span className="approved-badge">Approved</span>
+                  <div className="title-row">
+                    <h1>{job.jobtitle}</h1>
+                  </div>
+                  <div className="status-badges">
+                    {getGigStatusBadge(job.job_id)}
+                  </div>
+                  <div className="action-buttons">
+                    <button className="remove-btn" onClick={() => handleRemove(job.job_id)}>Remove</button>
+                    <select 
+                      className="status-dropdown"
+                      value={gigStatuses[job.job_id] || ''}
+                      onChange={(e) => handleStatusChange(job.job_id, e.target.value)}
+                    >
+                      <option value="">Select Status</option>
+                      <option value="in_progress">In Progress</option>
+                      <option value="completed">Completed</option>
+                    </select>
                   </div>
                 </div>
                 <div className="top-right">
@@ -134,6 +253,58 @@ const MyGigs = () => {
             </li>
           ))}
         </ul>
+      )}
+
+      {/* Review Modal */}
+      {showReviewModal && (
+        <div className="review-modal-overlay" onClick={handleCloseModal}>
+          <div className="review-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="close-modal-btn" onClick={handleCloseModal}>×</button>
+            {!showSuccessMessage ? (
+              <>
+                <h2>Rate Your Employer</h2>
+                <p className="employer-name">{currentReviewGig?.business_name}</p>
+                
+                <div className="star-rating">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span
+                      key={star}
+                      className={`star ${star <= (hoverRating || rating) ? 'filled' : ''}`}
+                      onClick={() => setRating(star)}
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(0)}
+                    >
+                      ★
+                    </span>
+                  ))}
+                </div>
+
+                <textarea
+                  className="review-comment"
+                  placeholder="Share your experience (optional)"
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value)}
+                  rows={4}
+                />
+
+                <div className="modal-buttons">
+                  <button className="cancel-btn" onClick={handleCloseModal}>Cancel</button>
+                  <button 
+                    className="submit-btn" 
+                    onClick={handleReviewSubmit}
+                  >
+                    Submit
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="success-message">
+                <div className="success-icon">✓</div>
+                <h2>Thanks for rating!</h2>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
