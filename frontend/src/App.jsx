@@ -1,14 +1,14 @@
 import './App.css';
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
 
 import Calendar from "./components/Calendar";
 import GigWorkersPage from "./components/GigWorkersPage";
 //import Header from "./components/Header";
 //import HomePage from "./components/HomePage";
-import JobPostingForm from "./components/JobPostingForm";
 import LandingPage from "./components/LandingPage";
 import JobsApplied from "./components/JobsApplied";
+import MyGigs from "./components/MyGigs";
 import PasswordReset from "./components/PasswordReset";
 import PasswordResetInitiation from "./components/PasswordResetInitiation";
 import ProfilePage from "./components/ProfilePage";
@@ -32,16 +32,12 @@ import AccountSelection from './components/AccountSelection';
 import SearchPage from "./components/SearchPage";
 
 const App = () => {
-  const [user, setUser] = useState(
-    () => JSON.parse(localStorage.getItem("user")) || null
-  );
-
   useEffect(() => {
     const handleStorageChange = () => {
       const updatedUserData = localStorage.getItem("user");
 
       if (updatedUserData) {
-        setUser(JSON.parse(updatedUserData));
+        // User data updated in localStorage
       }
     };
 
@@ -66,7 +62,6 @@ const App = () => {
               <Route path="/signin" element={<SignIn />} />
               <Route path="/account-selection" element={<AccountSelection />} />
               <Route path="/verify/:token" element={<VerifyEmailPage />} />
-              <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
               <Route path="/initiate-password-reset" element={<PasswordResetInitiation />} />
               <Route path="/verify/password-reset/:uniqueIdentifier" element={<PasswordReset />} />
               <Route path="/registration-success" element={<RegistrationSuccess />} />
@@ -76,6 +71,7 @@ const App = () => {
                 <Route path="/dashboard" element={<ProtectedRoute> <Dashboard /> </ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute>< ProfilePage /> </ProtectedRoute>} />
                 <Route path="/jobs-applied" element={<ProtectedRoute> <JobsApplied /> </ProtectedRoute>} />
+                <Route path="/my-gigs" element={<ProtectedRoute> <MyGigs /> </ProtectedRoute>} />
                 <Route path="/my-jobs" element={<ProtectedRoute> <JobPosting /> </ProtectedRoute>} />
                 <Route path="/gig-workers" element={<ProtectedRoute> <GigWorkersPage /> </ProtectedRoute>} />
                 <Route path="/my-calendar" element={<ProtectedRoute> <Calendar /> </ProtectedRoute>} />
