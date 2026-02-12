@@ -63,10 +63,15 @@ router.post("/register", async (req, res) => {
       await user_queries.addBusiness(user.id, businessName, businessDescription);
     }
 
+<<<<<<< Updated upstream
     // generate a verification token
     const verificationToken = crypto.randomBytes(64).toString("hex");
 
     // save the verification token in the database
+=======
+    const verificationToken = crypto.randomBytes(64).toString("hex");
+
+>>>>>>> Stashed changes
     await user_queries.saveVerificationToken(user.id, verificationToken);
 
     const updatedUser = await user_queries.getUserById(user.id);
@@ -75,7 +80,10 @@ router.post("/register", async (req, res) => {
       user: updatedUser,
     });
 
+<<<<<<< Updated upstream
     // send verification email
+=======
+>>>>>>> Stashed changes
     await sendVerificationEmail(email, verificationToken);
   } catch (error) {
     console.error("Error during user registration;");
@@ -113,7 +121,10 @@ async function sendVerificationEmail(email, token) {
   }
 }
 
+<<<<<<< Updated upstream
 // Route to handle verification link clicks
+=======
+>>>>>>> Stashed changes
 router.get("/verify/:token", async (req, res) => {
   const { token } = req.params;
 
@@ -314,9 +325,12 @@ router.post("/pending-register", async (req, res) => {
   }
 });
 
+<<<<<<< Updated upstream
 /**
  * ✅ LOGIN: enforce one active session per user
  */
+=======
+>>>>>>> Stashed changes
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -326,13 +340,17 @@ router.post("/login", async (req, res) => {
 
   try {
     const foundUser = await user_queries.checkLoginCredentials(email, password);
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
     if (!foundUser) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
     const userId = foundUser.id;
 
+<<<<<<< Updated upstream
     const existing = await db.query(
       "SELECT session_id FROM active_sessions WHERE user_id = $1",
       [userId]
@@ -345,9 +363,30 @@ router.post("/login", async (req, res) => {
           message:
             "This account is already logged in on another device. Please log out there first.",
         });
+=======
+    const sessionRow = await db.query(
+      "SELECT current_session_id FROM users WHERE id = $1",
+      [userId]
+    );
+
+    const currentSessionId = sessionRow.rows[0]?.current_session_id;
+
+    if (currentSessionId && currentSessionId !== req.sessionID) {
+      return res.status(409).json({
+        message:
+          "This account is already logged in on another device. Please log out there first.",
+      });
+    }
+
+    req.session.regenerate(async (err) => {
+      if (err) {
+        console.error("Session regenerate error:", err);
+        return res.status(500).json({ message: "Internal Server Error" });
+>>>>>>> Stashed changes
       }
     }
 
+<<<<<<< Updated upstream
     req.session.user_id = userId;
 
     await db.query(
@@ -359,15 +398,29 @@ router.post("/login", async (req, res) => {
     );
 
     return res.status(200).json(foundUser);
+=======
+      req.session.user_id = userId;
+
+      await db.query(
+        "UPDATE users SET current_session_id = $1, session_last_seen = NOW() WHERE id = $2",
+        [req.sessionID, userId]
+      );
+
+      return res.status(200).json(foundUser);
+    });
+>>>>>>> Stashed changes
   } catch (err) {
     console.error("Error during login:", err);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
+<<<<<<< Updated upstream
 /**
  * ✅ ME: validate session matches active_sessions
  */
+=======
+>>>>>>> Stashed changes
 router.get("/me", async (req, res) => {
   try {
     if (!req.session || !req.session.user_id) {
@@ -376,17 +429,35 @@ router.get("/me", async (req, res) => {
 
     const userId = req.session.user_id;
 
+<<<<<<< Updated upstream
     const existing = await db.query(
       "SELECT session_id FROM active_sessions WHERE user_id = $1",
       [userId]
     );
 
     if (existing.rows.length === 0 || existing.rows[0].session_id !== req.sessionID) {
+=======
+    const result = await db.query(
+      "SELECT current_session_id FROM users WHERE id = $1",
+      [userId]
+    );
+
+    const currentSessionId = result.rows[0]?.current_session_id;
+
+    if (!currentSessionId || currentSessionId !== req.sessionID) {
+>>>>>>> Stashed changes
       req.session.destroy(() => {});
       return res.status(401).json({ error: "Not logged in" });
     }
 
+<<<<<<< Updated upstream
     await db.query("UPDATE active_sessions SET last_seen = NOW() WHERE user_id = $1", [userId]);
+=======
+    await db.query(
+      "UPDATE users SET session_last_seen = NOW() WHERE id = $1",
+      [userId]
+    );
+>>>>>>> Stashed changes
 
     const user = await user_queries.getUserById(userId);
     if (!user) return res.status(404).json({ error: "User not found" });
@@ -398,15 +469,25 @@ router.get("/me", async (req, res) => {
   }
 });
 
+<<<<<<< Updated upstream
 /**
  * ✅ LOGOUT: remove session record so user can login elsewhere
  */
+=======
+>>>>>>> Stashed changes
 router.post("/logout", async (req, res) => {
   try {
     const userId = req.session?.user_id;
 
     if (userId) {
+<<<<<<< Updated upstream
       await db.query("DELETE FROM active_sessions WHERE user_id = $1", [userId]);
+=======
+      await db.query(
+        "UPDATE users SET current_session_id = NULL, session_last_seen = NULL WHERE id = $1",
+        [userId]
+      );
+>>>>>>> Stashed changes
     }
 
     req.session.destroy(() => {
@@ -418,9 +499,12 @@ router.post("/logout", async (req, res) => {
   }
 });
 
+<<<<<<< Updated upstream
 // ---- the rest of your existing routes stay the same ----
 
 // Get conversation partners for a user
+=======
+>>>>>>> Stashed changes
 router.get("/conversation-partners/:userId", async (req, res) => {
   const { userId } = req.params;
 
@@ -433,7 +517,10 @@ router.get("/conversation-partners/:userId", async (req, res) => {
   }
 });
 
+<<<<<<< Updated upstream
 // Get message history between two users
+=======
+>>>>>>> Stashed changes
 router.get("/message-history", async (req, res) => {
   const { senderId, receiverId } = req.query;
 
@@ -450,7 +537,10 @@ router.get("/message-history", async (req, res) => {
   }
 });
 
+<<<<<<< Updated upstream
 // Send a message to another user
+=======
+>>>>>>> Stashed changes
 router.post("/send-message", async (req, res) => {
   const { senderId, receiverId, content } = req.body;
 
@@ -467,7 +557,10 @@ router.post("/send-message", async (req, res) => {
   }
 });
 
+<<<<<<< Updated upstream
 // Get the latest messages for a user
+=======
+>>>>>>> Stashed changes
 router.get("/latest-messages/:userId", async (req, res) => {
   const { userId } = req.params;
 
@@ -541,7 +634,10 @@ router.get("/search-users", async (req, res) => {
   }
 });
 
+<<<<<<< Updated upstream
 // Get user details (worker first/last name or business name)
+=======
+>>>>>>> Stashed changes
 router.get("/user-details/:userId", async (req, res) => {
   const { userId } = req.params;
 
