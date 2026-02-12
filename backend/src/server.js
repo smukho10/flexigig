@@ -4,9 +4,10 @@ const multer = require('multer');
 const path = require('path');
 const session = require('express-session');
 require('dotenv').config(); // Load environment variables from .env file
-
-const app = express();
-const PORT = process.env.PORT || 8080;
+const app = require("./app");
+//const app = express();
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 /**
  * CORS
