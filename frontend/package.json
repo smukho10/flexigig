@@ -5,9 +5,6 @@
   "proxy": "http://localhost:8080",
   "dependencies": {
     "@mui/x-date-pickers-pro": "^6.19.6",
-    "@testing-library/jest-dom": "^5.17.0",
-    "@testing-library/react": "^12.1.5",
-    "@testing-library/user-event": "^13.5.0",
     "axios": "^1.6.7",
     "date-fns": "^3.5.0",
     "dayjs": "^1.11.10",
@@ -30,12 +27,23 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "test:coverage": "react-scripts test --coverage --watchAll=false",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
     "extends": [
       "react-app",
       "react-app/jest"
+    ]
+  },
+  "jest": {
+    "testMatch": [
+      "<rootDir>/test/**/*.test.js",
+      "<rootDir>/test/**/*.test.jsx",
+      "<rootDir>/src/**/*.test.js",
+      "<rootDir>/src/**/*.test.jsx",
+      "<rootDir>/src/**/__tests__/**/*.test.js",
+      "<rootDir>/src/**/__tests__/**/*.test.jsx"
     ]
   },
   "browserslist": {
@@ -57,6 +65,9 @@
   "license": "ISC",
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "@testing-library/jest-dom": "^5.16.5",
+    "@testing-library/react": "^12.1.5",
+    "@testing-library/user-event": "^13.5.0",
     "@types/react-date-range": "^1.4.9"
   }
 }
