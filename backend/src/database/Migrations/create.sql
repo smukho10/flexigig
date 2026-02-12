@@ -55,6 +55,7 @@ CREATE TABLE users (
     userImage VARCHAR(255),
     user_phone_number VARCHAR(25),
     user_address INT,
+    profile_photo_key VARCHAR(255),
     CONSTRAINT fk_user_address FOREIGN KEY(user_address) REFERENCES locations(location_id)
 );
 
