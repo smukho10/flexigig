@@ -1,13 +1,17 @@
 require('dotenv').config({ path: __dirname + '/.env' }); // Load from src/.env
+require('dotenv').config(); // Load environment variables from .env file
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
 const session = require('express-session');
+const app = require("./app");
+const app = express();
 const passport = require('./config/passport.js');
 
-const app = express();
 const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 /**
  * CORS
