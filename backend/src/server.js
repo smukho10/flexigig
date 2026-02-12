@@ -1,12 +1,13 @@
+require('dotenv').config({ path: __dirname + '/.env' }); // Load from src/.env
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
 const session = require('express-session');
-require('dotenv').config(); // Load environment variables from .env file
+const passport = require('./config/passport.js');
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 5000;
 
 /**
  * CORS
@@ -16,12 +17,11 @@ const PORT = process.env.PORT || 8080;
  */
 const allowedOrigins = [
   'http://localhost:3000',
-  'http://localhost:8080',
+  'http://localhost:5000',
   'https://flexygig.co',
   'https://www.flexygig.co',
   // Optional: include your known Vercel prod domains explicitly (not required if using *.vercel.app rule)
-  'https://flexygig-nine.vercel.app',
-  'https://flexygig-ta3d.vercel.app'
+  'https://flexygig-nine.vercel.app'
 ];
 
 function isAllowedOrigin(origin) {
@@ -79,7 +79,12 @@ app.use(session({
   }
 }));
 
+// Initialize Passport (must be after session middleware)
+app.use(passport.initialize());
+app.use(passport.session());
+
 const userRouter = require('./database/routes/user_routes.js');
+const authRouter = require('./database/routes/auth_routes.js');
 const profileRouter = require('./database/routes/profile_routes.js');
 const jobRouter = require('./database/routes/job_routes.js');
 const workersRouter = require('./database/routes/workers_routes.js');
@@ -119,6 +124,7 @@ app.post('/upload', upload.single('photo'), (req, res) => {
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use('/api', userRouter);
+app.use('/api', authRouter);
 app.use('/api', profileRouter);
 app.use('/api', jobRouter);
 app.use('/api', calendar);
