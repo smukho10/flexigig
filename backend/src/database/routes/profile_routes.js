@@ -188,5 +188,92 @@ router.post("/profile/update/:id", async (req, res) => {
 
 });
 
+// R2 Photo Upload Routes
+const { PutObjectCommand, GetObjectCommand } = require("@aws-sdk/client-s3");
+const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
+const s3 = require("../../config/r2");
+const crypto = require("crypto");
+const connection = require("../connection.js");
+
+// Get upload URL (frontend will PUT file to this URL)
+router.post("/profile/upload-photo-url/:userId", async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const { contentType } = req.body;
+
+    if (!contentType || !contentType.startsWith("image/")) {
+      return res.status(400).json({ message: "Invalid content type" });
+    }
+
+    const key = `users/${userId}/profile-${crypto.randomUUID()}.jpg`;
+
+    const command = new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET,
+      Key: key,
+      ContentType: contentType,
+    });
+
+    const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 3600 });
+
+    res.json({ uploadUrl, key });
+  } catch (e) {
+    console.error("Error generating upload URL:", e);
+    res.status(500).json({ message: "Failed to generate upload URL" });
+  }
+});
+
+// Save the key after upload
+router.post("/profile/save-photo-key/:userId", async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const { key } = req.body;
+
+    if (!key) {
+      return res.status(400).json({ message: "Key is required" });
+    }
+
+    await connection.query(
+      `UPDATE users SET profile_photo_key = $1 WHERE id = $2;`,
+      [key, userId]
+    );
+
+    res.json({ message: "Profile photo saved" });
+  } catch (e) {
+    console.error("Error saving photo key:", e);
+    res.status(500).json({ message: "Failed to save photo key" });
+  }
+});
+
+// Get view URL (frontend displays this)
+router.get("/profile/view-photo-url/:userId", async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    const result = await connection.query(
+      `SELECT profile_photo_key FROM users WHERE id = $1;`,
+      [userId]
+    );
+
+    if (!result.rows[0] || !result.rows[0].profile_photo_key) {
+      return res.status(404).json({ message: "No profile photo found" });
+    }
+
+    const key = result.rows[0].profile_photo_key;
+
+    const command = new GetObjectCommand({
+      Bucket: process.env.R2_BUCKET,
+      Key: key,
+    });
+
+    const viewUrl = await getSignedUrl(s3, command, {
+      expiresIn: parseInt(process.env.R2_SIGNED_URL_EXPIRY || 3600),
+    });
+
+    res.json({ viewUrl });
+  } catch (e) {
+    console.error("Error generating view URL:", e);
+    res.status(500).json({ message: "Failed to generate view URL" });
+  }
+});
 
 module.exports = router;
