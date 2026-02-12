@@ -1,6 +1,51 @@
 const db = require('../connection.js');
 const bcrypt = require('bcryptjs');
 
+// Get user by Google ID (for OAuth login)
+const getUserByGoogleId = async (googleId) => {
+  try {
+    const result = await db.query(
+      `SELECT id, email, isbusiness, userimage AS "userImage", auth_provider, google_id
+       FROM users WHERE google_id = $1`,
+      [googleId]
+    );
+    return result.rows[0] || null;
+  } catch (err) {
+    console.error("Error getting user by Google ID:", err);
+    return null;
+  }
+};
+
+// Link Google account to existing user
+const linkGoogleAccount = async (userId, googleId) => {
+  try {
+    await db.query(
+      `UPDATE users SET google_id = $1, auth_provider = 'google' WHERE id = $2`,
+      [googleId, userId]
+    );
+    return true;
+  } catch (err) {
+    console.error("Error linking Google account:", err);
+    return false;
+  }
+};
+
+// Create new OAuth user (no password)
+const createOAuthUser = async (email, googleId, isBusiness, userImage) => {
+  try {
+    const result = await db.query(
+      `INSERT INTO users (email, password, google_id, auth_provider, isbusiness, userimage, active)
+       VALUES ($1, NULL, $2, 'google', $3, $4, TRUE)
+       RETURNING *`,
+      [email, googleId, isBusiness, userImage]
+    );
+    return result.rows[0];
+  } catch (err) {
+    console.error("Error creating OAuth user:", err);
+    throw err;
+  }
+};
+
 const addUser = (email, password, isBusiness, phoneNumber, userImage, locationId) => {
   const query = `INSERT INTO users (email, password, isBusiness, user_phone_number, userImage, active, user_address) VALUES ($1, $2, $3, $4, $5, TRUE, $6) RETURNING *;`;
 
@@ -395,6 +440,9 @@ module.exports = {
   addWorker,
   addBusiness,
   getUserByEmail,
+  getUserByGoogleId,
+  linkGoogleAccount,
+  createOAuthUser,
   checkLoginCredentials,
   saveVerificationToken,
   getUserResetToken,
