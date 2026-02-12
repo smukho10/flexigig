@@ -27,6 +27,12 @@ const ProfilePage = () => {
   const [workerProfiles, setWorkerProfiles] = useState([]);
   const [selectedWorkerId, setSelectedWorkerId] = useState(null);
 
+  // R2 Photo Upload States
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoUrl, setPhotoUrl] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [photoError, setPhotoError] = useState(null);
+
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -241,6 +247,98 @@ useEffect(() => {
     setIsEditingExp(!isEditingExp);
   }
 
+  // R2 Photo Upload Handlers
+  const handlePhotoSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      setPhotoError("Please select a valid image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setPhotoError("File size must be less than 5MB");
+      return;
+    }
+
+    setPhotoFile(file);
+    setPhotoError(null);
+    // Show preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPhotoUrl(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handlePhotoUpload = async () => {
+    if (!photoFile || !user) return;
+
+    setUploading(true);
+    setPhotoError(null);
+
+    try {
+      // Step 1: Get signed upload URL from backend
+      const uploadUrlRes = await axios.post(
+        `${process.env.REACT_APP_BACKEND_URL}/api/profile/upload-photo-url/${user.id}`,
+        { contentType: photoFile.type },
+        { withCredentials: true }
+      );
+
+      const { uploadUrl, key } = uploadUrlRes.data;
+
+      // Step 2: Upload file to R2 using signed URL
+      await fetch(uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": photoFile.type },
+        body: photoFile,
+      });
+
+      // Step 3: Save key in database
+      await axios.post(
+        `${process.env.REACT_APP_BACKEND_URL}/api/profile/save-photo-key/${user.id}`,
+        { key },
+        { withCredentials: true }
+      );
+
+      setPhotoError(null);
+      setPhotoFile(null);
+      alert("Profile photo uploaded successfully!");
+      
+      // Refresh profile to get new photo
+      await fetchProfile();
+    } catch (error) {
+      console.error("Photo upload error:", error);
+      setPhotoError("Failed to upload photo. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const fetchProfilePhoto = async () => {
+    if (!user?.id) return;
+
+    try {
+      const res = await axios.get(
+        `${process.env.REACT_APP_BACKEND_URL}/api/profile/view-photo-url/${user.id}`,
+        { withCredentials: true }
+      );
+      setPhotoUrl(res.data.viewUrl);
+    } catch (error) {
+      // No photo yet, that's okay
+      console.log("No profile photo found");
+      setPhotoUrl(null);
+    }
+  };
+
+  // Fetch photo on component mount
+  useEffect(() => {
+    fetchProfilePhoto();
+  }, [user?.id]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -426,6 +524,62 @@ useEffect(() => {
     return (
       <div className="user-profile-form">
         <form onSubmit={handleSubmit} className="form">
+          {/* R2 Photo Upload Section */}
+          <div className="form-sections-container">
+            <div className="form-section">
+              <h2>Profile Photo</h2>
+              <div style={{ marginBottom: "20px" }}>
+                {photoUrl ? (
+                  <div style={{
+                    width: "150px",
+                    height: "150px",
+                    borderRadius: "50%",
+                    overflow: "hidden",
+                    marginBottom: "15px"
+                  }}>
+                    <img 
+                      src={photoUrl} 
+                      alt="Profile Preview" 
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  </div>
+                ) : (
+                  <div style={{
+                    width: "150px",
+                    height: "150px",
+                    borderRadius: "50%",
+                    backgroundColor: "#e0e0e0",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: "15px"
+                  }}>
+                    <p>No photo</p>
+                  </div>
+                )}
+              </div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoSelect}
+                style={{ marginBottom: "10px" }}
+                disabled={uploading}
+              />
+              {photoError && <p style={{ color: "red", marginBottom: "10px" }}>{photoError}</p>}
+              <button
+                type="button"
+                onClick={handlePhotoUpload}
+                disabled={!photoFile || uploading}
+                className="form-button"
+                style={{
+                  backgroundColor: uploading ? "#ccc" : "#4CAF50"
+                }}
+              >
+                {uploading ? "Uploading..." : "Upload Photo"}
+              </button>
+            </div>
+          </div>
+
           <div className="form-sections-container">
             {user.isbusiness ? (
               // Employer Section
@@ -726,6 +880,26 @@ useEffect(() => {
   return !user ? <div>Loading...</div> : (
     <div className="profile-page">
       <div className="profile-container">
+        {/* Profile Photo Display */}
+        {photoUrl && (
+          <div style={{ textAlign: "center", marginBottom: "20px" }}>
+            <div style={{
+              width: "180px",
+              height: "180px",
+              borderRadius: "50%",
+              overflow: "hidden",
+              margin: "0 auto",
+              border: "3px solid #4EBBC2"
+            }}>
+              <img 
+                src={photoUrl} 
+                alt="Profile" 
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            </div>
+          </div>
+        )}
+
         {user.isbusiness ? (
           <div className="business-profile">
             <div className="profile-section">
