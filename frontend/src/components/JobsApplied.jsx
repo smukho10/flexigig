@@ -14,6 +14,7 @@ const JobsApplied = () => {
   const [appliedJobs, setAppliedJobs] = useState([]);
   const [refresh, setRefresh] = useState();
   const [removing, setRemoving] = useState();
+  const [jobStatuses, setJobStatuses] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -21,9 +22,17 @@ const JobsApplied = () => {
       if (user && user.id) {
         try {
           const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/applied-jobs/${user.id}`, { withCredentials: true });
-          setAppliedJobs(res.data.jobs.sort(((a, b) => {
-            return a.jobstart.localeCompare(b.jobstart)
-          })));
+          
+          // Load statuses from localStorage
+          const storedStatuses = JSON.parse(localStorage.getItem('jobStatuses') || '{}');
+          setJobStatuses(storedStatuses);
+          
+          // Filter out approved jobs
+          const filteredJobs = res.data.jobs.filter(job => 
+            storedStatuses[job.job_id] !== 'approved'
+          ).sort((a, b) => a.jobstart.localeCompare(b.jobstart));
+          
+          setAppliedJobs(filteredJobs);
         } catch (error) {
           console.error("Error fetching filled jobs:", error);
         }
@@ -32,13 +41,30 @@ const JobsApplied = () => {
     fetchAppliedJobs();
   }, [user, refresh]);
 
+  const handleStatusChange = (jobId, newStatus) => {
+    const updatedStatuses = {
+      ...jobStatuses,
+      [jobId]: newStatus
+    };
+    
+    // Save to localStorage
+    localStorage.setItem('jobStatuses', JSON.stringify(updatedStatuses));
+    setJobStatuses(updatedStatuses);
+    
+    // Trigger storage event for MyGigs component
+    window.dispatchEvent(new Event('storage'));
+    
+    // Refresh the jobs list to remove approved jobs
+    setRefresh(!refresh);
+  };
+
   const handleRemove = async (e) => {
     const jobId = e.target.value;
     if (!removing) {
       setRemoving(appliedJobs.find(job => job.job_id.toString() === jobId))
     } else {
       try {
-        await axios.patch(`api/remove-application/${user.id}/job/${jobId}`);
+        await axios.patch(`${process.env.REACT_APP_BACKEND_URL}/api/remove-application/${user.id}/job/${jobId}`);
         setRemoving(false)
         setRefresh(!refresh)
       } catch (error) {
@@ -73,6 +99,14 @@ const JobsApplied = () => {
     if (removing) setRemoving(false);
   }
 
+  const getStatusDisplay = (jobId) => {
+    const status = jobStatuses[jobId];
+    if (status === 'rejected') {
+      return <span className="status-badge rejected">Rejected</span>;
+    }
+    return null;
+  };
+
   return (
     <div className="jobs-applied-container">
       <div className="header-container">
@@ -84,8 +118,22 @@ const JobsApplied = () => {
           <li key={job.job_id} className="job-item">
             <div className="top">
               <div className="top-left">
-                <h1>{job.jobtitle}</h1>
-                <button onClick={handleRemove} value={job.job_id}>Remove</button>
+                <div className="title-row">
+                  <h1>{job.jobtitle}</h1>
+                  {getStatusDisplay(job.job_id)}
+                </div>
+                <div className="action-buttons">
+                  <button onClick={handleRemove} value={job.job_id}>Remove</button>
+                  <select 
+                    className="status-dropdown"
+                    value={jobStatuses[job.job_id] || ''}
+                    onChange={(e) => handleStatusChange(job.job_id, e.target.value)}
+                  >
+                    <option value="">Select Status</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </div>
               </div>
               <div className="top-right">
                 <button onClick={handleEmployer}>

@@ -9,12 +9,12 @@ const client = new pg.Client({
   port: Number(process.env.PGPORT) || 5432,
 
   // Required for Render managed Postgres (SSL/TLS)
-  ssl: { rejectUnauthorized: false },
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
 client
   .connect()
-  .then(() => console.log("Connected to Postgres ✅"))
+  .then(() => console.log("Connected to Postgres"))
   .catch((e) => console.log(`Error connecting to Postgres server:\n${e}`));
 
 module.exports = client;
