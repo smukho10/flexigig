@@ -1,3 +1,4 @@
+// backend/src/database/routes/user_routes.js
 const express = require("express");
 const db = require("../connection.js");
 const router = express.Router();
@@ -8,6 +9,9 @@ const nodemailer = require("nodemailer");
 const workers_queries = require("../queries/workers_queries.js");
 require("dotenv").config();
 
+/**
+ * REGISTER
+ */
 router.post("/register", async (req, res) => {
   const {
     email,
@@ -29,9 +33,7 @@ router.post("/register", async (req, res) => {
   }
 
   try {
-    //check if email is not already in db
     const foundUser = await user_queries.getUserByEmail(email);
-
     if (foundUser) {
       res.status(400).send("Email is already exists");
       return;
@@ -39,13 +41,9 @@ router.post("/register", async (req, res) => {
 
     // turn accountType to boolean isBusiness
     let isBusiness = "";
-    if (accountType == "Worker") {
-      isBusiness = "false";
-    } else if (accountType == "Employer") {
-      isBusiness = "true";
-    }
+    if (accountType === "Worker") isBusiness = "false";
+    else if (accountType === "Employer") isBusiness = "true";
 
-    // add user into database
     const hashedPassword = bcrypt.hashSync(password, 10);
     const user = await user_queries.addUser(
       email,
@@ -55,23 +53,13 @@ router.post("/register", async (req, res) => {
       photo
     );
 
-    console.log("User added:", user);
-
-    if (accountType == "Worker") {
+    if (accountType === "Worker") {
       await user_queries.addWorker(user.id, firstName, lastName);
-    } else if (accountType == "Employer") {
+    } else if (accountType === "Employer") {
       await user_queries.addBusiness(user.id, businessName, businessDescription);
     }
 
-<<<<<<< Updated upstream
-    // generate a verification token
     const verificationToken = crypto.randomBytes(64).toString("hex");
-
-    // save the verification token in the database
-=======
-    const verificationToken = crypto.randomBytes(64).toString("hex");
-
->>>>>>> Stashed changes
     await user_queries.saveVerificationToken(user.id, verificationToken);
 
     const updatedUser = await user_queries.getUserById(user.id);
@@ -80,10 +68,6 @@ router.post("/register", async (req, res) => {
       user: updatedUser,
     });
 
-<<<<<<< Updated upstream
-    // send verification email
-=======
->>>>>>> Stashed changes
     await sendVerificationEmail(email, verificationToken);
   } catch (error) {
     console.error("Error during user registration;");
@@ -121,10 +105,7 @@ async function sendVerificationEmail(email, token) {
   }
 }
 
-<<<<<<< Updated upstream
 // Route to handle verification link clicks
-=======
->>>>>>> Stashed changes
 router.get("/verify/:token", async (req, res) => {
   const { token } = req.params;
 
@@ -187,8 +168,31 @@ router.get("/verify/:token", async (req, res) => {
 
     await db.query(`DELETE FROM pending_users WHERE token = $1;`, [token]);
 
-    req.session.user_id = user.id;
-    res.status(200).json(user);
+    // ✅ Auto-login after verification (single-device compatible)
+    req.session.regenerate(async (err) => {
+      if (err) {
+        console.error("Session regenerate error:", err);
+        return res.status(500).json({ message: "Internal Server Error" });
+      }
+
+      req.session.user_id = user.id;
+
+      // If already logged in somewhere else, block this auto-login
+      const { rows } = await db.query("SELECT current_session_id FROM users WHERE id = $1", [user.id]);
+      if (rows[0]?.current_session_id) {
+        return res.status(409).json({
+          message:
+            "This account is already logged in on another device. Please log out there first.",
+        });
+      }
+
+      await db.query(
+        "UPDATE users SET current_session_id = $1, session_last_seen = NOW() WHERE id = $2",
+        [req.sessionID, user.id]
+      );
+
+      res.status(200).json(user);
+    });
   } catch (error) {
     console.error("Error verifying pending user:", error);
     res.status(500).json({ message: "Internal Server Error" });
@@ -202,13 +206,8 @@ router.get("/validate-token/:token", async (req, res) => {
 
   try {
     const valid = await user_queries.validateToken(token);
-    if (valid) {
-      console.log("Valid token server");
-      res.status(200).send("valid");
-    } else {
-      console.log("Invalid token server");
-      res.status(200).send("invalid");
-    }
+    if (valid) res.status(200).send("valid");
+    else res.status(200).send("invalid");
   } catch (error) {
     console.error("Error resending verification email:", error);
     res.status(500).json({ message: "Internal Server Error" });
@@ -231,9 +230,7 @@ const resendVerificationEmail = async (email) => {
   try {
     const user = await user_queries.getUserByEmail(email);
 
-    if (!user) {
-      return { success: false, message: "User not found." };
-    }
+    if (!user) return { success: false, message: "User not found." };
 
     const token = crypto.randomBytes(64).toString("hex");
     await user_queries.insertOrUpdateToken(user.id, token);
@@ -275,9 +272,7 @@ router.post("/pending-register", async (req, res) => {
 
   try {
     const existingUser = await user_queries.getUserByEmail(email);
-    if (existingUser) {
-      return res.status(400).json({ message: "Email already registered" });
-    }
+    if (existingUser) return res.status(400).json({ message: "Email already registered" });
 
     const pendingResult = await db.query("SELECT * FROM pending_users WHERE email = $1;", [email]);
     if (pendingResult.rows.length > 0) {
@@ -325,12 +320,10 @@ router.post("/pending-register", async (req, res) => {
   }
 });
 
-<<<<<<< Updated upstream
 /**
- * ✅ LOGIN: enforce one active session per user
+ * ✅ LOGIN: One-device-at-a-time enforcement
+ * Rule: if users.current_session_id is set, block login with 409 until logout clears it.
  */
-=======
->>>>>>> Stashed changes
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -340,65 +333,32 @@ router.post("/login", async (req, res) => {
 
   try {
     const foundUser = await user_queries.checkLoginCredentials(email, password);
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
     if (!foundUser) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
     const userId = foundUser.id;
 
-<<<<<<< Updated upstream
-    const existing = await db.query(
-      "SELECT session_id FROM active_sessions WHERE user_id = $1",
-      [userId]
-    );
-
-    if (existing.rows.length > 0) {
-      const activeSessionId = existing.rows[0].session_id;
-      if (activeSessionId && activeSessionId !== req.sessionID) {
-        return res.status(409).json({
-          message:
-            "This account is already logged in on another device. Please log out there first.",
-        });
-=======
-    const sessionRow = await db.query(
+    // If already logged in somewhere (current_session_id is set) -> block
+    const { rows } = await db.query(
       "SELECT current_session_id FROM users WHERE id = $1",
       [userId]
     );
 
-    const currentSessionId = sessionRow.rows[0]?.current_session_id;
-
-    if (currentSessionId && currentSessionId !== req.sessionID) {
+    if (rows[0]?.current_session_id) {
       return res.status(409).json({
         message:
           "This account is already logged in on another device. Please log out there first.",
       });
     }
 
+    // Fresh session for this login
     req.session.regenerate(async (err) => {
       if (err) {
         console.error("Session regenerate error:", err);
         return res.status(500).json({ message: "Internal Server Error" });
->>>>>>> Stashed changes
       }
-    }
 
-<<<<<<< Updated upstream
-    req.session.user_id = userId;
-
-    await db.query(
-      `INSERT INTO active_sessions (user_id, session_id, last_seen)
-       VALUES ($1, $2, NOW())
-       ON CONFLICT (user_id)
-       DO UPDATE SET session_id = EXCLUDED.session_id, last_seen = NOW()`,
-      [userId, req.sessionID]
-    );
-
-    return res.status(200).json(foundUser);
-=======
       req.session.user_id = userId;
 
       await db.query(
@@ -408,19 +368,15 @@ router.post("/login", async (req, res) => {
 
       return res.status(200).json(foundUser);
     });
->>>>>>> Stashed changes
   } catch (err) {
     console.error("Error during login:", err);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
-<<<<<<< Updated upstream
 /**
- * ✅ ME: validate session matches active_sessions
+ * ✅ ME: validate current session matches users.current_session_id
  */
-=======
->>>>>>> Stashed changes
 router.get("/me", async (req, res) => {
   try {
     if (!req.session || !req.session.user_id) {
@@ -429,14 +385,6 @@ router.get("/me", async (req, res) => {
 
     const userId = req.session.user_id;
 
-<<<<<<< Updated upstream
-    const existing = await db.query(
-      "SELECT session_id FROM active_sessions WHERE user_id = $1",
-      [userId]
-    );
-
-    if (existing.rows.length === 0 || existing.rows[0].session_id !== req.sessionID) {
-=======
     const result = await db.query(
       "SELECT current_session_id FROM users WHERE id = $1",
       [userId]
@@ -445,19 +393,11 @@ router.get("/me", async (req, res) => {
     const currentSessionId = result.rows[0]?.current_session_id;
 
     if (!currentSessionId || currentSessionId !== req.sessionID) {
->>>>>>> Stashed changes
       req.session.destroy(() => {});
       return res.status(401).json({ error: "Not logged in" });
     }
 
-<<<<<<< Updated upstream
-    await db.query("UPDATE active_sessions SET last_seen = NOW() WHERE user_id = $1", [userId]);
-=======
-    await db.query(
-      "UPDATE users SET session_last_seen = NOW() WHERE id = $1",
-      [userId]
-    );
->>>>>>> Stashed changes
+    await db.query("UPDATE users SET session_last_seen = NOW() WHERE id = $1", [userId]);
 
     const user = await user_queries.getUserById(userId);
     if (!user) return res.status(404).json({ error: "User not found" });
@@ -469,25 +409,18 @@ router.get("/me", async (req, res) => {
   }
 });
 
-<<<<<<< Updated upstream
 /**
- * ✅ LOGOUT: remove session record so user can login elsewhere
+ * ✅ LOGOUT: clear current_session_id so user can login elsewhere
  */
-=======
->>>>>>> Stashed changes
 router.post("/logout", async (req, res) => {
   try {
     const userId = req.session?.user_id;
 
     if (userId) {
-<<<<<<< Updated upstream
-      await db.query("DELETE FROM active_sessions WHERE user_id = $1", [userId]);
-=======
       await db.query(
         "UPDATE users SET current_session_id = NULL, session_last_seen = NULL WHERE id = $1",
         [userId]
       );
->>>>>>> Stashed changes
     }
 
     req.session.destroy(() => {
@@ -499,12 +432,8 @@ router.post("/logout", async (req, res) => {
   }
 });
 
-<<<<<<< Updated upstream
-// ---- the rest of your existing routes stay the same ----
+// -------- other routes unchanged --------
 
-// Get conversation partners for a user
-=======
->>>>>>> Stashed changes
 router.get("/conversation-partners/:userId", async (req, res) => {
   const { userId } = req.params;
 
@@ -517,10 +446,6 @@ router.get("/conversation-partners/:userId", async (req, res) => {
   }
 });
 
-<<<<<<< Updated upstream
-// Get message history between two users
-=======
->>>>>>> Stashed changes
 router.get("/message-history", async (req, res) => {
   const { senderId, receiverId } = req.query;
 
@@ -537,15 +462,14 @@ router.get("/message-history", async (req, res) => {
   }
 });
 
-<<<<<<< Updated upstream
-// Send a message to another user
-=======
->>>>>>> Stashed changes
 router.post("/send-message", async (req, res) => {
   const { senderId, receiverId, content } = req.body;
 
   if (!senderId || !receiverId || !content) {
-    return res.status(400).json({ success: false, message: "Missing senderId, receiverId, or content" });
+    return res.status(400).json({
+      success: false,
+      message: "Missing senderId, receiverId, or content",
+    });
   }
 
   try {
@@ -557,10 +481,6 @@ router.post("/send-message", async (req, res) => {
   }
 });
 
-<<<<<<< Updated upstream
-// Get the latest messages for a user
-=======
->>>>>>> Stashed changes
 router.get("/latest-messages/:userId", async (req, res) => {
   const { userId } = req.params;
 
@@ -578,7 +498,6 @@ router.get("/latest-messages/:userId", async (req, res) => {
   }
 });
 
-// Search feature
 router.get("/search-users", async (req, res) => {
   const { query } = req.query;
 
@@ -634,10 +553,6 @@ router.get("/search-users", async (req, res) => {
   }
 });
 
-<<<<<<< Updated upstream
-// Get user details (worker first/last name or business name)
-=======
->>>>>>> Stashed changes
 router.get("/user-details/:userId", async (req, res) => {
   const { userId } = req.params;
 

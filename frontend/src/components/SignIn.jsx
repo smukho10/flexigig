@@ -1,6 +1,6 @@
 import "../styles/SignIn.css";
 import axios from "axios";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "./UserContext";
 import FlexygigLogo from "../assets/images/FlexygigLogo.png";
@@ -9,62 +9,63 @@ import ChevronLeft from "../assets/images/ChevronLeft.png";
 
 const SignIn = () => {
   const [errorMessage, setErrorMessage] = useState("");
-  const [signInData, setSignInData] = useState({
-    email: "",
-    password: "",
-  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [signInData, setSignInData] = useState({ email: "", password: "" });
+
   const navigate = useNavigate();
   const { setUser } = useUser();
 
+  const api = useMemo(() => {
+    const client = axios.create({
+      baseURL: process.env.REACT_APP_BACKEND_URL,
+      withCredentials: true,
+    });
+    return client;
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setSignInData({ ...signInData, [name]: value });
+    setSignInData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSignIn = (e) => {
+  const handleSignIn = async (e) => {
     e.preventDefault();
+    setErrorMessage("");
+    setIsSubmitting(true);
 
-    axios
-      .post(`${process.env.REACT_APP_BACKEND_URL}/api/login`, signInData, {
-        withCredentials: true,
-      })
-      .then(async (response) => {
-        if (
-          response.data.success === false ||
-          response.data.message ===
-            "Account not activated. Please check your email for verification."
-        ) {
-          setErrorMessage(response.data.message);
-        } else {
-          try {
-            const userRes = await axios.get(
-              `${process.env.REACT_APP_BACKEND_URL}/api/me`,
-              { withCredentials: true }
-            );
+    try {
+      await api.post("/api/login", signInData);
 
-            localStorage.setItem("user", JSON.stringify(userRes.data));
-            setUser(userRes.data);
+      const userRes = await api.get("/api/me");
 
-            navigate("/dashboard");
-          } catch (err) {
-            console.error("Failed to fetch user after login:", err);
-            setErrorMessage("Could not fetch user info after login.");
-          }
-        }
-      })
-      .catch((error) => {
-        // ✅ Handle already-logged-in-elsewhere case
-        if (error.response?.status === 409) {
-          setErrorMessage(error.response.data.message);
-          return;
-        }
+      localStorage.setItem("user", JSON.stringify(userRes.data));
+      setUser(userRes.data);
 
+      navigate("/dashboard");
+    } catch (error) {
+      const status = error?.response?.status;
+      const msg = error?.response?.data?.message || error?.response?.data?.error;
+
+      if (status === 409) {
         setErrorMessage(
-          error.response && error.response.data && error.response.data.message
-            ? error.response.data.message
-            : "Invalid credentials. Please try again."
+          msg ||
+            "This account is already logged in on another device. Please log out there first."
         );
-      });
+        return;
+      }
+
+      if (status === 401) {
+        setErrorMessage(
+          msg ||
+            "Your session is no longer valid (you may have logged in on another device). Please sign in again."
+        );
+        return;
+      }
+
+      setErrorMessage(msg || "Invalid credentials. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -94,6 +95,7 @@ const SignIn = () => {
             onChange={handleChange}
             required
             placeholder="Enter your email"
+            disabled={isSubmitting}
           />
         </div>
 
@@ -107,11 +109,14 @@ const SignIn = () => {
             onChange={handleChange}
             required
             placeholder="••••••••"
+            disabled={isSubmitting}
           />
         </div>
 
         <div>
-          <button type="submit">Sign In</button>
+          <button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Signing In..." : "Sign In"}
+          </button>
         </div>
       </form>
 
