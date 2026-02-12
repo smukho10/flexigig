@@ -6,7 +6,7 @@ const multer = require('multer');
 const path = require('path');
 const session = require('express-session');
 const app = require("./app");
-const app = express();
+//const app = express();
 const passport = require('./config/passport.js');
 
 const PORT = process.env.PORT || 5000;
