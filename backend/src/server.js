@@ -84,7 +84,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 //Single-session enforcement middleware
-const enforceSingleSession = require('./database/middleware/enforce_single_session.js');
+const enforceSingleSession = require('./database/middleware/single_session.js');
 
 const userRouter = require('./database/routes/user_routes.js');
 const authRouter = require('./database/routes/auth_routes.js');
