@@ -114,17 +114,22 @@ router.post("/register", async (req, res) => {
       return;
     }
 
-    let isBusiness = "";
-    if (accountType === "Worker") isBusiness = "false";
-    else if (accountType === "Employer") isBusiness = "true";
+    let isBusiness = false;
+    if (accountType === "Worker") isBusiness = false;
+    else if (accountType === "Employer") isBusiness = true;
 
     const hashedPassword = bcrypt.hashSync(password, 10);
-    const user = await user_queries.addUser(email, hashedPassword, isBusiness, phone_number, photo);
+    const user = await user_queries.addUser(email, hashedPassword, isBusiness, phone_number, photo, null);
 
     if (accountType === "Worker") {
       await user_queries.addWorker(user.id, firstName, lastName);
     } else if (accountType === "Employer") {
       await user_queries.addBusiness(user.id, businessName, businessDescription);
+    }
+
+    // For local development: automatically activate user (skip email verification)
+    if (process.env.NODE_ENV === 'development') {
+      await db.query('UPDATE users SET active = TRUE WHERE id = $1', [user.id]);
     }
 
     const verificationToken = crypto.randomBytes(64).toString('hex');
@@ -307,7 +312,12 @@ router.post("/pending-register", async (req, res) => {
 
     const pendingResult = await db.query('SELECT * FROM pending_users WHERE email = $1;', [email]);
     if (pendingResult.rows.length > 0) {
-      return res.status(400).json({ message: "A user with this email is already pending verification." });
+      // For development: delete old pending and allow re-registration
+      if (process.env.NODE_ENV === 'development') {
+        await db.query('DELETE FROM pending_users WHERE email = $1', [email]);
+      } else {
+        return res.status(400).json({ message: "A user with this email is already pending verification." });
+      }
     }
 
     const token = crypto.randomBytes(64).toString("hex");
@@ -338,12 +348,51 @@ router.post("/pending-register", async (req, res) => {
     ]);
 
     // respond first
-    res.status(200).json({ message: "Please check your email to complete registration." });
+    res.status(200).json({ message: process.env.NODE_ENV === 'development' ? "Registration successful! You can now login." : "Please check your email to complete registration." });
 
-    // send email async
-    sendVerificationEmail(email, token).then((ok) => {
-      if (!ok) console.error(`Failed to send pending verification email to ${email}`);
-    });
+    // For development: auto-complete pending registration
+    if (process.env.NODE_ENV === 'development') {
+      const locationResult = await db.query(`
+        INSERT INTO locations (StreetAddress, city, province, postalCode)
+        VALUES ($1, $2, $3, $4)
+        RETURNING location_id;
+      `, [
+        street_address || '',
+        city || '',
+        province || '',
+        postal_code || ''
+      ]);
+
+      const locationId = locationResult.rows[0].location_id;
+
+      const user = await user_queries.addUser(
+        email,
+        hashedPassword,
+        accountType === "Employer",
+        phone_number,
+        photo,
+        locationId
+      );
+
+      if (accountType === "Worker") {
+        const worker = await user_queries.addWorker(user.id, firstName, lastName);
+        if (skills && Array.isArray(skills)) {
+          for (const skill of skills) {
+            await workers_queries.addWorkerSkill(worker.id, skill.skill_id);
+          }
+        }
+      } else if (accountType === "Employer") {
+        await user_queries.addBusiness(user.id, businessName, businessDescription || "");
+      }
+
+      // Delete from pending
+      await db.query(`DELETE FROM pending_users WHERE email = $1;`, [email]);
+    } else {
+      // send email async
+      sendVerificationEmail(email, token).then((ok) => {
+        if (!ok) console.error(`Failed to send pending verification email to ${email}`);
+      });
+    }
 
   } catch (error) {
     console.error("Error creating pending user:", error);
