@@ -66,7 +66,7 @@ if (sessionSecret === 'default-secret-key') {
   console.warn("Warning: SESSION_SECRET is not set. Using a default secret. This is insecure for production.");
 }
 
-const isProd = process.env.NODE_ENV === 'production';
+const isProd = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
 
 app.use(session({
   secret: sessionSecret,
