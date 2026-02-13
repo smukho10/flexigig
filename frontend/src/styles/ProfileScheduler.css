@@ -1,0 +1,129 @@
+.profile-scheduler {
+  width: 100%;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+.scheduler-header {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.scheduler-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.scheduler-subtitle {
+  font-size: 14px;
+  color: #666;
+}
+
+.scheduler-subtitle strong {
+  color: #4E9BE6;
+  font-weight: 600;
+}
+
+.scheduler-calendar {
+  width: 100%;
+  margin-bottom: 20px;
+  background-color: white;
+  border-radius: 6px;
+  padding: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.scheduler-calendar .rbc-calendar {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+}
+
+.scheduler-calendar .rbc-header {
+  padding: 12px 4px;
+  font-weight: 600;
+  font-size: 13px;
+  color: #333;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.scheduler-calendar .rbc-today {
+  background-color: #f0f8ff;
+}
+
+.scheduler-calendar .rbc-off-range {
+  background-color: #fafafa;
+}
+
+.scheduler-calendar .rbc-event {
+  padding: 4px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.scheduler-calendar .rbc-event-content {
+  white-space: normal;
+  overflow: hidden;
+}
+
+.scheduler-calendar .rbc-time-slot {
+  position: relative;
+}
+
+.scheduler-calendar .rbc-time-content {
+  border-top: 1px solid #e0e0e0;
+}
+
+.scheduler-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 15px;
+  background-color: white;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #555;
+}
+
+.legend-swatch {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+/* Responsive styling */
+@media (max-width: 768px) {
+  .profile-scheduler {
+    padding: 15px;
+  }
+
+  .scheduler-title {
+    font-size: 20px;
+  }
+
+  .scheduler-subtitle {
+    font-size: 13px;
+  }
+
+  .scheduler-legend {
+    gap: 12px;
+  }
+
+  .legend-item {
+    font-size: 12px;
+  }
+}

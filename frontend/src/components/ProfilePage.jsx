@@ -3,6 +3,9 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/ProfilePage.css";
 import { useUser } from "./UserContext";
+import ProfileScheduler from "./ProfileScheduler";
+
+
 
 const ProfilePage = () => {
   const { user, setUser, logout } = useUser();
@@ -1188,6 +1191,10 @@ useEffect(() => {
             </div>
             <p>{user.traits && user.traits.join(", ")}</p>
             <button className="edit-button" onClick={toggleEditTraits}>Edit Traits</button>
+          </div>
+
+          <div className="profile-container">
+            <ProfileScheduler selectedProfileId={selectedWorkerId} profiles={workerProfiles} />
           </div>
         </>
       )}
