@@ -86,7 +86,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     }
   ));
 } else {
-  console.warn('⚠️  Google OAuth credentials not set. Google login disabled. Use email/password login for local development.');
+  console.warn('Google OAuth credentials not set. Google login disabled. Use email/password login for local development.');
 }
 
 module.exports = passport;
