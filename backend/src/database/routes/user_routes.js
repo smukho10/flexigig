@@ -219,7 +219,7 @@ router.get('/verify/:token', async (req, res) => {
 
     await db.query(`DELETE FROM pending_users WHERE token = $1;`, [token]);
 
-    // Single-session: regenerate (optional) then set user_id + current_session_id
+    // ✅ Single-session: regenerate (optional) then set user_id + current_session_id
     req.session.regenerate(async (err) => {
       if (err) {
         console.error("Session regeneration error after verify:", err);
@@ -390,7 +390,7 @@ router.post("/login", (req, res) => {
 
         req.session.user_id = foundUser.id;
 
-        //Single-session: mark this as the ONLY valid session
+        // ✅ Single-session: mark this as the ONLY valid session
         await user_queries.setCurrentSession(foundUser.id, req.sessionID);
 
         res.status(200).json(foundUser);
@@ -502,7 +502,7 @@ router.post("/logout", (req, res) => {
       return res.status(500).json({ error: "Logout failed" });
     }
 
-    //Single-session: only clear if THIS session is the active one
+    // ✅ Single-session: only clear if THIS session is the active one
     if (userId && sessionId) {
       await user_queries.clearCurrentSessionIfMatch(userId, sessionId);
     }
@@ -538,3 +538,121 @@ router.get('/message-history', async (req, res) => {
   const { senderId, receiverId } = req.query;
 
   if (!senderId || !receiverId) {
+    return res.status(400).json({ success: false, message: 'Missing senderId or receiverId' });
+  }
+
+  try {
+    const messages = await user_queries.getMessageHistory(senderId, receiverId);
+    res.status(200).json({ success: true, messages });
+  } catch (error) {
+    console.error('Error fetching message history:', error);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
+router.post('/send-message', async (req, res) => {
+  const { senderId, receiverId, content } = req.body;
+
+  if (!senderId || !receiverId || !content) {
+    return res.status(400).json({ success: false, message: 'Missing senderId, receiverId, or content' });
+  }
+
+  try {
+    const message = await user_queries.sendMessage(senderId, receiverId, content);
+    res.status(200).json({ success: true, message });
+  } catch (error) {
+    console.error('Error sending message:', error);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
+router.get('/latest-messages/:userId', async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const messages = await user_queries.getLatestMessages(userId);
+
+    if (messages.length === 0) {
+      return res.status(404).json({ success: false, message: 'No messages found' });
+    }
+
+    res.status(200).json({ success: true, messages });
+  } catch (error) {
+    console.error('Error fetching latest messages:', error);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
+router.get("/search-users", async (req, res) => {
+  const { query } = req.query;
+
+  try {
+    const values = [];
+    let whereClause = '';
+
+    if (query) {
+      values.push(`%${query}%`);
+      whereClause = `
+        WHERE
+          (w.first_name ILIKE $1 OR
+           w.last_name ILIKE $1 OR
+           b.business_name ILIKE $1)
+      `;
+    }
+
+    const searchQuery = `
+      SELECT
+        u.id,
+        u.isbusiness,
+        u.userimage AS "userImage",
+        u.user_phone_number AS phone_number,
+        u.email,
+        l.city,
+        l.province,
+        w.first_name,
+        w.last_name,
+        COALESCE(array_agg(DISTINCT s.skill_name) FILTER (WHERE s.skill_name IS NOT NULL), '{}') AS skills,
+        COALESCE(array_agg(DISTINCT t.trait_name) FILTER (WHERE t.trait_name IS NOT NULL), '{}') AS traits,
+        COALESCE(array_agg(DISTINCT e.experience_name) FILTER (WHERE e.experience_name IS NOT NULL), '{}') AS experiences,
+        b.business_name,
+        b.business_description
+      FROM users u
+      JOIN locations l ON u.user_address = l.location_id
+      LEFT JOIN workers w ON u.id = w.user_id
+      LEFT JOIN businesses b ON u.id = b.user_id
+      LEFT JOIN workers_skills ws ON w.id = ws.workers_id
+      LEFT JOIN skills s ON ws.skill_id = s.skill_id
+      LEFT JOIN workers_traits wt ON w.id = wt.workers_id
+      LEFT JOIN traits t ON wt.trait_id = t.trait_id
+      LEFT JOIN workers_experiences we ON w.id = we.workers_id
+      LEFT JOIN experiences e ON we.experience_id = e.experience_id
+      ${whereClause}
+      GROUP BY u.id, l.city, l.province, w.id, b.id;
+    `;
+
+    const { rows } = await db.query(searchQuery, values);
+    res.json(rows);
+  } catch (err) {
+    console.error("Search error:", err);
+    res.status(500).send("Server error");
+  }
+});
+
+router.get('/user-details/:userId', async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const userDetails = await user_queries.getUserDetails(userId);
+
+    if (userDetails.type === 'unknown') {
+      return res.status(404).json({ success: false, message: userDetails.message });
+    }
+
+    res.status(200).json({ success: true, userDetails });
+  } catch (error) {
+    console.error('Error fetching user details:', error);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
+module.exports = router;
