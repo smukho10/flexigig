@@ -103,10 +103,10 @@ const addBusiness = (userId, businessName, businessDescription) => {
 
 // check user credentials for login purposes
 const getUserByEmail = (email) => {
-  const query = `SELECT * FROM users WHERE email = $1;`;
+  const query = `SELECT * FROM users WHERE LOWER(email) = LOWER($1);`;
 
   return db
-    .query(query, [email])
+    .query(query, [email.toLowerCase()])
     .then((result) => {
       return result.rows[0];
     })

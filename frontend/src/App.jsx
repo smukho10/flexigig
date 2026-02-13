@@ -63,7 +63,7 @@ const App = () => {
               <Route path="/account-selection" element={<AccountSelection />} />
               <Route path="/verify/:token" element={<VerifyEmailPage />} />
               <Route path="/initiate-password-reset" element={<PasswordResetInitiation />} />
-              <Route path="/verify/password-reset/:uniqueIdentifier" element={<PasswordReset />} />
+              <Route path="/password-reset/:uniqueIdentifier" element={<PasswordReset />} />
               <Route path="/registration-success" element={<RegistrationSuccess />} />
 
               {/* Protected Routes with Layout */}
