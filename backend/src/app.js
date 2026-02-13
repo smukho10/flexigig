@@ -15,12 +15,21 @@ app.use(
 );
 
 // Sessions (needed if any routes depend on req.session)
+const isProd = process.env.NODE_ENV === "production" || process.env.RENDER === "true";
+
+if (isProd) {
+  app.set("trust proxy", 1);
+}
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "test_secret",
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false }
+    cookie: {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? "none" : "lax"
+    }
   })
 );
 
