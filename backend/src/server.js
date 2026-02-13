@@ -6,7 +6,6 @@ const multer = require('multer');
 const path = require('path');
 const session = require('express-session');
 const app = require("./app");
-//const app = express();
 const passport = require('./config/passport.js');
 
 const PORT = process.env.PORT || 5000;
@@ -22,7 +21,6 @@ const allowedOrigins = [
   'http://localhost:5000',
   'https://flexygig.co',
   'https://www.flexygig.co',
-  // Optional: include your known Vercel prod domains explicitly (not required if using *.vercel.app rule)
   'https://flexygig-nine.vercel.app'
 ];
 
@@ -75,15 +73,18 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    secure: isProd,          // true on Render (https)
+    secure: isProd,                 // true on Render (https)
     sameSite: isProd ? 'none' : 'lax', // 'none' for cross-site cookies in prod
-    maxAge: 24 * 60 * 60 * 1000 // 1 day
+    maxAge: 24 * 60 * 60 * 1000     // 1 day
   }
 }));
 
 // Initialize Passport (must be after session middleware)
 app.use(passport.initialize());
 app.use(passport.session());
+
+//Single-session enforcement middleware
+const enforceSingleSession = require('./database/middleware/enforce_single_session.js');
 
 const userRouter = require('./database/routes/user_routes.js');
 const authRouter = require('./database/routes/auth_routes.js');
@@ -124,6 +125,9 @@ app.post('/upload', upload.single('photo'), (req, res) => {
 });
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Apply enforcement BEFORE routers (only on /api)
+app.use('/api', enforceSingleSession);
 
 app.use('/api', userRouter);
 app.use('/api', authRouter);

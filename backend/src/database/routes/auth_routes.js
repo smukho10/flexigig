@@ -16,7 +16,8 @@ router.get('/auth/google', passport.authenticate('google', {
 
 // Google OAuth callback
 // Google redirects here after user grants permission
-router.get('/auth/google/callback',
+router.get(
+  '/auth/google/callback',
   passport.authenticate('google', {
     failureRedirect: `${getFrontendUrl()}/signin?error=oauth_failed`,
     session: false
@@ -41,13 +42,17 @@ router.get('/auth/google/callback',
       }
 
       // Existing user - create session and redirect to dashboard
-      req.session.regenerate((err) => {
+      req.session.regenerate(async (err) => {
         if (err) {
           console.error('Session regeneration error:', err);
           return res.redirect(`${getFrontendUrl()}/signin?error=session_error`);
         }
 
         req.session.user_id = userData.id;
+
+        // mark this as the ONLY valid session
+        await user_queries.setCurrentSession(userData.id, req.sessionID);
+
         res.redirect(`${getFrontendUrl()}/dashboard`);
       });
 
@@ -101,13 +106,16 @@ router.post('/auth/google/complete', async (req, res) => {
     delete req.session.pendingOAuth;
 
     // Create session
-    req.session.regenerate((err) => {
+    req.session.regenerate(async (err) => {
       if (err) {
         console.error('Session regeneration error:', err);
         return res.status(500).json({ success: false, message: 'Session error' });
       }
 
       req.session.user_id = user.id;
+
+      // Single-session: mark this as the ONLY valid session
+      await user_queries.setCurrentSession(user.id, req.sessionID);
 
       // Return user data
       res.status(200).json({
