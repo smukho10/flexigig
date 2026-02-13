@@ -1,6 +1,10 @@
 const db = require('../connection.js');
 const bcrypt = require('bcryptjs');
 
+// -----------------------------
+// OAuth helpers
+// -----------------------------
+
 // Get user by Google ID (for OAuth login)
 const getUserByGoogleId = async (googleId) => {
   try {
@@ -46,6 +50,10 @@ const createOAuthUser = async (email, googleId, isBusiness, userImage) => {
   }
 };
 
+// -----------------------------
+// Registration helpers
+// -----------------------------
+
 const addUser = (email, password, isBusiness, phoneNumber, userImage, locationId) => {
   const query = `INSERT INTO users (email, password, isBusiness, user_phone_number, userImage, active, user_address) VALUES ($1, $2, $3, $4, $5, TRUE, $6) RETURNING *;`;
 
@@ -63,7 +71,6 @@ const addUser = (email, password, isBusiness, phoneNumber, userImage, locationId
 const addWorker = (userId, firstName, lastName) => {
   const query = `INSERT INTO workers (user_id, first_name, last_name) VALUES ($1, $2, $3) RETURNING *;`;
   console.log("addWorker() called:", userId, firstName, lastName);
-
 
   return db
     .query(query, [userId, firstName, lastName])
@@ -89,6 +96,10 @@ const addBusiness = (userId, businessName, businessDescription) => {
       console.error("Error adding business:", err);
     });
 };
+
+// -----------------------------
+// Login helpers
+// -----------------------------
 
 // check user credentials for login purposes
 const getUserByEmail = (email) => {
@@ -134,6 +145,80 @@ const checkLoginCredentials = (email, password) => {
     });
 };
 
+// -----------------------------
+// Single-session enforcement helpers (NEW)
+// -----------------------------
+
+// Mark this session as the ONLY valid session for this user
+const setCurrentSession = async (userId, sessionId) => {
+  try {
+    await db.query(
+      `UPDATE users
+       SET current_session_id = $2,
+           session_last_seen  = NOW()
+       WHERE id = $1`,
+      [userId, sessionId]
+    );
+    return true;
+  } catch (err) {
+    console.error("Error setting current session:", err);
+    return false;
+  }
+};
+
+// Read the current valid session id for this user
+const getCurrentSessionId = async (userId) => {
+  try {
+    const result = await db.query(
+      `SELECT current_session_id
+       FROM users
+       WHERE id = $1`,
+      [userId]
+    );
+    return result.rows[0]?.current_session_id || null;
+  } catch (err) {
+    console.error("Error getting current session id:", err);
+    return null;
+  }
+};
+
+// Update last seen (optional heartbeat / audit)
+const touchSessionLastSeen = async (userId) => {
+  try {
+    await db.query(
+      `UPDATE users
+       SET session_last_seen = NOW()
+       WHERE id = $1`,
+      [userId]
+    );
+    return true;
+  } catch (err) {
+    console.error("Error touching session last seen:", err);
+    return false;
+  }
+};
+
+// Clear only if the session matches (prevents old device logout nuking new session)
+const clearCurrentSessionIfMatch = async (userId, sessionId) => {
+  try {
+    await db.query(
+      `UPDATE users
+       SET current_session_id = NULL,
+           session_last_seen  = NULL
+       WHERE id = $1 AND current_session_id = $2`,
+      [userId, sessionId]
+    );
+    return true;
+  } catch (err) {
+    console.error("Error clearing current session:", err);
+    return false;
+  }
+};
+
+// -----------------------------
+// Verification / tokens
+// -----------------------------
+
 const saveVerificationToken = (userId, token) => {
   console.log(`Saving verification token for user ID: ${userId}, Token: ${token}`);
   const query = 'INSERT INTO verification_tokens (user_id, token) VALUES ($1, $2) RETURNING *;';
@@ -149,7 +234,6 @@ const saveVerificationToken = (userId, token) => {
       console.error("Error verifying token");
     });
 };
-
 
 const getUserResetToken = (userId) => {
   const query = `SELECT token FROM verification_tokens WHERE user_id = $1;`;
@@ -205,7 +289,6 @@ const getUserIdAndToken = async (uniqueIdentifier) => {
   console.log('tokkkken,,,', uniqueIdentifier);
   try {
     const result = await db.query('SELECT user_id FROM verification_tokens WHERE token = $1;', [uniqueIdentifier]);
-    // const result = await db.query(`SELECT id, user_id expiration_time FROM verification_tokens WHERE token = $1;`, [token]);
 
     if (result.rows.length === 0) {
       return null;
@@ -281,11 +364,9 @@ const verifyEmail = async (token) => {
       return { success: true, message: 'Email is verified.' };
     }
 
-
     // Update the users table to set the active status to true
     await db.query('UPDATE users SET active = TRUE WHERE id = $1;', [userId]);
     await db.query('DELETE FROM verification_tokens WHERE token = $1;', [token]);
-
 
     return { success: true, message: 'Email verified successfully.', email: userVerificationStatus.rows[0].email };
   } catch (error) {
@@ -315,8 +396,8 @@ const getUserById = async (id) => {
 const getConversationPartners = async (userId) => {
   try {
     const query = `
-      SELECT DISTINCT 
-        CASE 
+      SELECT DISTINCT
+        CASE
           WHEN sender_id = $1 THEN receiver_id
           WHEN receiver_id = $1 THEN sender_id
         END AS partner_id
@@ -372,7 +453,7 @@ const sendMessage = async (senderId, receiverId, content) => {
 const getLatestMessages = async (userId) => {
   try {
     const query = `
-      SELECT 
+      SELECT
         m.message_id AS message_id,
         m.sender_id,
         m.receiver_id,
@@ -396,8 +477,8 @@ const getUserDetails = async (userId) => {
   try {
     // Check if the user is in the workers table
     const workerQuery = `
-      SELECT first_name, last_name 
-      FROM workers 
+      SELECT first_name, last_name
+      FROM workers
       WHERE user_id = $1;
     `;
     const workerResult = await db.query(workerQuery, [userId]);
@@ -413,8 +494,8 @@ const getUserDetails = async (userId) => {
 
     // Check if the user is in the businesses table
     const businessQuery = `
-      SELECT business_name 
-      FROM businesses 
+      SELECT business_name
+      FROM businesses
       WHERE user_id = $1;
     `;
     const businessResult = await db.query(businessQuery, [userId]);
@@ -459,4 +540,10 @@ module.exports = {
   sendMessage,
   getLatestMessages,
   getUserDetails,
+
+  //NEW EXPORTS
+  setCurrentSession,
+  getCurrentSessionId,
+  touchSessionLastSeen,
+  clearCurrentSessionIfMatch,
 };

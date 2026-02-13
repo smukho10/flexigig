@@ -23,6 +23,8 @@ if (!process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 }
 
+const isProd = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
+
 /**
  * Single source of truth for frontend URL
  */
@@ -217,8 +219,20 @@ router.get('/verify/:token', async (req, res) => {
 
     await db.query(`DELETE FROM pending_users WHERE token = $1;`, [token]);
 
-    req.session.user_id = user.id;
-    res.status(200).json(user);
+    // ✅ Single-session: regenerate (optional) then set user_id + current_session_id
+    req.session.regenerate(async (err) => {
+      if (err) {
+        console.error("Session regeneration error after verify:", err);
+        return res.status(500).json({ message: "Session error" });
+      }
+
+      req.session.user_id = user.id;
+
+      // Mark this as the only valid session
+      await user_queries.setCurrentSession(user.id, req.sessionID);
+
+      res.status(200).json(user);
+    });
 
   } catch (error) {
     console.error("Error verifying pending user:", error);
@@ -369,12 +383,16 @@ router.post("/login", (req, res) => {
       }
 
       // Regenerate session to get a NEW session ID (prevents session fixation)
-      req.session.regenerate((err) => {
+      req.session.regenerate(async (err) => {
         if (err) {
           return res.status(500).json({ message: "Login failed" });
         }
 
         req.session.user_id = foundUser.id;
+
+        // ✅ Single-session: mark this as the ONLY valid session
+        await user_queries.setCurrentSession(foundUser.id, req.sessionID);
+
         res.status(200).json(foundUser);
       });
     })
@@ -476,17 +494,25 @@ router.post("/reset-password", async (req, res) => {
  * logout
  */
 router.post("/logout", (req, res) => {
-  req.session.destroy(err => {
+  const userId = req.session?.user_id;
+  const sessionId = req.sessionID;
+
+  req.session.destroy(async (err) => {
     if (err) {
       return res.status(500).json({ error: "Logout failed" });
+    }
+
+    // ✅ Single-session: only clear if THIS session is the active one
+    if (userId && sessionId) {
+      await user_queries.clearCurrentSessionIfMatch(userId, sessionId);
     }
 
     // Clear the cookie INSIDE the callback, after session is destroyed
     res.clearCookie('connect.sid', {
       path: '/',
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax'
     });
 
     res.status(200).send();
