@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import "../styles/DashboardHeader.scss";
 import flexygig from "../assets/images/gigs.png";
 import { Link } from "react-router-dom";
@@ -17,6 +18,7 @@ const DashboardHeader = () => {
     const { logout } = useUser();
 
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [profilePhotoUrl, setProfilePhotoUrl] = useState(null);
 
     const toggleDropdown = () => {
         setIsDropdownOpen(!isDropdownOpen);
@@ -24,6 +26,7 @@ const DashboardHeader = () => {
 
     const navigate = useNavigate();
     const handleSignOut = async () => {
+
         await logout();
         navigate("/", { replace: true });
     };
@@ -42,9 +45,23 @@ const DashboardHeader = () => {
 
     const backendURL = process.env.REACT_APP_BACKEND_URL;
 
-    const profilePic = user?.userImage && typeof user.userImage === "string"
-        ? `${backendURL}${user.userImage.startsWith("/") ? "" : "/"}${user.userImage}`
-        : DefaultAvatar;
+    useEffect(() => {
+        const fetchProfilePhoto = async () => {
+            if (!user?.id) return;
+            try {
+                const res = await axios.get(
+                    `${backendURL}/api/profile/view-photo-url/${user.id}`,
+                    { withCredentials: true }
+                );
+                setProfilePhotoUrl(res.data.viewUrl);
+            } catch (error) {
+                setProfilePhotoUrl(null);
+            }
+        };
+        fetchProfilePhoto();
+    }, [user?.id, backendURL]);
+
+    const profilePic = profilePhotoUrl || DefaultAvatar;
 
     return (
         <div className="dashboard-header">
