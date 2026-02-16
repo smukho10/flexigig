@@ -29,7 +29,7 @@ const isProd = process.env.NODE_ENV === 'production' || process.env.RENDER === '
  * Single source of truth for frontend URL
  */
 function getFrontendUrl() {
-  const url = process.env.FRONTEND_URL || process.env.REACT_APP_FRONTEND_URL || '';
+  const url = process.env.FRONTEND_URL || process.env.REACT_APP_FRONTEND_URL || 'http://localhost:3000';
   return url.replace(/\/$/, '');
 }
 
@@ -100,7 +100,10 @@ async function sendPasswordResetEmail(email, resetToken) {
  * NOTE: This flow assumes your login logic blocks unverified users.
  */
 router.post("/register", async (req, res) => {
-  const { email, password, accountType, phone_number, photo, firstName, lastName, businessName, businessDescription } = req.body;
+  let { email, password, accountType, phone_number, photo, firstName, lastName, businessName, businessDescription } = req.body;
+
+  if (email) email = email.trim().toLowerCase();
+  if (password) password = password.trim();
 
   console.log("Incoming registration data:", { email, accountType });
 
@@ -294,6 +297,9 @@ router.post('/resend-verification', async (req, res) => {
  * Creates pending_users row and sends verification email.
  */
 router.post("/pending-register", async (req, res) => {
+  if (req.body.email) req.body.email = req.body.email.trim().toLowerCase();
+  if (req.body.password) req.body.password = req.body.password.trim();
+
   const {
     email,
     password,
@@ -418,7 +424,9 @@ router.post("/pending-register", async (req, res) => {
  * login
  */
 router.post("/login", (req, res) => {
-  const { email, password } = req.body;
+  let { email, password } = req.body;
+  if (email) email = email.trim().toLowerCase();
+  if (password) password = password.trim();
   if (!email || !password) {
     res.status(400).json({ message: "Invalid credentials" });
     return;
@@ -477,7 +485,8 @@ router.get("/me", async (req, res) => {
  * password reset - initiate
  */
 router.post("/initiate-password-reset", async (req, res) => {
-  const { email } = req.body;
+  let { email } = req.body;
+  if (email) email = email.trim().toLowerCase();
 
   try {
     const user = await user_queries.getUserByEmail(email);
@@ -513,7 +522,9 @@ router.post("/initiate-password-reset", async (req, res) => {
  * password reset - complete
  */
 router.post("/reset-password", async (req, res) => {
-  const { newPassword, confirmPassword, uniqueIdentifier } = req.body;
+  let { newPassword, confirmPassword, uniqueIdentifier } = req.body;
+  if (newPassword) newPassword = newPassword.trim();
+  if (confirmPassword) confirmPassword = confirmPassword.trim();
 
   try {
     const user = await user_queries.getUserIdAndToken(uniqueIdentifier);

@@ -104,20 +104,38 @@ const MyGigs = () => {
     }
   };
 
-  const handleReviewSubmit = () => {
+  const handleReviewSubmit = async () => {
     if (!currentReviewGig) return;
 
-    // Only submit review if rating is provided
-    if (rating > 0) {
-      // TODO: Future - Send review to backend API
-      // Example API call structure:
-      // await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/submit-review`, {
-      //   jobId: currentReviewGig.job_id,
-      //   userId: user.id,
-      //   employerId: currentReviewGig.user_id,
-      //   rating: rating,
-      //   comment: reviewComment
-      // }, { withCredentials: true });
+    try {
+      const reviewer_id = user?.id;
+      const reviewee_id = currentReviewGig?.user_id; // employer's users.id
+
+      if (!reviewer_id || !reviewee_id) {
+        console.error("Missing reviewer_id or reviewee_id", { reviewer_id, reviewee_id });
+        return;
+      }
+
+      // OPTIONAL fields (but backend requires at least one)
+      const ratingToSend = rating > 0 ? rating : null;
+      const textToSend = reviewComment?.trim() ? reviewComment.trim() : null;
+
+      // If both empty -> user chose not to review, just close
+      if (ratingToSend === null && textToSend === null) {
+        handleCloseModal();
+        return;
+      }
+
+      await axios.post(
+        `${process.env.REACT_APP_BACKEND_URL}/api/reviews`,
+        {
+          reviewer_id,
+          reviewee_id,
+          rating: ratingToSend,
+          review_text: textToSend,
+        },
+        { withCredentials: true }
+      );
 
       // Show success message
       setShowSuccessMessage(true);
@@ -131,9 +149,9 @@ const MyGigs = () => {
         setReviewComment("");
         setCurrentReviewGig(null);
       }, 2000);
-    } else {
-      // If no rating provided, just close the modal
-      handleCloseModal();
+    } catch (error) {
+      console.error("Error submitting review:", error);
+      alert(error?.response?.data?.message || "Failed to submit review");
     }
   };
 
