@@ -33,10 +33,5 @@ app.use(
   })
 );
 
-// Route mounts (match your existing server.js mounts)
-// app.use("/api", require("./database/routes/user_routes"));
-// app.use("/api", require("./database/routes/profile_routes"));
-// app.use("/api", require("./database/routes/workers_routes"));
-// add others if you have them, but only those that exist in your project
 
 module.exports = app;
