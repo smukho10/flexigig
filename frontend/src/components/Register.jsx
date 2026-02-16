@@ -34,7 +34,9 @@ const Register = () => {
 
   const fetchCurrentUser = async () => {
     try {
-      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/me`, { credentials: "include" });
+      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/me`, {
+        credentials: "include",
+      });
       const data = await res.json();
       setUser(data); // this includes the correct profile pic
     } catch (err) {
@@ -42,39 +44,42 @@ const Register = () => {
     }
   };
 
-
   const handleRegistration = async (e) => {
     e.preventDefault();
 
-    // ensure Account Type is selected
-    // TEMPORARY: also fill lastname with whitespace if accountType is Employer
     if (registrationData.accountType === "" || !registrationData.accountType) {
-      setErrorMessage(
-        "Please make sure you have selected an account type."
-      );
+      setErrorMessage("Please make sure you have selected an account type.");
       return;
     }
 
     if (
-      (registrationData.accountType === "Employer" && !registrationData.businessName) ||
-      (registrationData.accountType === "Worker" && (!registrationData.firstName || !registrationData.lastName))
+      (registrationData.accountType === "Employer" &&
+        !registrationData.businessName) ||
+      (registrationData.accountType === "Worker" &&
+        (!registrationData.firstName || !registrationData.lastName))
     ) {
       setErrorMessage("Please fill out all required fields.");
       return;
     }
 
     let uploadedPhotoPath = registrationData.photo;
-    const isUploadable = uploadedPhotoPath && (uploadedPhotoPath instanceof File || uploadedPhotoPath instanceof Blob);
+    const isUploadable =
+      uploadedPhotoPath &&
+      (uploadedPhotoPath instanceof File || uploadedPhotoPath instanceof Blob);
+
     if (isUploadable) {
       const formData = new FormData();
       formData.append("photo", uploadedPhotoPath);
 
       try {
-        const uploadRes = await fetch(`${process.env.REACT_APP_BACKEND_URL}/upload`, {
-          method: "POST",
-          credentials: "include",
-          body: formData,
-        });
+        const uploadRes = await fetch(
+          `${process.env.REACT_APP_BACKEND_URL}/upload`,
+          {
+            method: "POST",
+            credentials: "include",
+            body: formData,
+          }
+        );
 
         const uploadResult = await uploadRes.json();
 
@@ -95,14 +100,18 @@ const Register = () => {
     const formattedData = {
       ...registrationData,
       photo: uploadedPhotoPath, // this is a string at this point
+      phone_number: (registrationData.phone_number || "").replace(/\D/g, ""), // ✅ digits only
     };
 
     try {
-      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/pending-register`, formattedData, { withCredentials: true });
-      navigate("/registration-success");
-      //navigate("/verify/" + response.data.token);
+      await axios.post(
+        `${process.env.REACT_APP_BACKEND_URL}/api/pending-register`,
+        formattedData,
+        { withCredentials: true }
+      );
 
-      // Clear input fields
+      navigate("/registration-success");
+
       setRegistrationData({
         firstName: accountType === "Worker" ? "" : undefined,
         lastName: accountType === "Worker" ? "" : undefined,
@@ -115,13 +124,8 @@ const Register = () => {
         experiences: accountType === "Worker" ? [] : undefined,
         traits: accountType === "Worker" ? [] : undefined
       });
-      //navigate("/verify/" + response.data.token);
     } catch (error) {
-      if (
-        error.response &&
-        error.response.data &&
-        error.response.data.message
-      ) {
+      if (error.response && error.response.data && error.response.data.message) {
         setErrorMessage(error.response.data.message);
       } else {
         setErrorMessage(error.response.data);
@@ -140,4 +144,5 @@ const Register = () => {
     </div>
   );
 };
+
 export default Register;
