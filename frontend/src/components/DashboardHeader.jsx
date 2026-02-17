@@ -59,6 +59,10 @@ const DashboardHeader = () => {
             }
         };
         fetchProfilePhoto();
+
+        const handlePhotoUpdated = () => fetchProfilePhoto();
+        window.addEventListener("profilePhotoUpdated", handlePhotoUpdated);
+        return () => window.removeEventListener("profilePhotoUpdated", handlePhotoUpdated);
     }, [user?.id, backendURL]);
 
     const profilePic = profilePhotoUrl || DefaultAvatar;
