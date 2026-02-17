@@ -12,7 +12,7 @@ const GigWorkersPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const workerData = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/gig-workers`, { withCredentials: true });
+        const workerData = await axios.get(`/api/gig-workers`, { withCredentials: true });
         setWorkers(workerData.data);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -26,7 +26,7 @@ const GigWorkersPage = () => {
       try {
         const responses = await Promise.all(
           workers.map(worker =>
-            axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/my-calendar/${worker.user_id}`, { withCredentials: true })
+            axios.get(`/api/my-calendar/${worker.user_id}`, { withCredentials: true })
           )
         );
         const availabilityData = responses.map((response, index) => ({

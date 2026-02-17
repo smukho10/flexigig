@@ -56,8 +56,12 @@ const ProfilePage = () => {
   useEffect(() => {
     console.log("Profile fetch triggered, user:", user);
     if (user) {
+axios.get(
+  `/api/profile/${user.id}${selectedWorkerId ? `?workerId=${selectedWorkerId}` : ""}`,
+  { withCredentials: true }
+)
       axios.get(
-        `${process.env.REACT_APP_BACKEND_URL}/api/profile/${user.id}${selectedWorkerId ? `?workerId=${selectedWorkerId}` : ""}`,
+        `/api/profile/${user.id}${selectedWorkerId ? `?workerId=${selectedWorkerId}` : ""}`,
         { withCredentials: true }
       )
         .then((response) => {
@@ -74,10 +78,25 @@ const ProfilePage = () => {
     }
   }, [submit, selectedWorkerId, user?.id]);
 
+useEffect(() => {
+  if (!user?.isbusiness && user?.id) {
+    axios
+      .get(`/api/profile/worker-profiles/${user.id}`, { withCredentials: true })
+      .then((res) => {
+        setWorkerProfiles(res.data);
+        if (res.data.length > 0 && !selectedWorkerId) {
+          // Only set initial profile if no profile is selected yet
+          setSelectedWorkerId(res.data[0].id);
+          setWorkerId(res.data[0].id);
+        }
+      })
+      .catch((err) => console.error("Error fetching worker profiles:", err));
+  }
+}, [user?.id]);
   useEffect(() => {
     if (!user?.isbusiness && user?.id) {
       axios
-        .get(`${process.env.REACT_APP_BACKEND_URL}/api/profile/worker-profiles/${user.id}`, { withCredentials: true })
+        .get(`/api/profile/worker-profiles/${user.id}`, { withCredentials: true })
         .then((res) => {
           setWorkerProfiles(res.data);
           if (res.data.length > 0 && !selectedWorkerId) {
@@ -92,7 +111,7 @@ const ProfilePage = () => {
   useEffect(() => {
     if (!user.isbusiness && workerId != null) {
       axios
-        .get(`${process.env.REACT_APP_BACKEND_URL}/api/get-worker-skills-id/${workerId}`, { withCredentials: true })
+        .get(`/api/get-worker-skills-id/${workerId}`, { withCredentials: true })
         .then((response) => {
           setWorkerSkills(response.data);
         })
@@ -101,7 +120,16 @@ const ProfilePage = () => {
         });
 
       axios
-        .get(`${process.env.REACT_APP_BACKEND_URL}/api/get-worker-experiences-id/${workerId}`, { withCredentials: true })
+        .get(`/api/get-worker-traits-id/${workerId}`, { withCredentials: true })
+        .then((response) => {
+          setWorkerTraits(response.data);
+        })
+        .catch((error) => {
+          console.error("Error fetching worker traits by user id", error);
+        });
+
+      axios
+        .get(`/api/get-worker-experiences-id/${workerId}`, { withCredentials: true })
         .then((response) => {
           setWorkerExp(response.data);
         })
@@ -113,7 +141,7 @@ const ProfilePage = () => {
 
   const fetchProfile = () => {
     axios
-      .get(`${process.env.REACT_APP_BACKEND_URL}/api/profile/${user.id}`, { withCredentials: true })
+      .get(`/api/profile/${user.id}`, { withCredentials: true })
       .then((response) => {
         let merge = {
           ...response.data.profileData,
@@ -126,11 +154,24 @@ const ProfilePage = () => {
       });
   };
 
+  const fetchSkills = () => {
+    if (!user.isbusiness) {
+      axios
+        .get(`/api/get-worker-skills-id/${workerId}`, { withCredentials: true })
+        .then((response) => {
+          setWorkerSkills(response.data);
+        })
+        .catch((error) => {
+          console.error("Error fetching worker skills by user id", error);
+        });
+      setSelectedSkills(workerSkills);
+    }
+  }
   const fetchSkills = async () => {
     if (!user.isbusiness && workerId) {
       try {
         const response = await axios.get(
-          `${process.env.REACT_APP_BACKEND_URL}/api/get-worker-skills-id/${workerId}`,
+          `/api/get-worker-skills-id/${workerId}`,
           { withCredentials: true }
         );
         setWorkerSkills(response.data);
@@ -142,6 +183,21 @@ const ProfilePage = () => {
       }
     }
   };
+
+  const fetchTraits = () => {
+    if (!user.isbusiness) {
+      axios
+        .get(`/api/get-worker-traits-id/${workerId}`, { withCredentials: true })
+        .then((response) => {
+          setWorkerTraits(response.data);
+        })
+        .catch((error) => {
+          console.error("Error fetching worker traits by user id", error);
+        });
+      setSelectedTraits(workerTraits);
+    }
+  }
+
 
   const fetchExperiences = async () => {
     if (!user.isbusiness && workerId) {
@@ -162,7 +218,7 @@ const ProfilePage = () => {
 
   useEffect(() => {
     axios
-      .get(`${process.env.REACT_APP_BACKEND_URL}/api/get-all-skills`, { withCredentials: true })
+      .get(`/api/get-all-skills`, { withCredentials: true })
       .then((response) => {
         setSkills(response.data);
       })
@@ -171,7 +227,16 @@ const ProfilePage = () => {
       });
 
     axios
-      .get(`${process.env.REACT_APP_BACKEND_URL}/api/get-all-experiences`, { withCredentials: true })
+      .get(`/api/get-all-traits`, { withCredentials: true })
+      .then((response) => {
+        setTraits(response.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching traits:", error);
+      });
+
+    axios
+      .get(`/api/get-all-experiences`, { withCredentials: true })
       .then((response) => {
         setExperiences(response.data);
       })
@@ -255,14 +320,16 @@ const ProfilePage = () => {
     setPhotoError(null);
 
     try {
+      // Step 1: Get signed upload URL from backend
       const uploadUrlRes = await axios.post(
-        `${process.env.REACT_APP_BACKEND_URL}/api/profile/upload-photo-url/${user.id}`,
+        `/api/profile/upload-photo-url/${user.id}`,
         { contentType: photoFile.type },
         { withCredentials: true }
       );
 
       const { uploadUrl, key } = uploadUrlRes.data;
 
+      // Step 2: Upload file to R2 using signed URL
       await fetch(uploadUrl, {
         method: "PUT",
         headers: { "Content-Type": photoFile.type },
@@ -270,7 +337,7 @@ const ProfilePage = () => {
       });
 
       await axios.post(
-        `${process.env.REACT_APP_BACKEND_URL}/api/profile/save-photo-key/${user.id}`,
+        `/api/profile/save-photo-key/${user.id}`,
         { key },
         { withCredentials: true }
       );
@@ -294,7 +361,7 @@ const ProfilePage = () => {
 
     try {
       const res = await axios.get(
-        `${process.env.REACT_APP_BACKEND_URL}/api/profile/view-photo-url/${user.id}`,
+        `/api/profile/view-photo-url/${user.id}`,
         { withCredentials: true }
       );
       setPhotoUrl(res.data.viewUrl);
@@ -315,7 +382,7 @@ const ProfilePage = () => {
 
     try {
       await axios.put(
-        `${process.env.REACT_APP_BACKEND_URL}/api/profile/update-worker-profile/${selectedWorkerId}`,
+        `/api/profile/update-worker-profile/${selectedWorkerId}`,
         {
           biography: editedUser.biography,
           firstname: editedUser.firstname,
@@ -333,7 +400,7 @@ const ProfilePage = () => {
       );
 
       const profileRes = await axios.get(
-        `${process.env.REACT_APP_BACKEND_URL}/api/profile/${user.id}?workerId=${selectedWorkerId}`,
+        `/api/profile/${user.id}?workerId=${selectedWorkerId}`,
         { withCredentials: true }
       );
 
@@ -357,7 +424,7 @@ const ProfilePage = () => {
     try {
       // Clear existing skills
       await axios.post(
-        `${process.env.REACT_APP_BACKEND_URL}/api/clear-worker-skills/${workerId}`,
+        `/api/clear-worker-skills/${workerId}`,
         {},
         { withCredentials: true }
       );
@@ -365,7 +432,7 @@ const ProfilePage = () => {
       // Add all selected skills
       const addPromises = selectedSkills.map((skill) =>
         axios.post(
-          `${process.env.REACT_APP_BACKEND_URL}/api/add-worker-skill-ids/${workerId}/${skill.skill_id}`,
+          `/api/add-worker-skill-ids/${workerId}/${skill.skill_id}`,
           {},
           { withCredentials: true }
         )
@@ -396,7 +463,7 @@ const ProfilePage = () => {
     try {
       // Clear existing experiences
       await axios.post(
-        `${process.env.REACT_APP_BACKEND_URL}/api/clear-worker-experiences/${workerId}`,
+        `/api/clear-worker-experiences/${workerId}`,
         {},
         { withCredentials: true }
       );
@@ -404,7 +471,7 @@ const ProfilePage = () => {
       // Add all selected experiences
       const addPromises = selectedExp.map((exp) =>
         axios.post(
-          `${process.env.REACT_APP_BACKEND_URL}/api/add-worker-experience-ids/${workerId}/${exp.experience_id}`,
+          `/api/add-worker-experience-ids/${workerId}/${exp.experience_id}`,
           {},
           { withCredentials: true }
         )
@@ -445,12 +512,12 @@ const ProfilePage = () => {
 
     try {
       await axios.delete(
-        `${process.env.REACT_APP_BACKEND_URL}/api/profile/delete-worker-profile/${selectedWorkerId}`,
+        `/api/profile/delete-worker-profile/${selectedWorkerId}`,
         { withCredentials: true }
       );
 
       const res = await axios.get(
-        `${process.env.REACT_APP_BACKEND_URL}/api/profile/worker-profiles/${user.id}`,
+        `/api/profile/worker-profiles/${user.id}`,
         { withCredentials: true }
       );
 
@@ -1024,13 +1091,13 @@ const ProfilePage = () => {
                       if (!name) return;
 
                       await axios.post(
-                        `${process.env.REACT_APP_BACKEND_URL}/api/profile/create-worker-profile/${user.id}`,
+                        `/api/profile/create-worker-profile/${user.id}`,
                         { profileName: name },
                         { withCredentials: true }
                       );
 
                       const res = await axios.get(
-                        `${process.env.REACT_APP_BACKEND_URL}/api/profile/worker-profiles/${user.id}`,
+                        `/api/profile/worker-profiles/${user.id}`,
                         { withCredentials: true }
                       );
 

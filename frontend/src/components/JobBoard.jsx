@@ -19,7 +19,7 @@ const JobBoard = () => {
     useEffect(() => {
         const fetchJobs = async () => {
             try {
-                const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/all-jobs`);
+                const res = await axios.get(`/api/all-jobs`);
                 setJobs(res.data.filter((job) => job.jobfilled === false).sort(((a, b) => {
                     return a.jobstart.localeCompare(b.jobstart)
                 })));
@@ -57,7 +57,7 @@ const JobBoard = () => {
             setApplying(jobs.find(job => job.job_id.toString() === jobId))
         } else {
             try {
-                await axios.patch(`${process.env.REACT_APP_BACKEND_URL}/api/apply-job/${jobId}`, { applicantId }, { withCredentials: true });
+                await axios.patch(`/api/apply-job/${jobId}`, { applicantId }, { withCredentials: true });
                 if (jobDetails) setJobDetails(false)
                 setApplying(false)
                 setRefresh(!refresh);

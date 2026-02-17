@@ -17,7 +17,7 @@ const HomePage = () => {
 
   const fetchAllJobs = async () => {
     try {
-      const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/all-jobs`, { withCredentials: true });
+      const response = await axios.get(`/api/all-jobs`, { withCredentials: true });
       setJobs(response.data);
     } catch (error) {
       console.error("Error fetching jobs:", error);
@@ -35,7 +35,7 @@ const HomePage = () => {
         params.append("startDate", filterDate.startDate);
       if (filterDate.endDate) params.append("endDate", filterDate.endDate);
 
-      const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/all-jobs?${params.toString()}`, { withCredentials: true });
+      const response = await axios.get(`/api/all-jobs?${params.toString()}`, { withCredentials: true });
       setJobs(response.data);
     } catch (error) {
       console.error("Error fetching jobs:", error);
@@ -50,7 +50,7 @@ const HomePage = () => {
     const userId = user.id;
 
     try {
-      await axios.patch(`${process.env.REACT_APP_BACKEND_URL}/api/apply-job/${jobId}`, { userId }, { withCredentials: true });
+      await axios.patch(`/api/apply-job/${jobId}`, { userId }, { withCredentials: true });
       setJobs((currentJobs) =>
         currentJobs.filter((job) => job.job_id !== jobId)
       );

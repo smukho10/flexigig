@@ -13,7 +13,7 @@ const PasswordReset = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/validate-token/${uniqueIdentifier}`, { withCredentials: true }).then((response) => {
+    axios.get(`/api/validate-token/${uniqueIdentifier}`, { withCredentials: true }).then((response) => {
       if (response.data === "valid") {
         setValid(true);
       } else {
@@ -29,7 +29,7 @@ const PasswordReset = () => {
       return;
     }
     try {
-      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/reset-password`, {
+      const response = await axios.post(`/api/reset-password`, {
         newPassword,
         confirmPassword,
         uniqueIdentifier,

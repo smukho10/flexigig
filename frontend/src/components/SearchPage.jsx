@@ -14,7 +14,7 @@ const SearchPage = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/search-users?query=${encodeURIComponent(query)}`, { withCredentials: true });
+        const response = await axios.get(`/api/search-users?query=${encodeURIComponent(query)}`, { withCredentials: true });
         setUsers(response.data);
       } catch (err) {
         console.error("Error fetching users:", err);

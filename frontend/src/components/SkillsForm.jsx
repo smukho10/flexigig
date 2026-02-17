@@ -12,7 +12,7 @@ const SkillsForm = ({ data, setData }) => {
     useEffect(() => {
         const getAllSkills = async () => {
             try {
-                const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/get-all-skills`, { withCredentials: true });
+                const res = await axios.get(`/api/get-all-skills`, { withCredentials: true });
                 const resData = res.data;
 
                 if (resData && typeof resData === "object") {

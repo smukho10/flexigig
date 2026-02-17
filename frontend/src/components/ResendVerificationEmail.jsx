@@ -10,7 +10,7 @@ const ResendVerificationEmail = () => {
 
   const handleResendVerification = async () => {
     try {
-      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/resend-verification`, { email }, { withCredentials: true });
+      const response = await axios.post(`/api/resend-verification`, { email }, { withCredentials: true });
       setMessage(response.data.message);
     } catch (error) {
       setMessage(error.response.data.message || "An error occurred");
