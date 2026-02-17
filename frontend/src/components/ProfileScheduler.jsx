@@ -1,13 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Calendar as BigCalendar, dateFnsLocalizer, Views } from "react-big-calendar";
-
 import format from "date-fns/format";
 import getDay from "date-fns/getDay";
 import parse from "date-fns/parse";
 import startOfWeek from "date-fns/startOfWeek";
-import addDays from "date-fns/addDays";
-import set from "date-fns/set";
-
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "../styles/ProfileScheduler.css";
 
@@ -23,74 +19,62 @@ const localizer = dateFnsLocalizer({
   locales,
 });
 
-const ROOM_META = [
-  { id: "room1", label: "Room 1", color: "#4E9BE6" },
-  { id: "room2", label: "Room 2", color: "#4CAF50" },
-  { id: "room3", label: "Room 3", color: "#A6CE39" },
-  { id: "room4", label: "Room 4", color: "#FF8C42" },
+// Default seed events (Global, not profile specific)
+const SEED_EVENTS = [
+  {
+    id: "evt-1",
+    title: "Quarterly Project Review",
+    start: new Date(new Date().setHours(9, 0, 0, 0)),
+    end: new Date(new Date().setHours(12, 0, 0, 0)),
+    resourceId: 1,
+  },
+  {
+    id: "evt-2",
+    title: "Team Lunch",
+    start: new Date(new Date().setHours(12, 30, 0, 0)),
+    end: new Date(new Date().setHours(13, 30, 0, 0)),
+    resourceId: 1,
+  },
 ];
 
-const getRoomColor = (roomId) => ROOM_META.find((r) => r.id === roomId)?.color || "#4EBBC2";
+const STORAGE_KEY = "flexigig_global_scheduler_events";
 
-const seedEventsForWeek = (baseDate, seed = 0) => {
-  const weekStart = startOfWeek(baseDate, { weekStartsOn: 0 });
-
-  const d = (dayOffset, hour, minute = 0) => {
-    const day = addDays(weekStart, dayOffset);
-    return set(day, { hours: hour, minutes: minute, seconds: 0, milliseconds: 0 });
-  };
-
-  const shift = seed % 3; // 0..2
-  const day = (n) => (n + shift) % 7;
-
-  return [
-    { id: `seed-${seed}-1`, title: "Quarterly Project Review Meeting", start: d(day(3), 9), end: d(day(3), 15), room: "room1" },
-    { id: `seed-${seed}-2`, title: "IT Group Mtg.", start: d(day(4), 10), end: d(day(4), 14, 30), room: "room2" },
-    { id: `seed-${seed}-3`, title: "Interview with James", start: d(day(5), 14), end: d(day(5), 15, 30), room: "room1" },
-    { id: `seed-${seed}-4`, title: "Interview with Nancy", start: d(day(6), 14), end: d(day(6), 16), room: "room4" },
-    { id: `seed-${seed}-5`, title: "New Projects Planning", start: d(day(3), 15), end: d(day(3), 16), room: "room3" },
-  ];
-};
-
-const normalizeRoomInput = (input) => {
-  if (!input) return ROOM_META[0].id;
-  const trimmed = String(input).trim().toLowerCase();
-
-  const direct = ROOM_META.find((r) => r.label.toLowerCase() === trimmed);
-  if (direct) return direct.id;
-
-  const num = trimmed.replace("room", "").trim();
-  const asNumber = parseInt(num, 10);
-  if (!Number.isNaN(asNumber) && asNumber >= 1 && asNumber <= ROOM_META.length) {
-    return `room${asNumber}`;
-  }
-  return ROOM_META[0].id;
-};
-
-export default function ProfileScheduler({ selectedProfileId, profiles = [] }) {
+export default function ProfileScheduler() {
   const [view, setView] = useState(Views.WEEK);
   const [date, setDate] = useState(new Date());
-  const [eventsByProfile, setEventsByProfile] = useState({});
 
-  const profileName = useMemo(() => {
-    if (!selectedProfileId) return "";
-    const p = profiles.find((x) => x.id === selectedProfileId);
-    return p?.profile_name || `Profile ${selectedProfileId}`;
-  }, [profiles, selectedProfileId]);
+  // Initialize events from LocalStorage or Fallback to Seed
+  const [events, setEvents] = useState(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        // Need to parse date strings back to Date objects
+        return JSON.parse(stored).map(evt => ({
+          ...evt,
+          start: new Date(evt.start),
+          end: new Date(evt.end)
+        }));
+      }
+    } catch (e) {
+      console.error("Failed to parse events from local storage", e);
+    }
+    return SEED_EVENTS;
+  });
 
+  // Save to LocalStorage whenever events change
   useEffect(() => {
-    if (!selectedProfileId) return;
-    setEventsByProfile((prev) => {
-      if (prev[selectedProfileId]) return prev;
-      return { ...prev, [selectedProfileId]: seedEventsForWeek(new Date(), selectedProfileId) };
-    });
-  }, [selectedProfileId]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+  }, [events]);
 
-  const events = eventsByProfile[selectedProfileId] || [];
+  // Modal State
+  const [showModal, setShowModal] = useState(false);
+  const [modalMode, setModalMode] = useState("add"); // 'add' | 'edit' | 'delete'
+  const [currentEvent, setCurrentEvent] = useState({ id: null, title: "", start: new Date(), end: new Date() });
 
-  const eventPropGetter = (event) => ({
+  // Event Styling
+  const eventPropGetter = () => ({
     style: {
-      backgroundColor: getRoomColor(event.room),
+      backgroundColor: "#4EBBC2", // Unified color
       border: "none",
       borderRadius: "6px",
       color: "#fff",
@@ -98,60 +82,95 @@ export default function ProfileScheduler({ selectedProfileId, profiles = [] }) {
     },
   });
 
-  const handleSelectSlot = ({ start, end }) => {
-    if (!selectedProfileId) return;
+  // Handle Slot Select (Add)
+  const handleSelectSlot = useCallback(({ start, end }) => {
+    setModalMode("add");
+    setCurrentEvent({ id: null, title: "", start, end });
+    setShowModal(true);
+  }, []);
 
-    const title = window.prompt("Add an event title (front-end demo):");
-    if (!title) return;
+  // Handle Event Select (Edit)
+  const handleSelectEvent = useCallback((event) => {
+    setModalMode("edit");
+    setCurrentEvent({ ...event });
+    setShowModal(true);
+  }, []);
 
-    const roomInput = window.prompt("Choose a category: Room 1, Room 2, Room 3, Room 4", "Room 1");
-    const room = normalizeRoomInput(roomInput);
+  // Save Event
+  const handleSave = () => {
+    if (!currentEvent.title.trim()) {
+      alert("Please enter a title.");
+      return;
+    }
 
-    const newEvent = {
-      id: `evt-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      title,
-      start,
-      end,
-      room,
-    };
-
-    setEventsByProfile((prev) => ({
-      ...prev,
-      [selectedProfileId]: [...(prev[selectedProfileId] || []), newEvent],
-    }));
+    if (modalMode === "add") {
+      const newEvent = {
+        ...currentEvent,
+        id: `evt-${Date.now()}`,
+      };
+      setEvents((prev) => [...prev, newEvent]);
+    } else {
+      setEvents((prev) => prev.map((e) => (e.id === currentEvent.id ? currentEvent : e)));
+    }
+    setShowModal(false);
   };
 
-  const handleSelectEvent = (event) => {
-    if (!selectedProfileId) return;
-    if (!window.confirm(`Delete "${event.title}"? (front-end demo)`)) return;
+  // Trigger Delete Confirmation
+  const handleDeleteClick = () => {
+    setModalMode("delete");
+  };
 
-    setEventsByProfile((prev) => ({
-      ...prev,
-      [selectedProfileId]: (prev[selectedProfileId] || []).filter((e) => e.id !== event.id),
-    }));
+  // Confirm Delete
+  const handleConfirmDelete = () => {
+    setEvents((prev) => prev.filter((e) => e.id !== currentEvent.id));
+    setShowModal(false);
+  };
+
+  // Input Handlers
+  const handleTitleChange = (e) => setCurrentEvent({ ...currentEvent, title: e.target.value });
+
+  const toDateTimeLocal = (date) => {
+    if (!date) return "";
+    const ten = (i) => (i < 10 ? "0" : "") + i;
+    const YYYY = date.getFullYear();
+    const MM = ten(date.getMonth() + 1);
+    const DD = ten(date.getDate());
+    const HH = ten(date.getHours());
+    const II = ten(date.getMinutes());
+    return `${YYYY}-${MM}-${DD}T${HH}:${II}`;
+  };
+
+  const handleStartChange = (e) => {
+    const d = new Date(e.target.value);
+    if (!isNaN(d.getTime())) setCurrentEvent({ ...currentEvent, start: d });
+  };
+
+  const handleEndChange = (e) => {
+    const d = new Date(e.target.value);
+    if (!isNaN(d.getTime())) setCurrentEvent({ ...currentEvent, end: d });
+  };
+
+  const getModalTitle = () => {
+    if (modalMode === "add") return "Add Event";
+    if (modalMode === "edit") return "Edit Event";
+    if (modalMode === "delete") return "Confirm Delete";
+    return "";
   };
 
   return (
     <div className="profile-scheduler">
       <div className="scheduler-header">
-        <div>
-          <div className="scheduler-title">Scheduler</div>
-          {profileName ? (
-            <div className="scheduler-subtitle">
-              Showing schedule for: <strong>{profileName}</strong>
-            </div>
-          ) : (
-            <div className="scheduler-subtitle">Pick a profile to see its schedule.</div>
-          )}
-        </div>
+        <div className="scheduler-title">Scheduler</div>
       </div>
 
       <div className="scheduler-calendar">
         <BigCalendar
+          key={date.toString() + view} // Force remount on navigation to fix rendering glitch
           localizer={localizer}
           events={events}
           startAccessor="start"
           endAccessor="end"
+          style={{ height: 1200 }} // Increased height for 24h view
           views={{ month: true, week: true, day: true }}
           view={view}
           date={date}
@@ -164,19 +183,84 @@ export default function ProfileScheduler({ selectedProfileId, profiles = [] }) {
           popup
           step={30}
           timeslots={2}
-          min={new Date(1970, 1, 1, 8, 0, 0)}
-          max={new Date(1970, 1, 1, 20, 0, 0)}
+          min={new Date(1970, 1, 1, 0, 0, 0)}
+          max={new Date(1970, 1, 1, 23, 59, 59)}
         />
       </div>
 
-      <div className="scheduler-legend">
-        {ROOM_META.map((room) => (
-          <div key={room.id} className="legend-item">
-            <span className="legend-swatch" style={{ backgroundColor: room.color }} />
-            <span>{room.label}</span>
+      {/* Custom Modal Overlay */}
+      {showModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>{getModalTitle()}</h3>
+              <button className="modal-close-btn" onClick={() => setShowModal(false)}>&times;</button>
+            </div>
+
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Event Title</label>
+                <input
+                  type="text"
+                  placeholder="Enter title"
+                  value={currentEvent.title}
+                  onChange={handleTitleChange}
+                  autoFocus
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Start Time</label>
+                <input
+                  type="datetime-local"
+                  value={toDateTimeLocal(currentEvent.start)}
+                  onChange={handleStartChange}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>End Time</label>
+                <input
+                  type="datetime-local"
+                  value={toDateTimeLocal(currentEvent.end)}
+                  onChange={handleEndChange}
+                />
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              {modalMode === "delete" ? (
+                <div className="modal-footer-right" style={{ width: '100%', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                  <button className="btn btn-secondary" onClick={() => setModalMode("edit")}>
+                    Cancel
+                  </button>
+                  <button className="btn btn-danger" onClick={handleConfirmDelete}>
+                    Confirm Delete
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="modal-footer-left">
+                    {modalMode === "edit" && (
+                      <button className="btn btn-danger" onClick={handleDeleteClick}>
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                  <div className="modal-footer-right">
+                    <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
+                      Cancel
+                    </button>
+                    <button className="btn btn-primary" onClick={handleSave}>
+                      Save Changes
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
