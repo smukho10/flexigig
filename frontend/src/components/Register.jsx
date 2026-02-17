@@ -28,8 +28,7 @@ const Register = () => {
     photo: "",
     phone_number: "",
     skills: accountType === "Worker" ? [] : undefined,
-    experiences: accountType === "Worker" ? [] : undefined,
-    traits: accountType === "Worker" ? [] : undefined
+    experiences: accountType === "Worker" ? [] : undefined
   });
 
   const fetchCurrentUser = async () => {
@@ -121,8 +120,7 @@ const Register = () => {
         photo: "",
         phone_number: "",
         skills: accountType === "Worker" ? [] : undefined,
-        experiences: accountType === "Worker" ? [] : undefined,
-        traits: accountType === "Worker" ? [] : undefined
+        experiences: accountType === "Worker" ? [] : undefined
       });
     } catch (error) {
       if (error.response && error.response.data && error.response.data.message) {

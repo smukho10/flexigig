@@ -54,9 +54,6 @@ const UserProfileWidget = ({ user }) => {
             {user.skills && (
               <p><strong>Skills:</strong> {user.skills.join(", ")}</p>
             )}
-            {user.traits && (
-              <p><strong>Traits:</strong> {user.traits.join(", ")}</p>
-            )}
             {user.experiences && (
               <p><strong>Experience:</strong> {user.experiences.join(", ")}</p>
             )}
