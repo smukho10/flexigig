@@ -317,9 +317,11 @@ useEffect(() => {
       setPhotoError(null);
       setPhotoFile(null);
       alert("Profile photo uploaded successfully!");
-      
+
       // Refresh profile to get new photo
       await fetchProfile();
+      // Notify header to update miniature avatar
+      window.dispatchEvent(new Event("profilePhotoUpdated"));
     } catch (error) {
       console.error("Photo upload error:", error);
       setPhotoError("Failed to upload photo. Please try again.");
