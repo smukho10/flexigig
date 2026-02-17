@@ -4,6 +4,8 @@
   background-color: #f9f9f9;
   border-radius: 8px;
   margin-top: 20px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .scheduler-header {
