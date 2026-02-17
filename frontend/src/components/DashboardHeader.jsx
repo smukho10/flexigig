@@ -49,7 +49,7 @@ const DashboardHeader = () => {
             if (!user?.id) return;
             try {
                 const res = await axios.get(
-                    `${backendURL}/api/profile/view-photo-url/${user.id}`,
+                    `/api/profile/view-photo-url/${user.id}`,
                     { withCredentials: true }
                 );
                 setProfilePhotoUrl(res.data.viewUrl);
@@ -62,7 +62,7 @@ const DashboardHeader = () => {
         const handlePhotoUpdated = () => fetchProfilePhoto();
         window.addEventListener("profilePhotoUpdated", handlePhotoUpdated);
         return () => window.removeEventListener("profilePhotoUpdated", handlePhotoUpdated);
-    }, [user?.id, backendURL]);
+    }, [user?.id]);
 
     const profilePic = profilePhotoUrl || DefaultAvatar;
 

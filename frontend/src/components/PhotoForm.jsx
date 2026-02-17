@@ -62,7 +62,7 @@ const PhotoForm = ({ data, setData }) => {
             <h1>Upload Profile Photo</h1>
             <div className="photo">
                 {data.photo ? (
-                    <img src={typeof data.photo === "string" ? `${backendURL}${data.photo}` : URL.createObjectURL(data.photo)} alt="user" />
+                    <img src={typeof data.photo === "string" ? (data.photo.startsWith("http") ? data.photo : data.photo) : URL.createObjectURL(data.photo)} alt="user" />
                 ) : (
                     <img src={DefaultAvatar} alt="default" />
                 )}

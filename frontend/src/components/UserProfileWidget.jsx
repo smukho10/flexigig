@@ -7,7 +7,7 @@ const UserProfileWidget = ({ user }) => {
   const navigate = useNavigate();
 
   const profilePic = user?.userImage
-    ? `${backendURL}${user.userImage.startsWith("/") ? "" : "/"}${user.userImage}`
+    ? (user.userImage.startsWith("http") ? user.userImage : user.userImage)
     : DefaultAvatar; // fallback avatar
 
   const handleMessage = () => {

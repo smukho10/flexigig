@@ -12,7 +12,7 @@ const MessageWidget = () => {
 
   // Fallback profile picture
   const profilePic = user?.userImage
-    ? `${backendURL}${user.userImage.startsWith("/") ? "" : "/"}${user.userImage}`
+    ? (user.userImage.startsWith("http") ? user.userImage : user.userImage)
     : DefaultAvatar; // fallback avatar
 
   // Fetch the latest messages
