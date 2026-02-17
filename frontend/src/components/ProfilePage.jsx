@@ -5,26 +5,19 @@ import "../styles/ProfilePage.css";
 import { useUser } from "./UserContext";
 import ProfileScheduler from "./ProfileScheduler";
 
-
-
 const ProfilePage = () => {
   const { user, setUser, logout } = useUser();
   const [isEditing, setIsEditing] = useState(false);
-
   const [isEditingSkills, setIsEditingSkills] = useState(false);
-
   const [isEditingExp, setIsEditingExp] = useState(false);
   const [editedUser, setEditedUser] = useState();
   const [submit, setSubmit] = useState(false);
   const [skills, setSkills] = useState([]);
-
   const [experiences, setExperiences] = useState([]);
 
   const [workerId, setWorkerId] = useState();
   const [workerSkills, setWorkerSkills] = useState([]);
   const [selectedSkills, setSelectedSkills] = useState([]);
-  
-
   const [workerExp, setWorkerExp] = useState([]);
   const [selectedExp, setSelectedExp] = useState([]);
   const [workerProfiles, setWorkerProfiles] = useState([]);
@@ -35,6 +28,9 @@ const ProfilePage = () => {
   const [photoUrl, setPhotoUrl] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [photoError, setPhotoError] = useState(null);
+
+  // Loading state for save operations
+  const [isSaving, setIsSaving] = useState(false);
 
   const navigate = useNavigate();
 
@@ -48,7 +44,6 @@ const ProfilePage = () => {
       setEditedUser({
         ...user,
         skills: user.skills ? user.skills : [],
-        // Map field names for the form
         worker_phone_number: user.phone_number,
         worker_street_address: user.street_address,
         worker_city: user.city,
@@ -61,10 +56,10 @@ const ProfilePage = () => {
   useEffect(() => {
     console.log("Profile fetch triggered, user:", user);
     if (user) {
-axios.get(
-  `${process.env.REACT_APP_BACKEND_URL}/api/profile/${user.id}${selectedWorkerId ? `?workerId=${selectedWorkerId}` : ""}`,
-  { withCredentials: true }
-)
+      axios.get(
+        `${process.env.REACT_APP_BACKEND_URL}/api/profile/${user.id}${selectedWorkerId ? `?workerId=${selectedWorkerId}` : ""}`,
+        { withCredentials: true }
+      )
         .then((response) => {
           console.log("Profile data:", response.data);
           setUser((prevUser) => ({
@@ -79,21 +74,20 @@ axios.get(
     }
   }, [submit, selectedWorkerId, user?.id]);
 
-useEffect(() => {
-  if (!user?.isbusiness && user?.id) {
-    axios
-      .get(`${process.env.REACT_APP_BACKEND_URL}/api/profile/worker-profiles/${user.id}`, { withCredentials: true })
-      .then((res) => {
-        setWorkerProfiles(res.data);
-        if (res.data.length > 0 && !selectedWorkerId) {
-          // Only set initial profile if no profile is selected yet
-          setSelectedWorkerId(res.data[0].id);
-          setWorkerId(res.data[0].id);
-        }
-      })
-      .catch((err) => console.error("Error fetching worker profiles:", err));
-  }
-}, [user?.id]);
+  useEffect(() => {
+    if (!user?.isbusiness && user?.id) {
+      axios
+        .get(`${process.env.REACT_APP_BACKEND_URL}/api/profile/worker-profiles/${user.id}`, { withCredentials: true })
+        .then((res) => {
+          setWorkerProfiles(res.data);
+          if (res.data.length > 0 && !selectedWorkerId) {
+            setSelectedWorkerId(res.data[0].id);
+            setWorkerId(res.data[0].id);
+          }
+        })
+        .catch((err) => console.error("Error fetching worker profiles:", err));
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user.isbusiness && workerId != null) {
@@ -106,7 +100,6 @@ useEffect(() => {
           console.error("Error fetching worker skills by user id", error);
         });
 
-
       axios
         .get(`${process.env.REACT_APP_BACKEND_URL}/api/get-worker-experiences-id/${workerId}`, { withCredentials: true })
         .then((response) => {
@@ -116,7 +109,7 @@ useEffect(() => {
           console.error("Error fetching worker experiences by user id", error);
         });
     }
-  }, [workerId])
+  }, [workerId]);
 
   const fetchProfile = () => {
     axios
@@ -133,33 +126,39 @@ useEffect(() => {
       });
   };
 
-  const fetchSkills = () => {
-    if (!user.isbusiness) {
-      axios
-        .get(`${process.env.REACT_APP_BACKEND_URL}/api/get-worker-skills-id/${workerId}`, { withCredentials: true })
-        .then((response) => {
-          setWorkerSkills(response.data);
-        })
-        .catch((error) => {
-          console.error("Error fetching worker skills by user id", error);
-        });
-      setSelectedSkills(workerSkills);
+  const fetchSkills = async () => {
+    if (!user.isbusiness && workerId) {
+      try {
+        const response = await axios.get(
+          `${process.env.REACT_APP_BACKEND_URL}/api/get-worker-skills-id/${workerId}`,
+          { withCredentials: true }
+        );
+        setWorkerSkills(response.data);
+        setSelectedSkills(response.data);
+        return response.data;
+      } catch (error) {
+        console.error("Error fetching worker skills by user id", error);
+        return [];
+      }
     }
-  }
+  };
 
-  const fetchExperiences = () => {
-    if (!user.isbusiness) {
-      axios
-        .get(`${process.env.REACT_APP_BACKEND_URL}/api/get-worker-experiences-id/${workerId}`, { withCredentials: true })
-        .then((response) => {
-          setWorkerExp(response.data);
-        })
-        .catch((error) => {
-          console.error("Error fetching worker experiences by user id", error);
-        });
-      setSelectedExp(workerExp);
+  const fetchExperiences = async () => {
+    if (!user.isbusiness && workerId) {
+      try {
+        const response = await axios.get(
+          `${process.env.REACT_APP_BACKEND_URL}/api/get-worker-experiences-id/${workerId}`,
+          { withCredentials: true }
+        );
+        setWorkerExp(response.data);
+        setSelectedExp(response.data);
+        return response.data;
+      } catch (error) {
+        console.error("Error fetching worker experiences by user id", error);
+        return [];
+      }
     }
-  }
+  };
 
   useEffect(() => {
     axios
@@ -193,14 +192,12 @@ useEffect(() => {
         if (!isNaN(parseInt(value))) {
           setEditedUser((prev) => ({ ...prev, [name]: value }));
         }
-      }
-      else if (name === "desired_pay") {
+      } else if (name === "desired_pay") {
         if (!isNaN(parseFloat(value))) {
-          var rounded = Math.round(value * 100) / 100
+          var rounded = Math.round(value * 100) / 100;
           setEditedUser((prev) => ({ ...prev, [name]: rounded }));
         }
-      }
-      else {
+      } else {
         setEditedUser((prev) => ({ ...prev, [name]: value }));
       }
     }
@@ -212,28 +209,31 @@ useEffect(() => {
   };
 
   const toggleEditSkills = () => {
-    fetchSkills();
+    if (!isEditingSkills) {
+      // Opening the edit form - fetch current skills
+      fetchSkills();
+    }
     setIsEditingSkills(!isEditingSkills);
-  }
-
+  };
 
   const toggleEditExp = () => {
-    fetchExperiences();
+    if (!isEditingExp) {
+      // Opening the edit form - fetch current experiences
+      fetchExperiences();
+    }
     setIsEditingExp(!isEditingExp);
-  }
+  };
 
   // R2 Photo Upload Handlers
   const handlePhotoSelect = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith("image/")) {
       setPhotoError("Please select a valid image file");
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       setPhotoError("File size must be less than 5MB");
       return;
@@ -241,7 +241,6 @@ useEffect(() => {
 
     setPhotoFile(file);
     setPhotoError(null);
-    // Show preview
     const reader = new FileReader();
     reader.onloadend = () => {
       setPhotoUrl(reader.result);
@@ -256,7 +255,6 @@ useEffect(() => {
     setPhotoError(null);
 
     try {
-      // Step 1: Get signed upload URL from backend
       const uploadUrlRes = await axios.post(
         `${process.env.REACT_APP_BACKEND_URL}/api/profile/upload-photo-url/${user.id}`,
         { contentType: photoFile.type },
@@ -265,14 +263,12 @@ useEffect(() => {
 
       const { uploadUrl, key } = uploadUrlRes.data;
 
-      // Step 2: Upload file to R2 using signed URL
       await fetch(uploadUrl, {
         method: "PUT",
         headers: { "Content-Type": photoFile.type },
         body: photoFile,
       });
 
-      // Step 3: Save key in database
       await axios.post(
         `${process.env.REACT_APP_BACKEND_URL}/api/profile/save-photo-key/${user.id}`,
         { key },
@@ -283,9 +279,7 @@ useEffect(() => {
       setPhotoFile(null);
       alert("Profile photo uploaded successfully!");
 
-      // Refresh profile to get new photo
       await fetchProfile();
-      // Notify header to update miniature avatar
       window.dispatchEvent(new Event("profilePhotoUpdated"));
     } catch (error) {
       console.error("Photo upload error:", error);
@@ -305,13 +299,11 @@ useEffect(() => {
       );
       setPhotoUrl(res.data.viewUrl);
     } catch (error) {
-      // No photo yet, that's okay
       console.log("No profile photo found");
       setPhotoUrl(null);
     }
   };
 
-  // Fetch photo on component mount
   useEffect(() => {
     fetchProfilePhoto();
   }, [user?.id]);
@@ -322,7 +314,6 @@ useEffect(() => {
     setSubmit(true);
 
     try {
-      // Use the NEW endpoint that updates by workerId instead of userId
       await axios.put(
         `${process.env.REACT_APP_BACKEND_URL}/api/profile/update-worker-profile/${selectedWorkerId}`,
         {
@@ -332,17 +323,15 @@ useEffect(() => {
           profile_name: editedUser.profile_name || "Profile 1",
           desired_work_radius: editedUser.desired_work_radius,
           desired_pay: editedUser.desired_pay,
-          // Include phone and address fields (user-level data)
           worker_phone_number: editedUser.worker_phone_number,
           worker_street_address: editedUser.worker_street_address,
           worker_city: editedUser.worker_city,
           worker_province: editedUser.worker_province,
-          worker_postal_code: editedUser.worker_postal_code
+          worker_postal_code: editedUser.worker_postal_code,
         },
         { withCredentials: true }
       );
 
-      // Refresh the profile data
       const profileRes = await axios.get(
         `${process.env.REACT_APP_BACKEND_URL}/api/profile/${user.id}?workerId=${selectedWorkerId}`,
         { withCredentials: true }
@@ -350,7 +339,7 @@ useEffect(() => {
 
       setUser((prevUser) => ({
         ...prevUser,
-        ...profileRes.data.profileData
+        ...profileRes.data.profileData,
       }));
 
       setIsEditing(false);
@@ -361,45 +350,82 @@ useEffect(() => {
     }
   };
 
-  const handleSubmitSkills = async () => {
+  const handleSubmitSkills = async (e) => {
+    e.preventDefault();
+    setIsSaving(true);
+
     try {
-      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/clear-worker-skills/${workerId}`, { withCredentials: true });
+      // Clear existing skills
+      await axios.post(
+        `${process.env.REACT_APP_BACKEND_URL}/api/clear-worker-skills/${workerId}`,
+        {},
+        { withCredentials: true }
+      );
+
+      // Add all selected skills
+      const addPromises = selectedSkills.map((skill) =>
+        axios.post(
+          `${process.env.REACT_APP_BACKEND_URL}/api/add-worker-skill-ids/${workerId}/${skill.skill_id}`,
+          {},
+          { withCredentials: true }
+        )
+      );
+
+      await Promise.all(addPromises);
+
+      // Refresh the skills data
+      await fetchSkills();
+
+      // Show success message
+      alert("Skills updated successfully!");
+
+      // Close the editing form
+      setIsEditingSkills(false);
     } catch (error) {
-      console.error("Error clearing user skills:", error);
+      console.error("Error updating skills:", error);
+      alert("Failed to update skills. Please try again.");
+    } finally {
+      setIsSaving(false);
     }
-
-    const submitted = selectedSkills;
-    setWorkerSkills(selectedSkills);
-    for (const s of submitted) {
-      try {
-        axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/add-worker-skill-ids/${workerId}/${s.skill_id}`, { withCredentials: true });
-      } catch (error) {
-        console.error("Error adding skill to worker:", error);
-      }
-    }
-
-    toggleEditSkills();
   };
 
+  const handleSubmitExp = async (e) => {
+    e.preventDefault();
+    setIsSaving(true);
 
-  const handleSubmitExp = async () => {
     try {
-      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/clear-worker-experiences/${workerId}`, { withCredentials: true });
+      // Clear existing experiences
+      await axios.post(
+        `${process.env.REACT_APP_BACKEND_URL}/api/clear-worker-experiences/${workerId}`,
+        {},
+        { withCredentials: true }
+      );
+
+      // Add all selected experiences
+      const addPromises = selectedExp.map((exp) =>
+        axios.post(
+          `${process.env.REACT_APP_BACKEND_URL}/api/add-worker-experience-ids/${workerId}/${exp.experience_id}`,
+          {},
+          { withCredentials: true }
+        )
+      );
+
+      await Promise.all(addPromises);
+
+      // Refresh the experiences data
+      await fetchExperiences();
+
+      // Show success message
+      alert("Experience updated successfully!");
+
+      // Close the editing form
+      setIsEditingExp(false);
     } catch (error) {
-      console.error("Error clearing user experiences:", error);
+      console.error("Error updating experiences:", error);
+      alert("Failed to update experience. Please try again.");
+    } finally {
+      setIsSaving(false);
     }
-
-    const submitted = selectedExp;
-    setWorkerExp(selectedExp);
-    for (const s of submitted) {
-      try {
-        axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/add-worker-experience-ids/${workerId}/${s.experience_id}`, { withCredentials: true });
-      } catch (error) {
-        console.error("Error adding experience to user:", error);
-      }
-    }
-
-    toggleEditExp();
   };
 
   const handleDeleteProfile = async () => {
@@ -408,7 +434,7 @@ useEffect(() => {
       return;
     }
 
-    const currentProfile = workerProfiles.find(p => p.id === selectedWorkerId);
+    const currentProfile = workerProfiles.find((p) => p.id === selectedWorkerId);
     const profileName = currentProfile ? currentProfile.profile_name : "this profile";
 
     const confirmed = window.confirm(
@@ -423,7 +449,6 @@ useEffect(() => {
         { withCredentials: true }
       );
 
-      // Refresh the profiles list
       const res = await axios.get(
         `${process.env.REACT_APP_BACKEND_URL}/api/profile/worker-profiles/${user.id}`,
         { withCredentials: true }
@@ -431,7 +456,6 @@ useEffect(() => {
 
       setWorkerProfiles(res.data);
 
-      // Select the first remaining profile
       if (res.data.length > 0) {
         setSelectedWorkerId(res.data[0].id);
         setWorkerId(res.data[0].id);
@@ -445,69 +469,91 @@ useEffect(() => {
   };
 
   const handleSkillSelect = (skillObj) => {
-    if (!selectedSkills.some(o => o.skill_name === skillObj.skill_name)) {
+    if (!selectedSkills.some((o) => o.skill_name === skillObj.skill_name)) {
       setSelectedSkills([...selectedSkills, skillObj]);
     } else {
-      setSelectedSkills(selectedSkills.filter(item => item.skill_name !== skillObj.skill_name));
+      setSelectedSkills(selectedSkills.filter((item) => item.skill_name !== skillObj.skill_name));
     }
-  }
-
+  };
 
   const handleExpSelect = (expObj) => {
-    if (!selectedExp.some(o => o.experience_name === expObj.experience_name)) {
+    if (!selectedExp.some((o) => o.experience_name === expObj.experience_name)) {
       setSelectedExp([...selectedExp, expObj]);
     } else {
-      setSelectedExp(selectedExp.filter(item => item.experience_name !== expObj.experience_name));
+      setSelectedExp(selectedExp.filter((item) => item.experience_name !== expObj.experience_name));
     }
-  }
+  };
 
   if (isEditingSkills) {
     return (
       <div className="user-profile-form">
-        <form onSubmit={handleSubmit} className="form">
+        <form onSubmit={handleSubmitSkills} className="form">
           <div className="form-sections-container">
             <div className="form-section worker-section">
               <h1>Please Select Applicable Skills</h1>
               <ul>
-                {skills.map((skillObj) => <button className={`form-item-button ${selectedSkills.some(o => o.skill_name === skillObj.skill_name) ? "form-item-button-selected" : ""}`}
-                  onClick={() => handleSkillSelect(skillObj)}>{skillObj.skill_name}</button>)}
+                {skills.map((skillObj) => (
+                  <button
+                    key={skillObj.skill_id}
+                    type="button"
+                    className={`form-item-button ${
+                      selectedSkills.some((o) => o.skill_name === skillObj.skill_name)
+                        ? "form-item-button-selected"
+                        : ""
+                    }`}
+                    onClick={() => handleSkillSelect(skillObj)}
+                  >
+                    {skillObj.skill_name}
+                  </button>
+                ))}
               </ul>
             </div>
           </div>
-          <button type="submit" onClick={handleSubmitSkills} className="form-button">
-            Save Skills
+          <button type="submit" className="form-button" disabled={isSaving}>
+            {isSaving ? "Saving..." : "Save Skills"}
           </button>
-          <button type="button" onClick={toggleEditSkills} className="form-button">
+          <button type="button" onClick={toggleEditSkills} className="form-button" disabled={isSaving}>
             Cancel
           </button>
         </form>
       </div>
-    )
+    );
   }
-
 
   if (isEditingExp) {
     return (
       <div className="user-profile-form">
-        <form onSubmit={handleSubmit} className="form">
+        <form onSubmit={handleSubmitExp} className="form">
           <div className="form-sections-container">
             <div className="form-section">
               <h1>Please Select Applicable Experience</h1>
               <ul>
-                {experiences.map((expObj) => <button className={`form-item-button ${selectedExp.some(o => o.experience_name === expObj.experience_name) ? "form-item-button-selected" : ""}`}
-                  onClick={() => handleExpSelect(expObj)}>{expObj.experience_name}</button>)}
+                {experiences.map((expObj) => (
+                  <button
+                    key={expObj.experience_id}
+                    type="button"
+                    className={`form-item-button ${
+                      selectedExp.some((o) => o.experience_name === expObj.experience_name)
+                        ? "form-item-button-selected"
+                        : ""
+                    }`}
+                    onClick={() => handleExpSelect(expObj)}
+                  >
+                    {expObj.experience_name}
+                  </button>
+                ))}
               </ul>
             </div>
           </div>
-          <button type="submit" onClick={handleSubmitExp} className="form-button">
-            Save Experiences
+          <button type="submit" className="form-button" disabled={isSaving}>
+            {isSaving ? "Saving..." : "Save Experiences"}
           </button>
-          <button type="button" onClick={toggleEditExp} className="form-button">
+          <button type="button" onClick={toggleEditExp} className="form-button" disabled={isSaving}>
             Cancel
           </button>
         </form>
       </div>
-    )
+    );
   }
 
   if (isEditing) {
@@ -520,30 +566,34 @@ useEffect(() => {
               <h2>Profile Photo</h2>
               <div style={{ marginBottom: "20px" }}>
                 {photoUrl ? (
-                  <div style={{
-                    width: "150px",
-                    height: "150px",
-                    borderRadius: "50%",
-                    overflow: "hidden",
-                    marginBottom: "15px"
-                  }}>
-                    <img 
-                      src={photoUrl} 
-                      alt="Profile Preview" 
+                  <div
+                    style={{
+                      width: "150px",
+                      height: "150px",
+                      borderRadius: "50%",
+                      overflow: "hidden",
+                      marginBottom: "15px",
+                    }}
+                  >
+                    <img
+                      src={photoUrl}
+                      alt="Profile Preview"
                       style={{ width: "100%", height: "100%", objectFit: "cover" }}
                     />
                   </div>
                 ) : (
-                  <div style={{
-                    width: "150px",
-                    height: "150px",
-                    borderRadius: "50%",
-                    backgroundColor: "#e0e0e0",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginBottom: "15px"
-                  }}>
+                  <div
+                    style={{
+                      width: "150px",
+                      height: "150px",
+                      borderRadius: "50%",
+                      backgroundColor: "#e0e0e0",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginBottom: "15px",
+                    }}
+                  >
                     <p>No photo</p>
                   </div>
                 )}
@@ -562,7 +612,7 @@ useEffect(() => {
                 disabled={!photoFile || uploading}
                 className="form-button"
                 style={{
-                  backgroundColor: uploading ? "#ccc" : "#4CAF50"
+                  backgroundColor: uploading ? "#ccc" : "#4CAF50",
                 }}
               >
                 {uploading ? "Uploading..." : "Upload Photo"}
@@ -587,10 +637,7 @@ useEffect(() => {
                     className="input-text"
                   />
 
-                  <label
-                    htmlFor="business_phone_number"
-                    className="form-label"
-                  >
+                  <label htmlFor="business_phone_number" className="form-label">
                     Business Phone Number:
                   </label>
                   <input
@@ -614,10 +661,7 @@ useEffect(() => {
                     className="input-text"
                   />
 
-                  <label
-                    htmlFor="business_street_address"
-                    className="form-label"
-                  >
+                  <label htmlFor="business_street_address" className="form-label">
                     Business Street Address:
                   </label>
                   <input
@@ -653,10 +697,7 @@ useEffect(() => {
                     className="input-text"
                   />
 
-                  <label
-                    htmlFor="business_postal_code"
-                    className="form-label"
-                  >
+                  <label htmlFor="business_postal_code" className="form-label">
                     Business Postal Code:
                   </label>
                   <input
@@ -668,10 +709,7 @@ useEffect(() => {
                     className="input-text"
                   />
 
-                  <label
-                    htmlFor="business_description"
-                    className="form-label"
-                  >
+                  <label htmlFor="business_description" className="form-label">
                     Company Bio:
                   </label>
                   <textarea
@@ -764,10 +802,7 @@ useEffect(() => {
                     required
                   />
 
-                  <label
-                    htmlFor="worker_street_address"
-                    className="form-label"
-                  >
+                  <label htmlFor="worker_street_address" className="form-label">
                     Street Adress:
                   </label>
                   <input
@@ -832,26 +867,6 @@ useEffect(() => {
                     required
                   />
 
-                  {/*<label htmlFor="skills" className="form-label">
-                    Skills:
-                  </label>
-                  <div className="tags-container">
-                    {skills.map((skill) => (
-                      <div
-                        required
-                        key={skill.skill_id}
-                        onClick={() => handleSkillChange(skill.skill_name)}
-                        className={`tag ${editedUser.skills &&
-                          editedUser.skills.includes(skill.skill_name)
-                          ? "selected"
-                          : ""
-                          }`}
-                      >
-                        {skill.skill_name}
-                      </div>
-                    ))}
-                  </div>*/}
-
                   <label htmlFor="desired_pay" className="form-label">
                     Desired Pay ($/hr):
                   </label>
@@ -867,7 +882,6 @@ useEffect(() => {
                 </>
               </div>
             )}
-
           </div>
 
           <button type="submit" className="form-button">
@@ -881,25 +895,25 @@ useEffect(() => {
     );
   }
 
-  return !user ? <div>Loading...</div> : (
+  return !user ? (
+    <div>Loading...</div>
+  ) : (
     <div className="profile-page">
       <div className="profile-container">
         {/* Profile Photo Display */}
         {photoUrl && (
           <div style={{ textAlign: "center", marginBottom: "20px" }}>
-            <div style={{
-              width: "180px",
-              height: "180px",
-              borderRadius: "50%",
-              overflow: "hidden",
-              margin: "0 auto",
-              border: "3px solid #4EBBC2"
-            }}>
-              <img 
-                src={photoUrl} 
-                alt="Profile" 
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
+            <div
+              style={{
+                width: "180px",
+                height: "180px",
+                borderRadius: "50%",
+                overflow: "hidden",
+                margin: "0 auto",
+                border: "3px solid #4EBBC2",
+              }}
+            >
+              <img src={photoUrl} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
           </div>
         )}
@@ -923,10 +937,7 @@ useEffect(() => {
                 <strong>Email:</strong> {user.email}
               </p>
               <p>
-                <strong>Address:</strong> {user.street_address} {" "}
-                {user.city} {user.province} {" "}
-                {user.postal_code}
-                {/* ^ might need apostrophes here depending onthe format we pick for addresses*/}
+                <strong>Address:</strong> {user.street_address} {user.city} {user.province} {user.postal_code}
               </p>
               <p>
                 <strong>Website:</strong> {user.business_website}
@@ -935,109 +946,107 @@ useEffect(() => {
           </div>
         ) : (
           <div className="worker-profile">
-              {!user.isbusiness && workerProfiles.length > 0 && (
-                <div style={{ marginBottom: "20px", padding: "15px", backgroundColor: "#f5f5f5", borderRadius: "8px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-                    <label style={{ fontWeight: "bold", fontSize: "16px" }}>Profile:</label>
-                    <select
-                      value={selectedWorkerId || ""}
-                      onChange={(e) => {
-                        const wid = Number(e.target.value);
-                        setSelectedWorkerId(wid);
-                        setWorkerId(wid);
-                      }}
-                      style={{
-                        padding: "8px 12px",
-                        fontSize: "16px",
-                        borderRadius: "4px",
-                        border: "1px solid #ccc",
-                        flex: "1",
-                        maxWidth: "300px"
-                      }}
-                    >
-                      {workerProfiles.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.profile_name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div style={{ display: "flex", gap: "10px" }}>
-                    <button
-                      style={{
-                        backgroundColor: "#4EBBC2",
-                        color: "white",
-                        padding: "8px 16px",
-                        border: "none",
-                        borderRadius: "4px",
-                        cursor: "pointer",
-                        fontSize: "14px"
-                      }}
-                      onClick={() => setIsEditing(true)}
-                    >
-                      Edit This Profile
-                    </button>
-
-                    <button
-                      style={{
-                        backgroundColor: "#FF6347",
-                        color: "white",
-                        padding: "8px 16px",
-                        border: "none",
-                        borderRadius: "4px",
-                        cursor: workerProfiles.length <= 1 ? "not-allowed" : "pointer",
-                        fontSize: "14px",
-                        opacity: workerProfiles.length <= 1 ? 0.5 : 1
-                      }}
-                      disabled={workerProfiles.length <= 1}
-                      onClick={handleDeleteProfile}
-                    >
-                      Delete This Profile
-                    </button>
-
-                    <button
-                      style={{
-                        backgroundColor: "#4CAF50",
-                        color: "white",
-                        padding: "8px 16px",
-                        border: "none",
-                        borderRadius: "4px",
-                        cursor: workerProfiles.length >= 3 ? "not-allowed" : "pointer",
-                        fontSize: "14px",
-                        opacity: workerProfiles.length >= 3 ? 0.5 : 1
-                      }}
-                      disabled={workerProfiles.length >= 3}
-                      onClick={async () => {
-                        const name = window.prompt("Enter new profile name:");
-                        if (!name) return;
-
-                        await axios.post(
-                          `${process.env.REACT_APP_BACKEND_URL}/api/profile/create-worker-profile/${user.id}`,
-                          { profileName: name },
-                          { withCredentials: true }
-                        );
-
-                        // Refresh list
-                        const res = await axios.get(
-                          `${process.env.REACT_APP_BACKEND_URL}/api/profile/worker-profiles/${user.id}`,
-                          { withCredentials: true }
-                        );
-
-                        setWorkerProfiles(res.data);
-                        // Select the newly created profile
-                        if (res.data.length > 0) {
-                          const newProfile = res.data[res.data.length - 1];
-                          setSelectedWorkerId(newProfile.id);
-                          setWorkerId(newProfile.id);
-                        }
-                      }}
-                    >
-                      + Add Profile
-                    </button>
-                  </div>
+            {!user.isbusiness && workerProfiles.length > 0 && (
+              <div style={{ marginBottom: "20px", padding: "15px", backgroundColor: "#f5f5f5", borderRadius: "8px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+                  <label style={{ fontWeight: "bold", fontSize: "16px" }}>Profile:</label>
+                  <select
+                    value={selectedWorkerId || ""}
+                    onChange={(e) => {
+                      const wid = Number(e.target.value);
+                      setSelectedWorkerId(wid);
+                      setWorkerId(wid);
+                    }}
+                    style={{
+                      padding: "8px 12px",
+                      fontSize: "16px",
+                      borderRadius: "4px",
+                      border: "1px solid #ccc",
+                      flex: "1",
+                      maxWidth: "300px",
+                    }}
+                  >
+                    {workerProfiles.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.profile_name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              )}
+
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <button
+                    style={{
+                      backgroundColor: "#4EBBC2",
+                      color: "white",
+                      padding: "8px 16px",
+                      border: "none",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      fontSize: "14px",
+                    }}
+                    onClick={() => setIsEditing(true)}
+                  >
+                    Edit This Profile
+                  </button>
+
+                  <button
+                    style={{
+                      backgroundColor: "#FF6347",
+                      color: "white",
+                      padding: "8px 16px",
+                      border: "none",
+                      borderRadius: "4px",
+                      cursor: workerProfiles.length <= 1 ? "not-allowed" : "pointer",
+                      fontSize: "14px",
+                      opacity: workerProfiles.length <= 1 ? 0.5 : 1,
+                    }}
+                    disabled={workerProfiles.length <= 1}
+                    onClick={handleDeleteProfile}
+                  >
+                    Delete This Profile
+                  </button>
+
+                  <button
+                    style={{
+                      backgroundColor: "#4CAF50",
+                      color: "white",
+                      padding: "8px 16px",
+                      border: "none",
+                      borderRadius: "4px",
+                      cursor: workerProfiles.length >= 3 ? "not-allowed" : "pointer",
+                      fontSize: "14px",
+                      opacity: workerProfiles.length >= 3 ? 0.5 : 1,
+                    }}
+                    disabled={workerProfiles.length >= 3}
+                    onClick={async () => {
+                      const name = window.prompt("Enter new profile name:");
+                      if (!name) return;
+
+                      await axios.post(
+                        `${process.env.REACT_APP_BACKEND_URL}/api/profile/create-worker-profile/${user.id}`,
+                        { profileName: name },
+                        { withCredentials: true }
+                      );
+
+                      const res = await axios.get(
+                        `${process.env.REACT_APP_BACKEND_URL}/api/profile/worker-profiles/${user.id}`,
+                        { withCredentials: true }
+                      );
+
+                      setWorkerProfiles(res.data);
+                      if (res.data.length > 0) {
+                        const newProfile = res.data[res.data.length - 1];
+                        setSelectedWorkerId(newProfile.id);
+                        setWorkerId(newProfile.id);
+                      }
+                    }}
+                  >
+                    + Add Profile
+                  </button>
+                </div>
+              </div>
+            )}
             <div className="profile-section">
               <h2>Biography</h2>
               <p>{user.biography || ""}</p>
@@ -1058,10 +1067,7 @@ useEffect(() => {
                 <strong>Phone number:</strong> {user.phone_number}
               </p>
               <p>
-                <strong>Location:</strong> {user.street_address}{" "}
-                {user.city} {user.province}{" "}
-                {user.postal_code}
-                {/* ^ might need apostrophes here depending onthe format we pick for addresses*/}
+                <strong>Location:</strong> {user.street_address} {user.city} {user.province} {user.postal_code}
               </p>
             </div>
             <div className="profile-section">
@@ -1082,22 +1088,32 @@ useEffect(() => {
             <div className="profile-section">
               <h2>Skills</h2>
               <ul>
-                {workerSkills.map((skillObj) => <div className="displayed-items">{skillObj.skill_name}</div>)}
+                {workerSkills.map((skillObj) => (
+                  <div key={skillObj.skill_id} className="displayed-items">
+                    {skillObj.skill_name}
+                  </div>
+                ))}
               </ul>
             </div>
-            <p>{user.skills && user.skills.join(", ")}</p>
-            <button className="edit-button" onClick={toggleEditSkills}>Edit Skills</button>
+            <button className="edit-button" onClick={toggleEditSkills}>
+              Edit Skills
+            </button>
           </div>
 
           <div className="profile-container">
             <div className="profile-section">
               <h2>Experience</h2>
               <ul>
-                {workerExp.map((expObj) => <div className="displayed-items">{expObj.experience_name}</div>)}
+                {workerExp.map((expObj) => (
+                  <div key={expObj.experience_id} className="displayed-items">
+                    {expObj.experience_name}
+                  </div>
+                ))}
               </ul>
             </div>
-            <p>{user.experiences && user.experiences.join(", ")}</p>
-            <button className="edit-button" onClick={toggleEditExp}>Edit Experiences</button>
+            <button className="edit-button" onClick={toggleEditExp}>
+              Edit Experiences
+            </button>
           </div>
 
           <div className="profile-container">
