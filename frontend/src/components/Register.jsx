@@ -33,7 +33,7 @@ const Register = () => {
 
   const fetchCurrentUser = async () => {
     try {
-      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/me`, {
+      const res = await fetch(`/api/me`, {
         credentials: "include",
       });
       const data = await res.json();
@@ -72,7 +72,7 @@ const Register = () => {
 
       try {
         const uploadRes = await fetch(
-          `${process.env.REACT_APP_BACKEND_URL}/upload`,
+          `/upload`,
           {
             method: "POST",
             credentials: "include",
@@ -104,7 +104,7 @@ const Register = () => {
 
     try {
       await axios.post(
-        `${process.env.REACT_APP_BACKEND_URL}/api/pending-register`,
+        `/api/pending-register`,
         formattedData,
         { withCredentials: true }
       );

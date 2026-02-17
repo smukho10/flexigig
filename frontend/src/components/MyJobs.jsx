@@ -16,7 +16,7 @@ const MyJobs = () => {
     const fetchUnfilledJobs = async () => {
       if (user && user.id) {
         try {
-          const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/unfilled-jobs/${user.id}`, { withCredentials: true });
+          const response = await axios.get(`/api/unfilled-jobs/${user.id}`, { withCredentials: true });
           setJobPosting(response.data.jobs);
         } catch (error) {
           console.error("Error fetching unfilled jobs:", error);
@@ -27,7 +27,7 @@ const MyJobs = () => {
     const fetchFilledJobs = async () => {
       if (user && user.id) {
         try {
-          const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/filled-jobs/${user.id}`, { withCredentials: true });
+          const response = await axios.get(`/api/filled-jobs/${user.id}`, { withCredentials: true });
           setAppliedJobs(response.data.jobs);
         } catch (error) {
           console.error("Error fetching filled jobs:", error);
@@ -45,10 +45,10 @@ const MyJobs = () => {
 
   const handleDelete = async (jobId) => {
     try {
-      await axios.delete(`${process.env.REACT_APP_BACKEND_URL}/api/delete-job/${jobId}`, { withCredentials: true });
-      const unfilledResponse = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/unfilled-jobs/${user.id}`, { withCredentials: true });
+      await axios.delete(`/api/delete-job/${jobId}`, { withCredentials: true });
+      const unfilledResponse = await axios.get(`/api/unfilled-jobs/${user.id}`, { withCredentials: true });
       setJobPosting(unfilledResponse.data.jobs);
-      const filledResponse = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/filled-jobs/${user.id}`, { withCredentials: true });
+      const filledResponse = await axios.get(`/api/filled-jobs/${user.id}`, { withCredentials: true });
       setAppliedJobs(filledResponse.data.jobs);
     } catch (error) {
       console.error("Failed to delete job:", error);

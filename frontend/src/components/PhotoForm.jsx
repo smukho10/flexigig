@@ -7,7 +7,6 @@ const PhotoForm = ({ data, setData }) => {
     const [lastPhoto, setLastPhoto] = useState();
     const [useCamera, setUseCamera] = useState(false)
     const photoInputRef = useRef();
-    const backendURL = process.env.REACT_APP_BACKEND_URL;
 
     // handles input component for photo
     const handleChange = async (e) => {
@@ -19,7 +18,7 @@ const PhotoForm = ({ data, setData }) => {
         formData.append("photo", file);
 
         try {
-            const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/upload`, {
+            const response = await fetch(`/upload`, {
                 method: "POST",
                 credentials: "include",
                 body: formData,
@@ -63,7 +62,7 @@ const PhotoForm = ({ data, setData }) => {
             <h1>Upload Profile Photo</h1>
             <div className="photo">
                 {data.photo ? (
-                    <img src={typeof data.photo === "string" ? `${backendURL}${data.photo}` : URL.createObjectURL(data.photo)} alt="user" />
+                    <img src={typeof data.photo === "string" ? (data.photo.startsWith("http") ? data.photo : data.photo) : URL.createObjectURL(data.photo)} alt="user" />
                 ) : (
                     <img src={DefaultAvatar} alt="default" />
                 )}

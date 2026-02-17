@@ -9,18 +9,17 @@ const MessageWidget = () => {
   const { user } = useUser(); // Get the logged-in user
   const [messages, setMessages] = useState([]);
   const [senderDetails, setSenderDetails] = useState({});
-  const backendURL = process.env.REACT_APP_BACKEND_URL;
 
   // Fallback profile picture
   const profilePic = user?.userImage
-    ? `${backendURL}${user.userImage.startsWith("/") ? "" : "/"}${user.userImage}`
+    ? (user.userImage.startsWith("http") ? user.userImage : user.userImage)
     : DefaultAvatar; // fallback avatar
 
   // Fetch the latest messages
   useEffect(() => {
     if (user) {
       axios
-        .get(`${process.env.REACT_APP_BACKEND_URL}/api/latest-messages/${user.id}`, { withCredentials: true }) // Use the user ID in the route
+        .get(`/api/latest-messages/${user.id}`, { withCredentials: true }) // Use the user ID in the route
         .then((response) => {
           setMessages(response.data.messages);
           fetchSenderDetails(response.data.messages);
@@ -41,7 +40,7 @@ const MessageWidget = () => {
     messages.forEach((message) => {
       if (!senderDetails[message.sender_id]) {
         axios
-          .get(`${process.env.REACT_APP_BACKEND_URL}/api/user-details/${message.sender_id}`, { withCredentials: true })
+          .get(`/api/user-details/${message.sender_id}`, { withCredentials: true })
           .then((response) => {
             const { type, firstName, lastName, businessName } = response.data.userDetails;
             details[message.sender_id] = type === "worker" ? `${firstName} ${lastName}` : businessName;

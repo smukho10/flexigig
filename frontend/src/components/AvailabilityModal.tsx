@@ -8,7 +8,7 @@ const AvailabilityModal = ({ user_id, onClose }) => {
 
   useEffect(() => {
     axios
-      .get(`${process.env.REACT_APP_BACKEND_URL}/api/my-calendar/${user_id}`, { withCredentials: true })
+      .get(`/api/my-calendar/${user_id}`, { withCredentials: true })
       .then((response) => {
         setAvailability(response.data);
       })

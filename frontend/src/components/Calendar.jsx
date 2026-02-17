@@ -44,7 +44,7 @@ const EventCalendar = () => {
     const user_id = user.id;
 
     axios
-      .get(`${process.env.REACT_APP_BACKEND_URL}/api/my-calendar/${user_id}`, { withCredentials: true })
+      .get(`/api/my-calendar/${user_id}`, { withCredentials: true })
       .then((response) => {
         const formattedEvents = response.data.map((event) => {
           const startDateTime = `${event.startdate} ${event.starttime}`;
@@ -124,7 +124,7 @@ const EventCalendar = () => {
     const user_id = user.id;
 
     axios
-      .post(`${process.env.REACT_APP_BACKEND_URL}/api/my-calendar`, {
+      .post(`/api/my-calendar`, {
         user_id,
         startDate: newEvent.start,
         endDate: newEvent.end,
@@ -155,7 +155,7 @@ const EventCalendar = () => {
     const eventIdToDelete = selectedEvent.id;
 
     axios
-      .delete(`${process.env.REACT_APP_BACKEND_URL}/api/my-calendar/${eventIdToDelete}`, { withCredentials: true })
+      .delete(`/api/my-calendar/${eventIdToDelete}`, { withCredentials: true })
       .then(() => {
         fetchUpdatedEvents();
         setSelectedEvent(null);

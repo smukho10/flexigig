@@ -28,7 +28,7 @@ const Messages = () => {
     useEffect(() => {
         if (user) {
             axios
-                .get(`${process.env.REACT_APP_BACKEND_URL}/api/conversation-partners/${user.id}`, { withCredentials: true })
+                .get(`/api/conversation-partners/${user.id}`, { withCredentials: true })
                 .then((response) => {
                     setConversationPartners(response.data.partners);
                     fetchPartnerDetails(response.data.partners);
@@ -60,7 +60,7 @@ const Messages = () => {
         partners.forEach((partnerId) => {
             if (!partnerDetails[partnerId]) {
                 axios
-                    .get(`${process.env.REACT_APP_BACKEND_URL}/api/user-details/${partnerId}`, { withCredentials: true })
+                    .get(`/api/user-details/${partnerId}`, { withCredentials: true })
                     .then((response) => {
                         const { type, firstName, lastName, businessName } = response.data.userDetails;
                         newDetails[partnerId] = type === "worker" ? `${firstName} ${lastName}` : businessName;
@@ -77,7 +77,7 @@ const Messages = () => {
     // Fetch message history for the selected partner
     const fetchMessageHistory = (partnerId) => {
         axios
-            .get(`${process.env.REACT_APP_BACKEND_URL}/api/message-history`, {
+            .get(`/api/message-history`, {
                 params: { senderId: user.id, receiverId: partnerId },
             }, { withCredentials: true })
             .then((response) => {
@@ -94,7 +94,7 @@ const Messages = () => {
         if (!newMessage.trim()) return;
 
         axios
-            .post(`${process.env.REACT_APP_BACKEND_URL}/api/send-message`, {
+            .post(`/api/send-message`, {
                 senderId: user.id,
                 receiverId: selectedPartner,
                 content: newMessage,
