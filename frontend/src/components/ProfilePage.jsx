@@ -56,10 +56,6 @@ const ProfilePage = () => {
   useEffect(() => {
     console.log("Profile fetch triggered, user:", user);
     if (user) {
-axios.get(
-  `/api/profile/${user.id}${selectedWorkerId ? `?workerId=${selectedWorkerId}` : ""}`,
-  { withCredentials: true }
-)
       axios.get(
         `/api/profile/${user.id}${selectedWorkerId ? `?workerId=${selectedWorkerId}` : ""}`,
         { withCredentials: true }
@@ -78,21 +74,6 @@ axios.get(
     }
   }, [submit, selectedWorkerId, user?.id]);
 
-useEffect(() => {
-  if (!user?.isbusiness && user?.id) {
-    axios
-      .get(`/api/profile/worker-profiles/${user.id}`, { withCredentials: true })
-      .then((res) => {
-        setWorkerProfiles(res.data);
-        if (res.data.length > 0 && !selectedWorkerId) {
-          // Only set initial profile if no profile is selected yet
-          setSelectedWorkerId(res.data[0].id);
-          setWorkerId(res.data[0].id);
-        }
-      })
-      .catch((err) => console.error("Error fetching worker profiles:", err));
-  }
-}, [user?.id]);
   useEffect(() => {
     if (!user?.isbusiness && user?.id) {
       axios
@@ -117,15 +98,6 @@ useEffect(() => {
         })
         .catch((error) => {
           console.error("Error fetching worker skills by user id", error);
-        });
-
-      axios
-        .get(`/api/get-worker-traits-id/${workerId}`, { withCredentials: true })
-        .then((response) => {
-          setWorkerTraits(response.data);
-        })
-        .catch((error) => {
-          console.error("Error fetching worker traits by user id", error);
         });
 
       axios
@@ -154,19 +126,6 @@ useEffect(() => {
       });
   };
 
-  const fetchSkills = () => {
-    if (!user.isbusiness) {
-      axios
-        .get(`/api/get-worker-skills-id/${workerId}`, { withCredentials: true })
-        .then((response) => {
-          setWorkerSkills(response.data);
-        })
-        .catch((error) => {
-          console.error("Error fetching worker skills by user id", error);
-        });
-      setSelectedSkills(workerSkills);
-    }
-  }
   const fetchSkills = async () => {
     if (!user.isbusiness && workerId) {
       try {
@@ -184,26 +143,11 @@ useEffect(() => {
     }
   };
 
-  const fetchTraits = () => {
-    if (!user.isbusiness) {
-      axios
-        .get(`/api/get-worker-traits-id/${workerId}`, { withCredentials: true })
-        .then((response) => {
-          setWorkerTraits(response.data);
-        })
-        .catch((error) => {
-          console.error("Error fetching worker traits by user id", error);
-        });
-      setSelectedTraits(workerTraits);
-    }
-  }
-
-
   const fetchExperiences = async () => {
     if (!user.isbusiness && workerId) {
       try {
         const response = await axios.get(
-          `${process.env.REACT_APP_BACKEND_URL}/api/get-worker-experiences-id/${workerId}`,
+          `/api/get-worker-experiences-id/${workerId}`,
           { withCredentials: true }
         );
         setWorkerExp(response.data);
@@ -224,15 +168,6 @@ useEffect(() => {
       })
       .catch((error) => {
         console.error("Error fetching skills:", error);
-      });
-
-    axios
-      .get(`/api/get-all-traits`, { withCredentials: true })
-      .then((response) => {
-        setTraits(response.data);
-      })
-      .catch((error) => {
-        console.error("Error fetching traits:", error);
       });
 
     axios
@@ -320,7 +255,6 @@ useEffect(() => {
     setPhotoError(null);
 
     try {
-      // Step 1: Get signed upload URL from backend
       const uploadUrlRes = await axios.post(
         `/api/profile/upload-photo-url/${user.id}`,
         { contentType: photoFile.type },
@@ -329,7 +263,6 @@ useEffect(() => {
 
       const { uploadUrl, key } = uploadUrlRes.data;
 
-      // Step 2: Upload file to R2 using signed URL
       await fetch(uploadUrl, {
         method: "PUT",
         headers: { "Content-Type": photoFile.type },
