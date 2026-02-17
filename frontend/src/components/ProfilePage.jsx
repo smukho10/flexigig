@@ -4,10 +4,40 @@ import { useNavigate } from "react-router-dom";
 import "../styles/ProfilePage.css";
 import { useUser } from "./UserContext";
 import ProfileScheduler from "./ProfileScheduler";
+import Modal from "./Modal";
 
 const ProfilePage = () => {
   const { user, setUser, logout } = useUser();
   const [isEditing, setIsEditing] = useState(false);
+
+  // Modal state
+  const [modal, setModal] = useState({ isOpen: false, title: "", message: "", type: "info", onConfirm: null, onCancel: null, showInput: false, inputPlaceholder: "" });
+
+  const showAlert = (title, message, type = "info") => {
+    setModal({
+      isOpen: true, title, message, type,
+      onConfirm: () => setModal((m) => ({ ...m, isOpen: false })),
+      onCancel: null, showInput: false, inputPlaceholder: "",
+    });
+  };
+
+  const showConfirm = (title, message, onConfirm, type = "danger") => {
+    setModal({
+      isOpen: true, title, message, type,
+      onConfirm: () => { setModal((m) => ({ ...m, isOpen: false })); onConfirm(); },
+      onCancel: () => setModal((m) => ({ ...m, isOpen: false })),
+      showInput: false, inputPlaceholder: "",
+    });
+  };
+
+  const showPrompt = (title, message, onConfirm, placeholder = "") => {
+    setModal({
+      isOpen: true, title, message, type: "info",
+      onConfirm: (value) => { setModal((m) => ({ ...m, isOpen: false })); onConfirm(value); },
+      onCancel: () => setModal((m) => ({ ...m, isOpen: false })),
+      showInput: true, inputPlaceholder: placeholder,
+    });
+  };
   const [isEditingSkills, setIsEditingSkills] = useState(false);
   const [isEditingExp, setIsEditingExp] = useState(false);
   const [editedUser, setEditedUser] = useState();
@@ -275,7 +305,7 @@ const ProfilePage = () => {
 
       setPhotoError(null);
       setPhotoFile(null);
-      alert("Profile photo uploaded successfully!");
+      showAlert("Success", "Profile photo uploaded successfully!", "success");
 
       await fetchProfile();
       window.dispatchEvent(new Event("profilePhotoUpdated"));
@@ -341,10 +371,10 @@ const ProfilePage = () => {
       }));
 
       setIsEditing(false);
-      alert("Profile updated successfully!");
+      showAlert("Success", "Profile updated successfully!", "success");
     } catch (error) {
       console.error("Update failed:", error.response || error);
-      alert("Failed to update profile. Please try again.");
+      showAlert("Error", "Failed to update profile. Please try again.", "danger");
     }
   };
 
@@ -369,11 +399,11 @@ const ProfilePage = () => {
 
       await Promise.all(addPromises);
       await fetchSkills();
-      alert("Skills updated successfully!");
+      showAlert("Success", "Skills updated successfully!", "success");
       setIsEditingSkills(false);
     } catch (error) {
       console.error("Error updating skills:", error);
-      alert("Failed to update skills. Please try again.");
+      showAlert("Error", "Failed to update skills. Please try again.", "danger");
     } finally {
       setIsSaving(false);
     }
@@ -400,54 +430,55 @@ const ProfilePage = () => {
 
       await Promise.all(addPromises);
       await fetchExperiences();
-      alert("Experience updated successfully!");
+      showAlert("Success", "Experience updated successfully!", "success");
       setIsEditingExp(false);
     } catch (error) {
       console.error("Error updating experiences:", error);
-      alert("Failed to update experience. Please try again.");
+      showAlert("Error", "Failed to update experience. Please try again.", "danger");
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleDeleteProfile = async () => {
+  const handleDeleteProfile = () => {
     if (workerProfiles.length <= 1) {
-      alert("Cannot delete the last profile. You must have at least one profile.");
+      showAlert("Cannot Delete", "You must have at least one profile.", "danger");
       return;
     }
 
     const currentProfile = workerProfiles.find((p) => p.id === selectedWorkerId);
     const profileName = currentProfile ? currentProfile.profile_name : "this profile";
 
-    const confirmed = window.confirm(
-      `Are you sure you want to delete "${profileName}"?\n\nThis will also delete all skills and experiences associated with this profile.\n\nThis action cannot be undone.`
+    showConfirm(
+      "Delete Profile",
+      `Are you sure you want to delete "${profileName}"?\n\nThis will also delete all skills and experiences associated with this profile.\n\nThis action cannot be undone.`,
+      async () => {
+        try {
+          await axios.delete(
+            `${process.env.REACT_APP_BACKEND_URL}/api/profile/delete-worker-profile/${selectedWorkerId}`,
+            { withCredentials: true }
+          );
+
+          const res = await axios.get(
+            `${process.env.REACT_APP_BACKEND_URL}/api/profile/worker-profiles/${user.id}`,
+            { withCredentials: true }
+          );
+
+          setWorkerProfiles(res.data);
+
+          if (res.data.length > 0) {
+            setSelectedWorkerId(res.data[0].id);
+            setWorkerId(res.data[0].id);
+          }
+
+          showAlert("Success", "Profile deleted successfully!", "success");
+        } catch (error) {
+          console.error("Error deleting profile:", error);
+          showAlert("Error", "Failed to delete profile. Please try again.", "danger");
+        }
+      },
+      "danger"
     );
-
-    if (!confirmed) return;
-
-    try {
-      await axios.delete(
-        `${process.env.REACT_APP_BACKEND_URL}/api/profile/delete-worker-profile/${selectedWorkerId}`,
-        { withCredentials: true }
-      );
-
-      const res = await axios.get(
-        `${process.env.REACT_APP_BACKEND_URL}/api/profile/worker-profiles/${user.id}`,
-        { withCredentials: true }
-      );
-
-      setWorkerProfiles(res.data);
-
-      if (res.data.length > 0) {
-        setSelectedWorkerId(res.data[0].id);
-        setWorkerId(res.data[0].id);
-      }
-
-      alert("Profile deleted successfully!");
-    } catch (error) {
-      console.error("Error deleting profile:", error);
-      alert("Failed to delete profile. Please try again.");
-    }
   };
 
   const handleSkillSelect = (skillObj) => {
@@ -955,24 +986,35 @@ const ProfilePage = () => {
               <button
                 className="btn-success"
                 disabled={workerProfiles.length >= 3}
-                onClick={async () => {
-                  const name = window.prompt("Enter new profile name:");
-                  if (!name) return;
-                  await axios.post(
-                    `${process.env.REACT_APP_BACKEND_URL}/api/profile/create-worker-profile/${user.id}`,
-                    { profileName: name },
-                    { withCredentials: true }
+                onClick={() => {
+                  showPrompt(
+                    "Add Profile",
+                    "Enter a name for your new profile:",
+                    async (name) => {
+                      try {
+                        await axios.post(
+                          `${process.env.REACT_APP_BACKEND_URL}/api/profile/create-worker-profile/${user.id}`,
+                          { profileName: name },
+                          { withCredentials: true }
+                        );
+                        const res = await axios.get(
+                          `${process.env.REACT_APP_BACKEND_URL}/api/profile/worker-profiles/${user.id}`,
+                          { withCredentials: true }
+                        );
+                        setWorkerProfiles(res.data);
+                        if (res.data.length > 0) {
+                          const newProfile = res.data[res.data.length - 1];
+                          setSelectedWorkerId(newProfile.id);
+                          setWorkerId(newProfile.id);
+                        }
+                        showAlert("Success", "Profile created successfully!", "success");
+                      } catch (error) {
+                        console.error("Error creating profile:", error);
+                        showAlert("Error", "Failed to create profile. Please try again.", "danger");
+                      }
+                    },
+                    "e.g., Construction Profile"
                   );
-                  const res = await axios.get(
-                    `${process.env.REACT_APP_BACKEND_URL}/api/profile/worker-profiles/${user.id}`,
-                    { withCredentials: true }
-                  );
-                  setWorkerProfiles(res.data);
-                  if (res.data.length > 0) {
-                    const newProfile = res.data[res.data.length - 1];
-                    setSelectedWorkerId(newProfile.id);
-                    setWorkerId(newProfile.id);
-                  }
                 }}
               >
                 + Add Profile
@@ -1057,6 +1099,19 @@ const ProfilePage = () => {
           </div>
         </>
       )}
+
+      <Modal
+        isOpen={modal.isOpen}
+        title={modal.title}
+        message={modal.message}
+        type={modal.type}
+        onConfirm={modal.onConfirm}
+        onCancel={modal.onCancel}
+        confirmText={modal.showInput ? "Create" : modal.onCancel ? "Yes, Delete" : "OK"}
+        cancelText="Cancel"
+        showInput={modal.showInput}
+        inputPlaceholder={modal.inputPlaceholder}
+      />
     </div>
   );
 };
