@@ -12,19 +12,19 @@ const ProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false);
 
   const [isEditingSkills, setIsEditingSkills] = useState(false);
-  const [isEditingTraits, setIsEditingTraits] = useState(false);
+
   const [isEditingExp, setIsEditingExp] = useState(false);
   const [editedUser, setEditedUser] = useState();
   const [submit, setSubmit] = useState(false);
   const [skills, setSkills] = useState([]);
-  const [traits, setTraits] = useState([]);
+
   const [experiences, setExperiences] = useState([]);
 
   const [workerId, setWorkerId] = useState();
   const [workerSkills, setWorkerSkills] = useState([]);
   const [selectedSkills, setSelectedSkills] = useState([]);
-  const [workerTraits, setWorkerTraits] = useState([]);
-  const [selectedTraits, setSelectedTraits] = useState([]);
+  
+
   const [workerExp, setWorkerExp] = useState([]);
   const [selectedExp, setSelectedExp] = useState([]);
   const [workerProfiles, setWorkerProfiles] = useState([]);
@@ -106,14 +106,6 @@ useEffect(() => {
           console.error("Error fetching worker skills by user id", error);
         });
 
-      axios
-        .get(`${process.env.REACT_APP_BACKEND_URL}/api/get-worker-traits-id/${workerId}`, { withCredentials: true })
-        .then((response) => {
-          setWorkerTraits(response.data);
-        })
-        .catch((error) => {
-          console.error("Error fetching worker traits by user id", error);
-        });
 
       axios
         .get(`${process.env.REACT_APP_BACKEND_URL}/api/get-worker-experiences-id/${workerId}`, { withCredentials: true })
@@ -155,20 +147,6 @@ useEffect(() => {
     }
   }
 
-  const fetchTraits = () => {
-    if (!user.isbusiness) {
-      axios
-        .get(`${process.env.REACT_APP_BACKEND_URL}/api/get-worker-traits-id/${workerId}`, { withCredentials: true })
-        .then((response) => {
-          setWorkerTraits(response.data);
-        })
-        .catch((error) => {
-          console.error("Error fetching worker traits by user id", error);
-        });
-      setSelectedTraits(workerTraits);
-    }
-  }
-
   const fetchExperiences = () => {
     if (!user.isbusiness) {
       axios
@@ -191,15 +169,6 @@ useEffect(() => {
       })
       .catch((error) => {
         console.error("Error fetching skills:", error);
-      });
-
-    axios
-      .get(`${process.env.REACT_APP_BACKEND_URL}/api/get-all-traits`, { withCredentials: true })
-      .then((response) => {
-        setTraits(response.data);
-      })
-      .catch((error) => {
-        console.error("Error fetching traits:", error);
       });
 
     axios
@@ -247,10 +216,6 @@ useEffect(() => {
     setIsEditingSkills(!isEditingSkills);
   }
 
-  const toggleEditTraits = () => {
-    fetchTraits();
-    setIsEditingTraits(!isEditingTraits);
-  }
 
   const toggleEditExp = () => {
     fetchExperiences();
@@ -416,25 +381,6 @@ useEffect(() => {
     toggleEditSkills();
   };
 
-  const handleSubmitTraits = async () => {
-    try {
-      await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/clear-worker-traits/${workerId}`, { withCredentials: true });
-    } catch (error) {
-      console.error("Error clearing user traits:", error);
-    }
-
-    const submitted = selectedTraits;
-    setWorkerTraits(selectedTraits);
-    for (const s of submitted) {
-      try {
-        axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/add-worker-trait-ids/${workerId}/${s.trait_id}`, { withCredentials: true });
-      } catch (error) {
-        console.error("Error adding trait to user:", error);
-      }
-    }
-
-    toggleEditTraits();
-  };
 
   const handleSubmitExp = async () => {
     try {
@@ -466,7 +412,7 @@ useEffect(() => {
     const profileName = currentProfile ? currentProfile.profile_name : "this profile";
 
     const confirmed = window.confirm(
-      `Are you sure you want to delete "${profileName}"?\n\nThis will also delete all skills, traits, and experiences associated with this profile.\n\nThis action cannot be undone.`
+      `Are you sure you want to delete "${profileName}"?\n\nThis will also delete all skills and experiences associated with this profile.\n\nThis action cannot be undone.`
     );
 
     if (!confirmed) return;
@@ -506,13 +452,6 @@ useEffect(() => {
     }
   }
 
-  const handleTraitSelect = (traitObj) => {
-    if (!selectedTraits.some(o => o.trait_name === traitObj.trait_name)) {
-      setSelectedTraits([...selectedTraits, traitObj]);
-    } else {
-      setSelectedTraits(selectedTraits.filter(item => item.trait_name !== traitObj.trait_name));
-    }
-  }
 
   const handleExpSelect = (expObj) => {
     if (!selectedExp.some(o => o.experience_name === expObj.experience_name)) {
@@ -546,29 +485,6 @@ useEffect(() => {
     )
   }
 
-  if (isEditingTraits) {
-    return (
-      <div className="user-profile-form">
-        <form onSubmit={handleSubmit} className="form">
-          <div className="form-sections-container">
-            <div className="form-section worker-section">
-              <h1>Please Select Applicable Traits</h1>
-              <ul>
-                {traits.map((traitObj) => <button className={`form-item-button ${selectedTraits.some(o => o.trait_name === traitObj.trait_name) ? "form-item-button-selected" : ""}`}
-                  onClick={() => handleTraitSelect(traitObj)}>{traitObj.trait_name}</button>)}
-              </ul>
-            </div>
-          </div>
-          <button type="submit" onClick={handleSubmitTraits} className="form-button">
-            Save Traits
-          </button>
-          <button type="button" onClick={toggleEditTraits} className="form-button">
-            Cancel
-          </button>
-        </form>
-      </div>
-    )
-  }
 
   if (isEditingExp) {
     return (
@@ -1182,17 +1098,6 @@ useEffect(() => {
             </div>
             <p>{user.experiences && user.experiences.join(", ")}</p>
             <button className="edit-button" onClick={toggleEditExp}>Edit Experiences</button>
-          </div>
-
-          <div className="profile-container">
-            <div className="profile-section">
-              <h2>Traits</h2>
-              <ul>
-                {workerTraits.map((traitObj) => <div className="displayed-items">{traitObj.trait_name}</div>)}
-              </ul>
-            </div>
-            <p>{user.traits && user.traits.join(", ")}</p>
-            <button className="edit-button" onClick={toggleEditTraits}>Edit Traits</button>
           </div>
 
           <div className="profile-container">

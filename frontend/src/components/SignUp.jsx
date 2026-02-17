@@ -4,7 +4,6 @@ import AccountForm from "./AccountForm";
 import PhotoForm from "./PhotoForm";
 import SkillsForm from "./SkillsForm";
 import ExperienceForm from "./ExperienceForm";
-import TraitsForm from "./TraitsForm";
 import LocationForm from "./LocationForm";
 import EmployerAccountForm from "./EmployerAccountForm"
 import { useState } from "react";
@@ -25,7 +24,6 @@ const SignUp = ({ data, setData, onFinish }) => {
         <PhotoForm data={data} setData={setData} />,
         <SkillsForm data={data} setData={setData} />,
         <ExperienceForm data={data} setData={setData} />,
-        <TraitsForm data={data} setData={setData} />,
         <LocationForm data={data} setData={setData} />,
     ];
 
