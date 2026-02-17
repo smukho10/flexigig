@@ -248,6 +248,8 @@ const ProfilePage = () => {
   const toggleEdit = () => {
     fetchProfile();
     setIsEditing(!isEditing);
+    const scrollContainer = document.querySelector('.content-area');
+      if (scrollContainer) scrollContainer.scrollTop = 0;
   };
 
   const toggleEditSkills = () => {
@@ -383,6 +385,8 @@ const ProfilePage = () => {
       }));
 
       setIsEditing(false);
+      const scrollContainer = document.querySelector('.content-area');
+      if (scrollContainer) scrollContainer.scrollTop = 0;
       showAlert("Success", "Profile updated successfully!", "success");
     } catch (error) {
       console.error("Update failed:", error.response || error);
