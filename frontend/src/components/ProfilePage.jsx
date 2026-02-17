@@ -71,9 +71,11 @@ const ProfilePage = () => {
 
   useEffect(() => {
     if (user) {
+      const currentWorker = workerProfiles.find(p => p.id === selectedWorkerId);
       setEditedUser({
         ...user,
         skills: user.skills ? user.skills : [],
+        profile_name: user.profile_name || (currentWorker ? currentWorker.profile_name : ""),
         worker_phone_number: user.phone_number,
         worker_street_address: user.street_address,
         worker_city: user.city,
@@ -143,13 +145,23 @@ const ProfilePage = () => {
 
   const fetchProfile = () => {
     axios
-      .get(`${process.env.REACT_APP_BACKEND_URL}/api/profile/${user.id}`, { withCredentials: true })
+      .get(`${process.env.REACT_APP_BACKEND_URL}/api/profile/${user.id}${selectedWorkerId ? `?workerId=${selectedWorkerId}` : ""}`, { withCredentials: true })
       .then((response) => {
         let merge = {
           ...response.data.profileData,
           ...response.data.businessData,
         };
-        setEditedUser(merge);
+        const currentWorker = workerProfiles.find(p => p.id === selectedWorkerId);
+        setEditedUser({
+          ...merge,
+          skills: merge.skills ? merge.skills : [],
+          profile_name: merge.profile_name || (currentWorker ? currentWorker.profile_name : ""),
+          worker_phone_number: merge.phone_number,
+          worker_street_address: merge.street_address,
+          worker_city: merge.city,
+          worker_province: merge.province,
+          worker_postal_code: merge.postal_code,
+        });
       })
       .catch((error) => {
         console.error("Error fetching user profile:", error);
