@@ -37,34 +37,53 @@ const SEED_EVENTS = [
   },
 ];
 
-const STORAGE_KEY = "flexigig_global_scheduler_events";
-
-export default function ProfileScheduler() {
+export default function ProfileScheduler({ selectedProfileId, profiles }) {
   const [view, setView] = useState(Views.WEEK);
   const [date, setDate] = useState(new Date());
 
-  // Initialize events from LocalStorage or Fallback to Seed
-  const [events, setEvents] = useState(() => {
+  // Determine storage key based on profile ID
+  const getStorageKey = useCallback(() => {
+    return selectedProfileId ? `flexigig_scheduler_events_${selectedProfileId}` : "flexigig_global_scheduler_events";
+  }, [selectedProfileId]);
+
+  // Get current profile name
+  const currentProfileName = profiles?.find(p => p.id === selectedProfileId)?.profile_name || "Profile Scheduler";
+
+  // Initialize events
+  const [events, setEvents] = useState([]);
+
+  // Load events when selectedProfileId changes
+  useEffect(() => {
+    const key = getStorageKey();
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const stored = localStorage.getItem(key);
       if (stored) {
-        // Need to parse date strings back to Date objects
-        return JSON.parse(stored).map(evt => ({
+        const parsedEvents = JSON.parse(stored).map(evt => ({
           ...evt,
           start: new Date(evt.start),
           end: new Date(evt.end)
         }));
+        setEvents(parsedEvents);
+      } else {
+        // If no events for this profile, start with empty or seed?
+        // Let's start with empty for new profiles to ensure separation, 
+        // effectively resetting the schedule for a new profile.
+        // Or if it is the very first load and no ID is provided, maybe seed.
+        // For now, let's just default to empty array for new profiles 
+        // so they don't inherit the global seed events which might be confusing.
+        setEvents([]);
       }
     } catch (e) {
       console.error("Failed to parse events from local storage", e);
+      setEvents([]);
     }
-    return SEED_EVENTS;
-  });
+  }, [selectedProfileId, getStorageKey]);
 
   // Save to LocalStorage whenever events change
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
-  }, [events]);
+    const key = getStorageKey();
+    localStorage.setItem(key, JSON.stringify(events));
+  }, [events, getStorageKey]);
 
   // Modal State
   const [showModal, setShowModal] = useState(false);
@@ -160,12 +179,12 @@ export default function ProfileScheduler() {
   return (
     <div className="profile-scheduler">
       <div className="scheduler-header">
-        <div className="scheduler-title">Scheduler</div>
+        <div className="scheduler-title">Schedule for {currentProfileName}</div>
       </div>
 
       <div className="scheduler-calendar">
         <BigCalendar
-          key={date.toString() + view} // Force remount on navigation to fix rendering glitch
+          key={date.toString() + view + selectedProfileId} // Force remount on navigation or profile switch to fix rendering glitch
           localizer={localizer}
           events={events}
           startAccessor="start"
