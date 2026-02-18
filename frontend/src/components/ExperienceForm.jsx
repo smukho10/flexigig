@@ -12,7 +12,7 @@ const ExperienceForm = ({ data, setData }) => {
     useEffect(() => {
         const getAllExperiences = async () => {
             try {
-                const res = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/get-all-experiences`, { withCredentials: true });
+                const res = await axios.get(`/api/get-all-experiences`, { withCredentials: true });
                 const resData = res.data;
 
                 if (resData && typeof resData === "object") {

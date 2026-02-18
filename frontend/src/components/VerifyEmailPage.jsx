@@ -14,7 +14,7 @@ const VerifyEmailPage = (setUserData) => {
 
   useEffect(() => {
     axios
-      .get(`${process.env.REACT_APP_BACKEND_URL}/api/verify/${token}`, { withCredentials: true })
+      .get(`/api/verify/${token}`, { withCredentials: true })
       .then((response) => {
         // Set verification status based on the response
         setVerificationStatus({

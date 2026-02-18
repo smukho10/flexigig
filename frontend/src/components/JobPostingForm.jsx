@@ -68,7 +68,7 @@ const JobPostingForm = ({ job, setDone }) => {
             postalCode: jobPost.jobPostalCode,
         };
         const updatedJobData = { ...jobPost, locationData };
-        const apiUrl = editing ? `${process.env.REACT_APP_BACKEND_URL}/api/edit-job/${jobPost.job_id}` : `${process.env.REACT_APP_BACKEND_URL}/api/post-job`;
+        const apiUrl = editing ? `/api/edit-job/${jobPost.job_id}` : `/api/post-job`;
 
         try {
             await axios[editing ? "patch" : "post"](apiUrl, updatedJobData, {

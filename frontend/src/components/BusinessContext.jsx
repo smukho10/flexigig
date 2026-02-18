@@ -16,7 +16,7 @@ export const BusinessProvider = ({ children }) => {
     const fetchBusiness = async () => {
       if (user?.isbusiness) {
         try {
-          const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/business/${user.id}`, { credentials: "include" });
+          const res = await fetch(`/api/business/${user.id}`, { credentials: "include" });
           if (res.ok) {
             const data = await res.json();
             setBusiness(data);

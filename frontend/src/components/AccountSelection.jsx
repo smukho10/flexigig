@@ -20,7 +20,7 @@ const AccountSelection = () => {
         if (oauth === 'google') {
             setIsOAuth(true);
             // Fetch pending OAuth data
-            axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/auth/google/pending`, { withCredentials: true })
+            axios.get(`/api/auth/google/pending`, { withCredentials: true })
                 .then(res => {
                     if (res.data.pending) {
                         setOauthData(res.data);
@@ -44,7 +44,7 @@ const AccountSelection = () => {
 
         try {
             const response = await axios.post(
-                `${process.env.REACT_APP_BACKEND_URL}/api/auth/google/complete`,
+                `/api/auth/google/complete`,
                 {
                     accountType,
                     firstName: oauthData.firstName,

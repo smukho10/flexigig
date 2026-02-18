@@ -19,7 +19,7 @@ const JobPosting = () => {
         const fetchJobs = async () => {
             if (user && user.id) {
                 try {
-                    const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/posted-jobs/${user.id}`, { withCredentials: true });
+                    const response = await axios.get(`/api/posted-jobs/${user.id}`, { withCredentials: true });
                     setJobs(response.data.jobs.sort(((a, b) => {
                         return a.jobtitle.localeCompare(b.jobtitle)
                     })));
@@ -43,10 +43,10 @@ const JobPosting = () => {
         } else {
             // remove job after confirmation
             try {
-                await axios.delete(`${process.env.REACT_APP_BACKEND_URL}/api/delete-job/${removeJob.job_id}`, { withCredentials: true });
+                await axios.delete(`/api/delete-job/${removeJob.job_id}`, { withCredentials: true });
                 setRemoveJob(false) // clear selected job
                 // update jobs list
-                const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/posted-jobs/${user.id}`, { withCredentials: true });
+                const response = await axios.get(`/api/posted-jobs/${user.id}`, { withCredentials: true });
                 setJobs(response.data.jobs.sort(((a, b) => {
                     return a.jobtitle.localeCompare(b.jobtitle)
                 })));

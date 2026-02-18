@@ -14,7 +14,7 @@ const PasswordResetInitiation = () => {
   const handleInitiatePasswordReset = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/initiate-password-reset`, { email }, { withCredentials: true });
+      const response = await axios.post(`/api/initiate-password-reset`, { email }, { withCredentials: true });
       setMessage(response.data.message);
     } catch (error) {
       setMessage(error.response?.data?.message || 'Error initiating password reset');

@@ -16,7 +16,7 @@ export const WorkerProvider = ({ children }) => {
         const fetchWorker = async () => {
             if (user && !user.isbusiness) {
                 try {
-                    const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/worker/${user.id}`, { credentials: "include" });
+                    const res = await fetch(`/api/worker/${user.id}`, { credentials: "include" });
                     if (res.ok) {
                         const data = await res.json();
                         setWorker(data);

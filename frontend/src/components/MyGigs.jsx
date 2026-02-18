@@ -35,7 +35,7 @@ const MyGigs = () => {
 
       if (user && user.id && approvedJobIds.length > 0) {
         // Fetch all applied jobs and filter for approved ones
-        axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/applied-jobs/${user.id}`, { withCredentials: true })
+      axios.get(`/api/applied-jobs/${user.id}`, { withCredentials: true })
           .then(res => {
             const approved = res.data.jobs.filter(job => 
               approvedJobIds.includes(job.job_id.toString())
@@ -127,7 +127,7 @@ const MyGigs = () => {
       }
 
       await axios.post(
-        `${process.env.REACT_APP_BACKEND_URL}/api/reviews`,
+        `/api/reviews`,
         {
           reviewer_id,
           reviewee_id,

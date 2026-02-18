@@ -20,7 +20,7 @@ export const UserProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/logout`, {
+      await fetch(`/api/logout`, {
         method: "POST",
         credentials: "include",
       });
@@ -37,7 +37,7 @@ export const UserProvider = ({ children }) => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/me`, {
+        const res = await fetch(`/api/me`, {
           credentials: "include", // if using cookies/session
         });
 
