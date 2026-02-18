@@ -76,7 +76,7 @@ const SignIn = () => {
           type="button"
           className="google-signin-btn"
           onClick={() => {
-            window.location.href = `/api/auth/google`;
+            window.location.href = `${process.env.REACT_APP_BACKEND_URL}/api/auth/google`;
           }}
         >
           <svg viewBox="0 0 24 24" width="20" height="20">

@@ -62,7 +62,7 @@ const EmailForm = ({ data, setData, setIsDone }) => {
     };
 
     const handleGoogleSignUp = () => {
-        window.location.href = `/api/auth/google`;
+        window.location.href = `${process.env.REACT_APP_BACKEND_URL}/api/auth/google`;
     };
 
     return (
