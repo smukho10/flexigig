@@ -17,15 +17,19 @@ const AccountSelection = () => {
 
     useEffect(() => {
         const oauth = searchParams.get('oauth');
+        const preSelectedAccountType = searchParams.get('accountType');
         if (oauth === 'google') {
             setIsOAuth(true);
-            // Fetch pending OAuth data
             axios.get(`/api/auth/google/pending`, { withCredentials: true })
                 .then(res => {
                     if (res.data.pending) {
-                        setOauthData(res.data);
+                        const data = { ...res.data, preSelectedAccountType };
+                        setOauthData(data);
+                        // If account type was pre-selected (from Register), auto-proceed - no second selection
+                        if (preSelectedAccountType === 'Worker' || preSelectedAccountType === 'Employer') {
+                            handleOAuthAccountSelection(preSelectedAccountType, res.data);
+                        }
                     } else {
-                        // No pending OAuth data, redirect to signin
                         navigate('/signin');
                     }
                 })
@@ -36,8 +40,9 @@ const AccountSelection = () => {
         }
     }, [searchParams, navigate]);
 
-    const handleOAuthAccountSelection = async (accountType) => {
-        if (!oauthData) return;
+    const handleOAuthAccountSelection = async (accountType, dataOverride) => {
+        const data = dataOverride || oauthData;
+        if (!data) return;
 
         setLoading(true);
         setError("");
@@ -47,17 +52,24 @@ const AccountSelection = () => {
                 `/api/auth/google/complete`,
                 {
                     accountType,
-                    firstName: oauthData.firstName,
-                    lastName: oauthData.lastName,
-                    businessName: accountType === 'Employer' ? `${oauthData.firstName}'s Business` : undefined
+                    firstName: data.firstName,
+                    lastName: data.lastName,
+                    businessName: accountType === 'Employer' ? `${(data.firstName || 'User')}'s Business` : undefined
                 },
                 { withCredentials: true }
             );
 
             if (response.data.success) {
-                localStorage.setItem("user", JSON.stringify(response.data.user));
-                setUser(response.data.user);
-                navigate('/dashboard');
+                const userData = { ...response.data.user };
+                if (response.data.workerId) userData.workerId = response.data.workerId;
+                localStorage.setItem("user", JSON.stringify(userData));
+                setUser(userData);
+                // Workers go to complete-profile to add skills/experience; Employers go to dashboard
+                if (accountType === 'Worker') {
+                    navigate('/complete-profile', { state: { workerId: response.data.workerId } });
+                } else {
+                    navigate('/dashboard');
+                }
             } else {
                 setError(response.data.message || 'Registration failed');
             }

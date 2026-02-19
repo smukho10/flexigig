@@ -29,6 +29,7 @@ import WorkerBoard from "./components/WorkerBoard";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoutes";
 import AccountSelection from './components/AccountSelection';
+import CompleteProfile from './components/CompleteProfile';
 import SearchPage from "./components/SearchPage";
 
 const App = () => {
@@ -68,6 +69,7 @@ const App = () => {
 
               {/* Protected Routes with Layout */}
               <Route element={<Layout />}>
+                <Route path="/complete-profile" element={<ProtectedRoute><CompleteProfile /></ProtectedRoute>} />
                 <Route path="/dashboard" element={<ProtectedRoute> <Dashboard /> </ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute>< ProfilePage /> </ProtectedRoute>} />
                 <Route path="/jobs-applied" element={<ProtectedRoute> <JobsApplied /> </ProtectedRoute>} />
