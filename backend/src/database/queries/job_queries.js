@@ -16,16 +16,17 @@ const insertLocation = async ({ jobStreetAddress, jobCity, jobProvince, jobPosta
   }
 };
 
-const postJob = async ({ jobTitle, jobType, jobDescription, hourlyRate, jobStart, jobEnd, location_id, user_id }) => {
+// status param added — defaults to 'open' if not provided
+const postJob = async ({ jobTitle, jobType, jobDescription, hourlyRate, jobStart, jobEnd, location_id, user_id, status = 'open' }) => {
   const jobQuery = `
     INSERT INTO jobPostings (
-      jobTitle, jobType, jobDescription, hourlyRate, jobStart, jobEnd, location_id, user_id, jobfilled
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false) 
+      jobTitle, jobType, jobDescription, hourlyRate, jobStart, jobEnd, location_id, user_id, jobfilled, status
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false, $9) 
     RETURNING *;
   `;
 
   try {
-    const jobResult = await db.query(jobQuery, [jobTitle, jobType, jobDescription, hourlyRate, jobStart, jobEnd, location_id, user_id]);
+    const jobResult = await db.query(jobQuery, [jobTitle, jobType, jobDescription, hourlyRate, jobStart, jobEnd, location_id, user_id, status]);
     return jobResult.rows[0];
   } catch (err) {
     console.error("Error posting job:", err);
@@ -33,6 +34,7 @@ const postJob = async ({ jobTitle, jobType, jobDescription, hourlyRate, jobStart
   }
 };
 
+// status now included in SELECT via jp.*  (it's already covered by the wildcard)
 const fetchPostedJobsByUserId = async (userId) => {
   const query = `
     SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode
@@ -97,9 +99,9 @@ const fetchJobByJobId = async (jobId) => {
   }
 };
 
-const updateJob = async (jobId, { jobTitle, jobType, jobDescription, hourlyRate, jobStart, jobEnd, locationData, user_id }) => {
+// status param added to updateJob
+const updateJob = async (jobId, { jobTitle, jobType, jobDescription, hourlyRate, jobStart, jobEnd, locationData, user_id, status }) => {
   try {
-
     const locationUpdateQuery = `
       UPDATE locations
       SET StreetAddress = $1, city = $2, province = $3, postalCode = $4
@@ -114,20 +116,36 @@ const updateJob = async (jobId, { jobTitle, jobType, jobDescription, hourlyRate,
       jobId
     ]);
 
-
     const jobUpdateQuery = `
       UPDATE jobPostings
-      SET jobTitle = $1, jobType = $2, jobDescription = $3, hourlyRate = $4, jobStart = $5, jobEnd = $6
-      WHERE job_id = $7 AND user_id = $8
+      SET jobTitle = $1, jobType = $2, jobDescription = $3, hourlyRate = $4, jobStart = $5, jobEnd = $6, status = $7
+      WHERE job_id = $8 AND user_id = $9
       RETURNING *;
     `;
     const result = await db.query(jobUpdateQuery, [
-      jobTitle, jobType, jobDescription, hourlyRate, jobStart, jobEnd, jobId, user_id
+      jobTitle, jobType, jobDescription, hourlyRate, jobStart, jobEnd, status, jobId, user_id
     ]);
 
     return result.rows[0];
   } catch (err) {
     console.error("Error updating job and location:", err);
+    throw err;
+  }
+};
+
+// NEW: just updates the status column for a job
+const updateJobStatus = async (jobId, status) => {
+  const query = `
+    UPDATE jobPostings
+    SET status = $1
+    WHERE job_id = $2
+    RETURNING *;
+  `;
+  try {
+    const result = await db.query(query, [status, jobId]);
+    return result.rows[0];
+  } catch (err) {
+    console.error("Error updating job status:", err);
     throw err;
   }
 };
@@ -236,8 +254,6 @@ const removeApplication = async (applicantId, jobId) => {
   }
 };
 
-
-
 module.exports = {
   postJob,
   insertLocation,
@@ -246,6 +262,7 @@ module.exports = {
   fetchFilledJobsByUserId,
   fetchJobByJobId,
   updateJob,
+  updateJobStatus,   // ← new
   deleteJobById,
   fetchAllJobs,
   applyForJob,

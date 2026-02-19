@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const job_queries = require("../queries/job_queries.js");
 
+const VALID_STATUSES = ['draft', 'open', 'in-review', 'filled', 'completed'];
+
 router.get("/posted-jobs/:userId", async (req, res) => {
   const { userId } = req.params;
   try {
@@ -9,7 +11,7 @@ router.get("/posted-jobs/:userId", async (req, res) => {
     res.json({ jobs });
   } catch (error) {
     console.error("Failed to fetch posted jobs:", error);
-    res.status(500).json({ message: "Failed to fetch unfilled jobs", error: error.message });
+    res.status(500).json({ message: "Failed to fetch posted jobs", error: error.message });
   }
 });
 
@@ -36,15 +38,21 @@ router.get("/filled-jobs/:userId", async (req, res) => {
 });
 
 router.post("/post-job", async (req, res) => {
-  console.log("Received job post data:", req.body)
+  console.log("Received job post data:", req.body);
   try {
-    const { jobStreetAddress, jobCity, jobProvince, jobPostalCode, userId, ...jobData } = req.body;
+    const { jobStreetAddress, jobCity, jobProvince, jobPostalCode, userId, status, ...jobData } = req.body;
     const locationData = { jobStreetAddress, jobCity, jobProvince, jobPostalCode };
 
     const location = await job_queries.insertLocation(locationData);
     const location_id = location.location_id;
 
-    const newJob = await job_queries.postJob({ ...jobData, location_id, });
+    // Pass status through — defaults to 'open' in the query if not provided
+    const newJob = await job_queries.postJob({
+      ...jobData,
+      location_id,
+      status: VALID_STATUSES.includes(status) ? status : 'open',
+    });
+
     res.status(201).json({
       message: "Job and Location successfully created",
       job: newJob,
@@ -79,6 +87,11 @@ router.patch("/edit-job/:jobId", async (req, res) => {
   const { jobId } = req.params;
   const jobData = req.body;
 
+  // Sanitise status before passing to query
+  if (jobData.status && !VALID_STATUSES.includes(jobData.status)) {
+    jobData.status = 'open';
+  }
+
   try {
     const updatedJob = await job_queries.updateJob(parseInt(jobId, 10), jobData);
     if (updatedJob) {
@@ -89,6 +102,28 @@ router.patch("/edit-job/:jobId", async (req, res) => {
   } catch (error) {
     console.error("Failed to update job:", error);
     res.status(500).json({ message: "Failed to update job", error: error.message });
+  }
+});
+
+// NEW: update just the status of a job (used by the tab workflow on the frontend)
+router.patch("/job-status/:jobId", async (req, res) => {
+  const { jobId } = req.params;
+  const { status } = req.body;
+
+  if (!status || !VALID_STATUSES.includes(status)) {
+    return res.status(400).json({ message: `Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}` });
+  }
+
+  try {
+    const updatedJob = await job_queries.updateJobStatus(parseInt(jobId, 10), status);
+    if (updatedJob) {
+      res.json({ message: "Job status updated", job: updatedJob });
+    } else {
+      res.status(404).json({ message: "Job not found" });
+    }
+  } catch (error) {
+    console.error("Failed to update job status:", error);
+    res.status(500).json({ message: "Failed to update job status", error: error.message });
   }
 });
 
@@ -116,7 +151,7 @@ router.get("/all-jobs", async (req, res) => {
 
 router.patch("/apply-job/:jobId", async (req, res) => {
   const { jobId } = req.params;
-  const applicantId = req.body.applicantId; // Assuming the applicant ID is sent in the request body
+  const applicantId = req.body.applicantId;
 
   try {
     await job_queries.applyForJob(jobId, applicantId);
@@ -132,7 +167,7 @@ router.get("/applied-jobs/:applicantId", async (req, res) => {
 
   try {
     const appliedJobs = await job_queries.fetchAppliedJobs(applicantId);
-    res.json({ jobs: appliedJobs })
+    res.json({ jobs: appliedJobs });
   } catch (error) {
     console.error("Error fetching applied jobs:", error);
     res.status(500).json({ message: "Error fetching applied jobs" });
@@ -143,10 +178,10 @@ router.patch("/remove-application/:applicantId/job/:jobId", async (req, res) => 
   const { applicantId, jobId } = req.params;
 
   try {
-    await job_queries.removeApplication(applicantId, jobId)
-    res.json({ message: "Application removed succesfully"});
+    await job_queries.removeApplication(applicantId, jobId);
+    res.json({ message: "Application removed successfully" });
   } catch (error) {
-    console.error("Erros removing job application:", error);
+    console.error("Error removing job application:", error);
     res.status(500).json({ message: "Error removing job application" });
   }
 });
