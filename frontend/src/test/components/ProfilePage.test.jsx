@@ -12,7 +12,7 @@ jest.mock("axios", () => ({
 }));
 
 // mock the useUser hook used by ProfilePage
-jest.mock("../../src/components/UserContext", () => ({
+jest.mock("../../components/UserContext", () => ({
   useUser: () => ({
     user: { id: 1, isbusiness: false, firstname: "Test", lastname: "User" },
     setUser: jest.fn(),
@@ -22,7 +22,7 @@ jest.mock("../../src/components/UserContext", () => ({
   UserProvider: ({ children }) => children
 }));
 
-import ProfilePage from "../../src/components/ProfilePage";
+import ProfilePage from "../../components/ProfilePage";
 
 describe("ProfilePage (external test folder)", () => {
   test("renders worker Biography section", async () => {

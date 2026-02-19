@@ -10,9 +10,14 @@ function getFrontendUrl() {
 
 // Initiate Google OAuth
 // Frontend redirects user here to start the OAuth flow
-router.get('/auth/google', passport.authenticate('google', {
-  scope: ['profile', 'email']
-}));
+// Optional: ?accountType=Worker|Employer - when coming from Register, avoids asking account type again
+router.get('/auth/google', (req, res, next) => {
+  const accountType = req.query.accountType;
+  if (accountType === 'Worker' || accountType === 'Employer') {
+    req.session.pendingAccountType = accountType;
+  }
+  passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
+});
 
 // Google OAuth callback
 // Google redirects here after user grants permission
@@ -37,7 +42,13 @@ router.get(
           lastName: userData.lastName
         };
 
-        // Redirect to account selection page
+        // If account type was pre-selected (from Register), pass it to bypass second selection
+        const accountType = req.session.pendingAccountType;
+        if (accountType) {
+          delete req.session.pendingAccountType;
+          return res.redirect(`${getFrontendUrl()}/account-selection?oauth=google&accountType=${accountType}`);
+        }
+
         return res.redirect(`${getFrontendUrl()}/account-selection?oauth=google`);
       }
 
@@ -93,11 +104,14 @@ router.post('/auth/google/complete', async (req, res) => {
       pendingOAuth.picture
     );
 
+    let workerId = null;
+
     // Create worker or business profile
     if (accountType === 'Worker') {
       const workerFirstName = firstName || pendingOAuth.firstName || 'User';
       const workerLastName = lastName || pendingOAuth.lastName || '';
-      await user_queries.addWorker(user.id, workerFirstName, workerLastName);
+      const worker = await user_queries.addWorker(user.id, workerFirstName, workerLastName);
+      workerId = worker?.id ?? null;
     } else {
       await user_queries.addBusiness(user.id, businessName || '', businessDescription || '');
     }
@@ -117,15 +131,19 @@ router.post('/auth/google/complete', async (req, res) => {
       // Single-session: mark this as the ONLY valid session
       await user_queries.setCurrentSession(user.id, req.sessionID);
 
-      // Return user data
+      // Return user data (include workerId for Workers so frontend can complete profile)
+      const userResponse = {
+        id: user.id,
+        email: user.email,
+        isbusiness: user.isbusiness,
+        userImage: user.userimage
+      };
+      if (workerId) userResponse.workerId = workerId;
+
       res.status(200).json({
         success: true,
-        user: {
-          id: user.id,
-          email: user.email,
-          isbusiness: user.isbusiness,
-          userImage: user.userimage
-        }
+        user: userResponse,
+        workerId: workerId
       });
     });
 
