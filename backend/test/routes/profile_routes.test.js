@@ -19,6 +19,10 @@ jest.mock("../../src/database/queries/profile_queries.js", () => ({
 const db = require("../../src/database/connection.js");
 const profileQueries = require("../../src/database/queries/profile_queries.js");
 
+// Mount the profile routes on the app
+const profileRouter = require("../../src/database/routes/profile_routes.js");
+app.use("/api", profileRouter);
+
 describe("Worker profiles API", () => {
   beforeEach(() => jest.clearAllMocks());
 
