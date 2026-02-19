@@ -4,10 +4,40 @@ import { useNavigate } from "react-router-dom";
 import "../styles/ProfilePage.css";
 import { useUser } from "./UserContext";
 import ProfileScheduler from "./ProfileScheduler";
+import Modal from "./Modal";
 
 const ProfilePage = () => {
   const { user, setUser, logout } = useUser();
   const [isEditing, setIsEditing] = useState(false);
+
+  // Modal state
+  const [modal, setModal] = useState({ isOpen: false, title: "", message: "", type: "info", onConfirm: null, onCancel: null, showInput: false, inputPlaceholder: "" });
+
+  const showAlert = (title, message, type = "info") => {
+    setModal({
+      isOpen: true, title, message, type,
+      onConfirm: () => setModal((m) => ({ ...m, isOpen: false })),
+      onCancel: null, showInput: false, inputPlaceholder: "",
+    });
+  };
+
+  const showConfirm = (title, message, onConfirm, type = "danger") => {
+    setModal({
+      isOpen: true, title, message, type,
+      onConfirm: () => { setModal((m) => ({ ...m, isOpen: false })); onConfirm(); },
+      onCancel: () => setModal((m) => ({ ...m, isOpen: false })),
+      showInput: false, inputPlaceholder: "",
+    });
+  };
+
+  const showPrompt = (title, message, onConfirm, placeholder = "") => {
+    setModal({
+      isOpen: true, title, message, type: "info",
+      onConfirm: (value) => { setModal((m) => ({ ...m, isOpen: false })); onConfirm(value); },
+      onCancel: () => setModal((m) => ({ ...m, isOpen: false })),
+      showInput: true, inputPlaceholder: placeholder,
+    });
+  };
   const [isEditingSkills, setIsEditingSkills] = useState(false);
   const [isEditingExp, setIsEditingExp] = useState(false);
   const [editedUser, setEditedUser] = useState();
@@ -41,9 +71,11 @@ const ProfilePage = () => {
 
   useEffect(() => {
     if (user) {
+      const currentWorker = workerProfiles.find(p => p.id === selectedWorkerId);
       setEditedUser({
         ...user,
         skills: user.skills ? user.skills : [],
+        profile_name: user.profile_name || (currentWorker ? currentWorker.profile_name : ""),
         worker_phone_number: user.phone_number,
         worker_street_address: user.street_address,
         worker_city: user.city,
@@ -113,13 +145,23 @@ const ProfilePage = () => {
 
   const fetchProfile = () => {
     axios
-      .get(`/api/profile/${user.id}`, { withCredentials: true })
+      .get(`/api/profile/${user.id}${selectedWorkerId ? `?workerId=${selectedWorkerId}` : ""}`, { withCredentials: true })
       .then((response) => {
         let merge = {
           ...response.data.profileData,
           ...response.data.businessData,
         };
-        setEditedUser(merge);
+        const currentWorker = workerProfiles.find(p => p.id === selectedWorkerId);
+        setEditedUser({
+          ...merge,
+          skills: merge.skills ? merge.skills : [],
+          profile_name: merge.profile_name || (currentWorker ? currentWorker.profile_name : ""),
+          worker_phone_number: merge.phone_number,
+          worker_street_address: merge.street_address,
+          worker_city: merge.city,
+          worker_province: merge.province,
+          worker_postal_code: merge.postal_code,
+        });
       })
       .catch((error) => {
         console.error("Error fetching user profile:", error);
@@ -206,11 +248,12 @@ const ProfilePage = () => {
   const toggleEdit = () => {
     fetchProfile();
     setIsEditing(!isEditing);
+    const scrollContainer = document.querySelector('.content-area');
+      if (scrollContainer) scrollContainer.scrollTop = 0;
   };
 
   const toggleEditSkills = () => {
     if (!isEditingSkills) {
-      // Opening the edit form - fetch current skills
       fetchSkills();
     }
     setIsEditingSkills(!isEditingSkills);
@@ -218,7 +261,6 @@ const ProfilePage = () => {
 
   const toggleEditExp = () => {
     if (!isEditingExp) {
-      // Opening the edit form - fetch current experiences
       fetchExperiences();
     }
     setIsEditingExp(!isEditingExp);
@@ -277,7 +319,7 @@ const ProfilePage = () => {
 
       setPhotoError(null);
       setPhotoFile(null);
-      alert("Profile photo uploaded successfully!");
+      showAlert("Success", "Profile photo uploaded successfully!", "success");
 
       await fetchProfile();
       window.dispatchEvent(new Event("profilePhotoUpdated"));
@@ -343,10 +385,12 @@ const ProfilePage = () => {
       }));
 
       setIsEditing(false);
-      alert("Profile updated successfully!");
+      const scrollContainer = document.querySelector('.content-area');
+      if (scrollContainer) scrollContainer.scrollTop = 0;
+      showAlert("Success", "Profile updated successfully!", "success");
     } catch (error) {
       console.error("Update failed:", error.response || error);
-      alert("Failed to update profile. Please try again.");
+      showAlert("Error", "Failed to update profile. Please try again.", "danger");
     }
   };
 
@@ -355,14 +399,12 @@ const ProfilePage = () => {
     setIsSaving(true);
 
     try {
-      // Clear existing skills
       await axios.post(
         `/api/clear-worker-skills/${workerId}`,
         {},
         { withCredentials: true }
       );
 
-      // Add all selected skills
       const addPromises = selectedSkills.map((skill) =>
         axios.post(
           `/api/add-worker-skill-ids/${workerId}/${skill.skill_id}`,
@@ -372,18 +414,12 @@ const ProfilePage = () => {
       );
 
       await Promise.all(addPromises);
-
-      // Refresh the skills data
       await fetchSkills();
-
-      // Show success message
-      alert("Skills updated successfully!");
-
-      // Close the editing form
+      showAlert("Success", "Skills updated successfully!", "success");
       setIsEditingSkills(false);
     } catch (error) {
       console.error("Error updating skills:", error);
-      alert("Failed to update skills. Please try again.");
+      showAlert("Error", "Failed to update skills. Please try again.", "danger");
     } finally {
       setIsSaving(false);
     }
@@ -394,14 +430,12 @@ const ProfilePage = () => {
     setIsSaving(true);
 
     try {
-      // Clear existing experiences
       await axios.post(
         `/api/clear-worker-experiences/${workerId}`,
         {},
         { withCredentials: true }
       );
 
-      // Add all selected experiences
       const addPromises = selectedExp.map((exp) =>
         axios.post(
           `/api/add-worker-experience-ids/${workerId}/${exp.experience_id}`,
@@ -411,61 +445,56 @@ const ProfilePage = () => {
       );
 
       await Promise.all(addPromises);
-
-      // Refresh the experiences data
       await fetchExperiences();
-
-      // Show success message
-      alert("Experience updated successfully!");
-
-      // Close the editing form
+      showAlert("Success", "Experience updated successfully!", "success");
       setIsEditingExp(false);
     } catch (error) {
       console.error("Error updating experiences:", error);
-      alert("Failed to update experience. Please try again.");
+      showAlert("Error", "Failed to update experience. Please try again.", "danger");
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleDeleteProfile = async () => {
+  const handleDeleteProfile = () => {
     if (workerProfiles.length <= 1) {
-      alert("Cannot delete the last profile. You must have at least one profile.");
+      showAlert("Cannot Delete", "You must have at least one profile.", "danger");
       return;
     }
 
     const currentProfile = workerProfiles.find((p) => p.id === selectedWorkerId);
     const profileName = currentProfile ? currentProfile.profile_name : "this profile";
 
-    const confirmed = window.confirm(
-      `Are you sure you want to delete "${profileName}"?\n\nThis will also delete all skills and experiences associated with this profile.\n\nThis action cannot be undone.`
+    showConfirm(
+      "Delete Profile",
+      `Are you sure you want to delete "${profileName}"?\n\nThis will also delete all skills and experiences associated with this profile.\n\nThis action cannot be undone.`,
+      async () => {
+        try {
+          await axios.delete(
+            `/api/profile/delete-worker-profile/${selectedWorkerId}`,
+            { withCredentials: true }
+          );
+
+          const res = await axios.get(
+            `/api/profile/worker-profiles/${user.id}`,
+            { withCredentials: true }
+          );
+
+          setWorkerProfiles(res.data);
+
+          if (res.data.length > 0) {
+            setSelectedWorkerId(res.data[0].id);
+            setWorkerId(res.data[0].id);
+          }
+
+          showAlert("Success", "Profile deleted successfully!", "success");
+        } catch (error) {
+          console.error("Error deleting profile:", error);
+          showAlert("Error", "Failed to delete profile. Please try again.", "danger");
+        }
+      },
+      "danger"
     );
-
-    if (!confirmed) return;
-
-    try {
-      await axios.delete(
-        `/api/profile/delete-worker-profile/${selectedWorkerId}`,
-        { withCredentials: true }
-      );
-
-      const res = await axios.get(
-        `/api/profile/worker-profiles/${user.id}`,
-        { withCredentials: true }
-      );
-
-      setWorkerProfiles(res.data);
-
-      if (res.data.length > 0) {
-        setSelectedWorkerId(res.data[0].id);
-        setWorkerId(res.data[0].id);
-      }
-
-      alert("Profile deleted successfully!");
-    } catch (error) {
-      console.error("Error deleting profile:", error);
-      alert("Failed to delete profile. Please try again.");
-    }
   };
 
   const handleSkillSelect = (skillObj) => {
@@ -899,228 +928,206 @@ const ProfilePage = () => {
     <div>Loading...</div>
   ) : (
     <div className="profile-page">
-      <div className="profile-container">
-        {/* Profile Photo Display */}
-        {photoUrl && (
-          <div style={{ textAlign: "center", marginBottom: "20px" }}>
-            <div
-              style={{
-                width: "180px",
-                height: "180px",
-                borderRadius: "50%",
-                overflow: "hidden",
-                margin: "0 auto",
-                border: "3px solid #4EBBC2",
-              }}
-            >
-              <img src={photoUrl} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            </div>
-          </div>
-        )}
 
-        {user.isbusiness ? (
+      {user.isbusiness ? (
+        /* ============ BUSINESS PROFILE ============ */
+        <div className="profile-container">
           <div className="business-profile">
             <div className="profile-section">
               <h2>Business Description</h2>
               <p>{user.business_description || ""}</p>
             </div>
-
             <div className="profile-section">
               <h2>Business Information</h2>
-              <p>
-                <strong>Name:</strong> {user.business_name}
-              </p>
-              <p>
-                <strong>Phone:</strong> {user.phone_number}
-              </p>
-              <p>
-                <strong>Email:</strong> {user.email}
-              </p>
-              <p>
-                <strong>Address:</strong> {user.street_address} {user.city} {user.province} {user.postal_code}
-              </p>
-              <p>
-                <strong>Website:</strong> {user.business_website}
-              </p>
+              <p><strong>Name:</strong> {user.business_name}</p>
+              <p><strong>Phone:</strong> {user.phone_number}</p>
+              <p><strong>Email:</strong> {user.email}</p>
+              <p><strong>Address:</strong> {user.street_address} {user.city} {user.province} {user.postal_code}</p>
+              <p><strong>Website:</strong> {user.business_website}</p>
             </div>
           </div>
-        ) : (
-          <div className="worker-profile">
-            {!user.isbusiness && workerProfiles.length > 0 && (
-              <div style={{ marginBottom: "20px", padding: "15px", backgroundColor: "#f5f5f5", borderRadius: "8px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-                  <label style={{ fontWeight: "bold", fontSize: "16px" }}>Profile:</label>
-                  <select
-                    value={selectedWorkerId || ""}
-                    onChange={(e) => {
-                      const wid = Number(e.target.value);
-                      setSelectedWorkerId(wid);
-                      setWorkerId(wid);
-                    }}
-                    style={{
-                      padding: "8px 12px",
-                      fontSize: "16px",
-                      borderRadius: "4px",
-                      border: "1px solid #ccc",
-                      flex: "1",
-                      maxWidth: "300px",
-                    }}
-                  >
-                    {workerProfiles.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.profile_name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+        </div>
+      ) : (
+        /* ============ WORKER PROFILE ============ */
+        <>
+          {/* --- Profile Header Banner --- */}
+          <div className="profile-header-banner">
+            <div className="profile-header-left">
+              <div className="profile-avatar">
+                {photoUrl ? (
+                  <img src={photoUrl} alt="Profile" />
+                ) : (
+                  <div className="profile-avatar-placeholder">
+                    {user.firstname?.charAt(0)}{user.lastname?.charAt(0)}
+                  </div>
+                )}
+              </div>
+              <div className="profile-header-info">
+                <h1 className="profile-header-name">
+                  {user.firstname} {user.lastname}
+                  {user.profile_name && <span className="profile-header-title"> - {user.profile_name}</span>}
+                </h1>
+                {(user.city || user.province) && (
+                  <p className="profile-header-location">
+                    {user.city}{user.city && user.province ? ", " : ""}{user.province}
+                  </p>
+                )}
+              </div>
+            </div>
 
-                <div style={{ display: "flex", gap: "10px" }}>
-                  <button
-                    style={{
-                      backgroundColor: "#4EBBC2",
-                      color: "white",
-                      padding: "8px 16px",
-                      border: "none",
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                      fontSize: "14px",
-                    }}
-                    onClick={() => setIsEditing(true)}
-                  >
-                    Edit This Profile
-                  </button>
-
-                  <button
-                    style={{
-                      backgroundColor: "#FF6347",
-                      color: "white",
-                      padding: "8px 16px",
-                      border: "none",
-                      borderRadius: "4px",
-                      cursor: workerProfiles.length <= 1 ? "not-allowed" : "pointer",
-                      fontSize: "14px",
-                      opacity: workerProfiles.length <= 1 ? 0.5 : 1,
-                    }}
-                    disabled={workerProfiles.length <= 1}
-                    onClick={handleDeleteProfile}
-                  >
-                    Delete This Profile
-                  </button>
-
-                  <button
-                    style={{
-                      backgroundColor: "#4CAF50",
-                      color: "white",
-                      padding: "8px 16px",
-                      border: "none",
-                      borderRadius: "4px",
-                      cursor: workerProfiles.length >= 3 ? "not-allowed" : "pointer",
-                      fontSize: "14px",
-                      opacity: workerProfiles.length >= 3 ? 0.5 : 1,
-                    }}
-                    disabled={workerProfiles.length >= 3}
-                    onClick={async () => {
-                      const name = window.prompt("Enter new profile name:");
-                      if (!name) return;
-
-                      await axios.post(
-                        `/api/profile/create-worker-profile/${user.id}`,
-                        { profileName: name },
-                        { withCredentials: true }
-                      );
-
-                      const res = await axios.get(
-                        `/api/profile/worker-profiles/${user.id}`,
-                        { withCredentials: true }
-                      );
-
-                      setWorkerProfiles(res.data);
-                      if (res.data.length > 0) {
-                        const newProfile = res.data[res.data.length - 1];
-                        setSelectedWorkerId(newProfile.id);
-                        setWorkerId(newProfile.id);
+            <div className="profile-header-actions">
+              {workerProfiles.length > 0 && (
+                <select
+                  className="profile-select"
+                  value={selectedWorkerId || ""}
+                  onChange={(e) => {
+                    const wid = Number(e.target.value);
+                    setSelectedWorkerId(wid);
+                    setWorkerId(wid);
+                  }}
+                >
+                  {workerProfiles.map((p) => (
+                    <option key={p.id} value={p.id}>{p.profile_name}</option>
+                  ))}
+                </select>
+              )}
+              <button className="btn-primary" onClick={() => setIsEditing(true)}>Edit Profile</button>
+              <button
+                className="btn-danger"
+                disabled={workerProfiles.length <= 1}
+                onClick={handleDeleteProfile}
+              >
+                Delete
+              </button>
+              <button
+                className="btn-success"
+                disabled={workerProfiles.length >= 3}
+                onClick={() => {
+                  showPrompt(
+                    "Add Profile",
+                    "Enter a name for your new profile:",
+                    async (name) => {
+                      try {
+                        await axios.post(
+                          `/api/profile/create-worker-profile/${user.id}`,
+                          { profileName: name },
+                          { withCredentials: true }
+                        );
+                        const res = await axios.get(
+                          `/api/profile/worker-profiles/${user.id}`,
+                          { withCredentials: true }
+                        );
+                        setWorkerProfiles(res.data);
+                        if (res.data.length > 0) {
+                          const newProfile = res.data[res.data.length - 1];
+                          setSelectedWorkerId(newProfile.id);
+                          setWorkerId(newProfile.id);
+                        }
+                        showAlert("Success", "Profile created successfully!", "success");
+                      } catch (error) {
+                        console.error("Error creating profile:", error);
+                        showAlert("Error", "Failed to create profile. Please try again.", "danger");
                       }
-                    }}
-                  >
-                    + Add Profile
-                  </button>
+                    },
+                    "e.g., Construction Profile"
+                  );
+                }}
+              >
+                + Add Profile
+              </button>
+            </div>
+          </div>
+
+          {/* --- Cards Grid --- */}
+          <div className="profile-cards-grid">
+
+            {/* About Me Card */}
+            <div className="profile-card">
+              <div className="profile-card-header">
+                <h2>About Me</h2>
+              </div>
+              <div className="profile-card-body">
+                <p><strong>First Name:</strong> {user.firstname}</p>
+                <p><strong>Last Name:</strong> {user.lastname}</p>
+                <p><strong>Email:</strong> {user.email}</p>
+                <p><strong>Phone:</strong> {user.phone_number || "Not provided"}</p>
+                <div className="profile-card-address">
+                  <strong>Address:</strong> {user.street_address} {user.city}, {user.province} {user.postal_code}
                 </div>
               </div>
-            )}
-            <div className="profile-section">
-              <h2>Biography</h2>
-              <p>{user.biography || ""}</p>
             </div>
 
-            <div className="profile-section">
-              <h2>Contact Information</h2>
-              <p>
-                <strong>First Name:</strong> {user.firstname}
-              </p>
-              <p>
-                <strong>Last Name:</strong> {user.lastname}
-              </p>
-              <p>
-                <strong>Email:</strong> {user.email}
-              </p>
-              <p>
-                <strong>Phone number:</strong> {user.phone_number}
-              </p>
-              <p>
-                <strong>Location:</strong> {user.street_address} {user.city} {user.province} {user.postal_code}
-              </p>
+            {/* Work Preferences Card */}
+            <div className="profile-card">
+              <div className="profile-card-header">
+                <h2>Work Preferences</h2>
+              </div>
+              <div className="profile-card-body">
+                <p><strong>Work Radius:</strong> {user.desired_work_radius} km</p>
+                <p><strong>Desired Pay:</strong> ${user.desired_pay}/hr (CAD)</p>
+              </div>
             </div>
-            <div className="profile-section">
-              <h2>Work Preferences</h2>
-              <p>
-                <strong>Work Radius:</strong> {user.desired_work_radius} km
-              </p>
-              <p>
-                <strong>Desired Pay (CAD):</strong> ${user.desired_pay}/hr
-              </p>
+
+            {/* Biography Card */}
+            <div className="profile-card profile-card-full">
+              <div className="profile-card-header">
+                <h2>Biography</h2>
+              </div>
+              <div className="profile-card-body">
+                <p>{user.biography || "No biography added yet."}</p>
+              </div>
             </div>
-          </div>
-        )}
-      </div>
-      {!user.isbusiness && (
-        <>
-          <div className="profile-container">
-            <div className="profile-section">
-              <h2>Skills</h2>
-              <ul>
-                {workerSkills.map((skillObj) => (
-                  <div key={skillObj.skill_id} className="displayed-items">
-                    {skillObj.skill_name}
-                  </div>
-                ))}
-              </ul>
+
+            {/* Skills Card */}
+            <div className="profile-card">
+              <div className="profile-card-header">
+                <h2>Skills</h2>
+                <button className="btn-icon" onClick={toggleEditSkills}>&#9998;</button>
+              </div>
+              <div className="profile-card-body">
+                <div className="profile-tags">
+                  {workerSkills.length > 0 ? workerSkills.map((skillObj, i) => (
+                    <span key={i} className="profile-tag">{skillObj.skill_name}</span>
+                  )) : <p className="profile-empty-text">No skills added yet.</p>}
+                </div>
+              </div>
             </div>
-            <button className="edit-button" onClick={toggleEditSkills}>
-              Edit Skills
-            </button>
+
+            {/* Experience Card */}
+            <div className="profile-card">
+              <div className="profile-card-header">
+                <h2>Experience</h2>
+                <button className="btn-icon" onClick={toggleEditExp}>&#9998;</button>
+              </div>
+              <div className="profile-card-body">
+                <div className="profile-tags">
+                  {workerExp.length > 0 ? workerExp.map((expObj, i) => (
+                    <span key={i} className="profile-tag">{expObj.experience_name}</span>
+                  )) : <p className="profile-empty-text">No experience added yet.</p>}
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="profile-container">
-            <div className="profile-section">
-              <h2>Experience</h2>
-              <ul>
-                {workerExp.map((expObj) => (
-                  <div key={expObj.experience_id} className="displayed-items">
-                    {expObj.experience_name}
-                  </div>
-                ))}
-              </ul>
-            </div>
-            <button className="edit-button" onClick={toggleEditExp}>
-              Edit Experiences
-            </button>
-          </div>
-
-          <div className="profile-container">
+          {/* --- Scheduler --- */}
+          <div className="profile-card profile-card-full" style={{ margin: "0 0 20px 0" }}>
             <ProfileScheduler selectedProfileId={selectedWorkerId} profiles={workerProfiles} />
           </div>
         </>
       )}
+
+      <Modal
+        isOpen={modal.isOpen}
+        title={modal.title}
+        message={modal.message}
+        type={modal.type}
+        onConfirm={modal.onConfirm}
+        onCancel={modal.onCancel}
+        confirmText={modal.showInput ? "Create" : modal.onCancel ? "Yes, Delete" : "OK"}
+        cancelText="Cancel"
+        showInput={modal.showInput}
+        inputPlaceholder={modal.inputPlaceholder}
+      />
     </div>
   );
 };
