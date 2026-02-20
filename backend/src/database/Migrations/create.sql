@@ -57,6 +57,8 @@ CREATE TABLE users (
     user_phone_number VARCHAR(25),
     user_address INT,
     profile_photo_key VARCHAR(255),
+    current_session_id TEXT,
+    session_last_seen TIMESTAMPTZ,
     CONSTRAINT fk_user_address FOREIGN KEY(user_address) REFERENCES locations(location_id)
 );
 
