@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
+import axios from "axios";
 import { Calendar as BigCalendar, dateFnsLocalizer, Views } from "react-big-calendar";
 import format from "date-fns/format";
 import getDay from "date-fns/getDay";
@@ -6,6 +7,7 @@ import parse from "date-fns/parse";
 import startOfWeek from "date-fns/startOfWeek";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "../styles/ProfileScheduler.css";
+import { useUser } from "./UserContext";
 
 const locales = {
   "en-CA": require("date-fns/locale/en-CA"),
@@ -19,81 +21,76 @@ const localizer = dateFnsLocalizer({
   locales,
 });
 
-// Default seed events (Global, not profile specific)
-const SEED_EVENTS = [
-  {
-    id: "evt-1",
-    title: "Quarterly Project Review",
-    start: new Date(new Date().setHours(9, 0, 0, 0)),
-    end: new Date(new Date().setHours(12, 0, 0, 0)),
-    resourceId: 1,
-  },
-  {
-    id: "evt-2",
-    title: "Team Lunch",
-    start: new Date(new Date().setHours(12, 30, 0, 0)),
-    end: new Date(new Date().setHours(13, 30, 0, 0)),
-    resourceId: 1,
-  },
-];
+// Extract YYYY-MM-DD from a Date object
+const formatDate = (date) => {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+// Extract HH:MM from a Date object
+const formatTime = (date) => {
+  const hh = String(date.getHours()).padStart(2, "0");
+  const min = String(date.getMinutes()).padStart(2, "0");
+  return `${hh}:${min}`;
+};
 
 export default function ProfileScheduler({ selectedProfileId, profiles }) {
+  const { user } = useUser();
   const [view, setView] = useState(Views.WEEK);
   const [date, setDate] = useState(new Date());
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
 
-  // Determine storage key based on profile ID
-  const getStorageKey = useCallback(() => {
-    return selectedProfileId ? `flexigig_scheduler_events_${selectedProfileId}` : "flexigig_global_scheduler_events";
+  const currentProfileName =
+    profiles?.find((p) => p.id === selectedProfileId)?.profile_name ||
+    "Profile Scheduler";
+
+  // Fetch events from DB for this worker profile
+  const fetchEvents = useCallback(() => {
+    if (!selectedProfileId) return;
+    setLoading(true);
+    axios
+      .get(`/api/my-calendar/worker/${selectedProfileId}`, {
+        withCredentials: true,
+      })
+      .then((res) => {
+        const formatted = res.data.map((evt) => ({
+          id: evt.id,
+          title: evt.title,
+          start: new Date(`${evt.startdate} ${evt.starttime}`),
+          end: new Date(`${evt.enddate} ${evt.endtime}`),
+        }));
+        setEvents(formatted);
+        setFetchError(null);
+      })
+      .catch((err) => {
+        console.error("Error fetching worker schedule:", err);
+        setFetchError("Failed to load schedule.");
+      })
+      .finally(() => setLoading(false));
   }, [selectedProfileId]);
 
-  // Get current profile name
-  const currentProfileName = profiles?.find(p => p.id === selectedProfileId)?.profile_name || "Profile Scheduler";
-
-  // Initialize events
-  const [events, setEvents] = useState([]);
-
-  // Load events when selectedProfileId changes
   useEffect(() => {
-    const key = getStorageKey();
-    try {
-      const stored = localStorage.getItem(key);
-      if (stored) {
-        const parsedEvents = JSON.parse(stored).map(evt => ({
-          ...evt,
-          start: new Date(evt.start),
-          end: new Date(evt.end)
-        }));
-        setEvents(parsedEvents);
-      } else {
-        // If no events for this profile, start with empty or seed?
-        // Let's start with empty for new profiles to ensure separation, 
-        // effectively resetting the schedule for a new profile.
-        // Or if it is the very first load and no ID is provided, maybe seed.
-        // For now, let's just default to empty array for new profiles 
-        // so they don't inherit the global seed events which might be confusing.
-        setEvents([]);
-      }
-    } catch (e) {
-      console.error("Failed to parse events from local storage", e);
-      setEvents([]);
-    }
-  }, [selectedProfileId, getStorageKey]);
+    fetchEvents();
+  }, [fetchEvents]);
 
-  // Save to LocalStorage whenever events change
-  useEffect(() => {
-    const key = getStorageKey();
-    localStorage.setItem(key, JSON.stringify(events));
-  }, [events, getStorageKey]);
-
-  // Modal State
+  // Modal state
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState("add"); // 'add' | 'edit' | 'delete'
-  const [currentEvent, setCurrentEvent] = useState({ id: null, title: "", start: new Date(), end: new Date() });
+  const [currentEvent, setCurrentEvent] = useState({
+    id: null,
+    title: "",
+    start: new Date(),
+    end: new Date(),
+  });
+  const [saving, setSaving] = useState(false);
 
-  // Event Styling
   const eventPropGetter = () => ({
     style: {
-      backgroundColor: "#4EBBC2", // Unified color
+      backgroundColor: "#4EBBC2",
       border: "none",
       borderRadius: "6px",
       color: "#fff",
@@ -101,62 +98,104 @@ export default function ProfileScheduler({ selectedProfileId, profiles }) {
     },
   });
 
-  // Handle Slot Select (Add)
   const handleSelectSlot = useCallback(({ start, end }) => {
     setModalMode("add");
     setCurrentEvent({ id: null, title: "", start, end });
     setShowModal(true);
   }, []);
 
-  // Handle Event Select (Edit)
   const handleSelectEvent = useCallback((event) => {
     setModalMode("edit");
     setCurrentEvent({ ...event });
     setShowModal(true);
   }, []);
 
-  // Save Event
+  // Save new or updated event to the database
   const handleSave = () => {
     if (!currentEvent.title.trim()) {
       alert("Please enter a title.");
       return;
     }
+    if (!user?.id) {
+      alert("Session expired. Please log in again.");
+      return;
+    }
+
+    setSaving(true);
+
+    const payload = {
+      user_id: user.id,
+      worker_id: selectedProfileId,
+      startDate: formatDate(currentEvent.start),
+      endDate: formatDate(currentEvent.end),
+      startTime: formatTime(currentEvent.start),
+      endTime: formatTime(currentEvent.end),
+      title: currentEvent.title.trim(),
+    };
 
     if (modalMode === "add") {
-      const newEvent = {
-        ...currentEvent,
-        id: `evt-${Date.now()}`,
-      };
-      setEvents((prev) => [...prev, newEvent]);
+      axios
+        .post("/api/my-calendar/worker", payload, { withCredentials: true })
+        .then(() => {
+          fetchEvents();
+          setShowModal(false);
+        })
+        .catch((err) => {
+          console.error("Error saving event:", err);
+          alert("Failed to save event. Please try again.");
+        })
+        .finally(() => setSaving(false));
     } else {
-      setEvents((prev) => prev.map((e) => (e.id === currentEvent.id ? currentEvent : e)));
+      // Edit: delete existing then re-create with updated values
+      axios
+        .delete(`/api/my-calendar/${currentEvent.id}`, {
+          withCredentials: true,
+        })
+        .then(() =>
+          axios.post("/api/my-calendar/worker", payload, {
+            withCredentials: true,
+          })
+        )
+        .then(() => {
+          fetchEvents();
+          setShowModal(false);
+        })
+        .catch((err) => {
+          console.error("Error updating event:", err);
+          alert("Failed to update event. Please try again.");
+        })
+        .finally(() => setSaving(false));
     }
-    setShowModal(false);
   };
 
-  // Trigger Delete Confirmation
   const handleDeleteClick = () => {
     setModalMode("delete");
   };
 
-  // Confirm Delete
   const handleConfirmDelete = () => {
-    setEvents((prev) => prev.filter((e) => e.id !== currentEvent.id));
-    setShowModal(false);
+    setSaving(true);
+    axios
+      .delete(`/api/my-calendar/${currentEvent.id}`, { withCredentials: true })
+      .then(() => {
+        fetchEvents();
+        setShowModal(false);
+      })
+      .catch((err) => {
+        console.error("Error deleting event:", err);
+        alert("Failed to delete event. Please try again.");
+      })
+      .finally(() => setSaving(false));
   };
 
-  // Input Handlers
-  const handleTitleChange = (e) => setCurrentEvent({ ...currentEvent, title: e.target.value });
+  const handleTitleChange = (e) =>
+    setCurrentEvent({ ...currentEvent, title: e.target.value });
 
   const toDateTimeLocal = (date) => {
     if (!date) return "";
     const ten = (i) => (i < 10 ? "0" : "") + i;
-    const YYYY = date.getFullYear();
-    const MM = ten(date.getMonth() + 1);
-    const DD = ten(date.getDate());
-    const HH = ten(date.getHours());
-    const II = ten(date.getMinutes());
-    return `${YYYY}-${MM}-${DD}T${HH}:${II}`;
+    return `${date.getFullYear()}-${ten(date.getMonth() + 1)}-${ten(
+      date.getDate()
+    )}T${ten(date.getHours())}:${ten(date.getMinutes())}`;
   };
 
   const handleStartChange = (e) => {
@@ -182,14 +221,19 @@ export default function ProfileScheduler({ selectedProfileId, profiles }) {
         <div className="scheduler-title">Schedule for {currentProfileName}</div>
       </div>
 
+      {fetchError && (
+        <p style={{ color: "red", padding: "8px" }}>{fetchError}</p>
+      )}
+      {loading && <p style={{ padding: "8px" }}>Loading schedule...</p>}
+
       <div className="scheduler-calendar">
         <BigCalendar
-          key={date.toString() + view + selectedProfileId} // Force remount on navigation or profile switch to fix rendering glitch
+          key={date.toString() + view + selectedProfileId}
           localizer={localizer}
           events={events}
           startAccessor="start"
           endAccessor="end"
-          style={{ height: 1200 }} // Increased height for 24h view
+          style={{ height: 1200 }}
           views={{ month: true, week: true, day: true }}
           view={view}
           date={date}
@@ -207,13 +251,17 @@ export default function ProfileScheduler({ selectedProfileId, profiles }) {
         />
       </div>
 
-      {/* Custom Modal Overlay */}
       {showModal && (
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-header">
               <h3>{getModalTitle()}</h3>
-              <button className="modal-close-btn" onClick={() => setShowModal(false)}>&times;</button>
+              <button
+                className="modal-close-btn"
+                onClick={() => setShowModal(false)}
+              >
+                &times;
+              </button>
             </div>
 
             <div className="modal-body">
@@ -249,29 +297,57 @@ export default function ProfileScheduler({ selectedProfileId, profiles }) {
 
             <div className="modal-footer">
               {modalMode === "delete" ? (
-                <div className="modal-footer-right" style={{ width: '100%', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                  <button className="btn btn-secondary" onClick={() => setModalMode("edit")}>
+                <div
+                  className="modal-footer-right"
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: "10px",
+                  }}
+                >
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => setModalMode("edit")}
+                    disabled={saving}
+                  >
                     Cancel
                   </button>
-                  <button className="btn btn-danger" onClick={handleConfirmDelete}>
-                    Confirm Delete
+                  <button
+                    className="btn btn-danger"
+                    onClick={handleConfirmDelete}
+                    disabled={saving}
+                  >
+                    {saving ? "Deleting..." : "Confirm Delete"}
                   </button>
                 </div>
               ) : (
                 <>
                   <div className="modal-footer-left">
                     {modalMode === "edit" && (
-                      <button className="btn btn-danger" onClick={handleDeleteClick}>
+                      <button
+                        className="btn btn-danger"
+                        onClick={handleDeleteClick}
+                        disabled={saving}
+                      >
                         Delete
                       </button>
                     )}
                   </div>
                   <div className="modal-footer-right">
-                    <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => setShowModal(false)}
+                      disabled={saving}
+                    >
                       Cancel
                     </button>
-                    <button className="btn btn-primary" onClick={handleSave}>
-                      Save Changes
+                    <button
+                      className="btn btn-primary"
+                      onClick={handleSave}
+                      disabled={saving}
+                    >
+                      {saving ? "Saving..." : "Save Changes"}
                     </button>
                   </div>
                 </>
