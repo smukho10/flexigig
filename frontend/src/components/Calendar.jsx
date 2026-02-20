@@ -100,6 +100,10 @@ const EventCalendar = () => {
   };
 
   const handleAddEvent = () => {
+    if (!user) {
+      return setMessage("Session expired. Please log in again.");
+    }
+
     if (!startTime || !endTime) {
       return setMessage("Please select both start and end times.");
     }
@@ -173,7 +177,7 @@ const EventCalendar = () => {
       setMessage("Start date cannot be after end date.");
       return;
     }
-    setNewEvent({ start: dates[0], end: dates[1] });
+    setNewEvent((prev) => ({ ...prev, start: dates[0], end: dates[1] }));
     setIsTimeEditable(!!dates[0] && !!dates[1]);
   };
 

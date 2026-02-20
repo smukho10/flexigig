@@ -29,10 +29,7 @@
   border-radius: 6px;
   padding: 10px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  height: 800px;
-  /* Fixed height */
   display: flex;
-  /* Ensure child fills it */
   flex-direction: column;
 }
 
@@ -212,6 +209,11 @@
 
 .btn-danger:hover {
   background-color: #ff5252;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 /* Responsive styling */
