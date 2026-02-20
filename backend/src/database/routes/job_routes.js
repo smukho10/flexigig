@@ -38,9 +38,15 @@ router.get("/filled-jobs/:userId", async (req, res) => {
 });
 
 router.post("/post-job", async (req, res) => {
-  console.log("Received job post data:", req.body);
+  console.log("Received job post data:", JSON.stringify(req.body, null, 2));
   try {
-    const { jobStreetAddress, jobCity, jobProvince, jobPostalCode, userId, status, ...jobData } = req.body;
+    const { jobStreetAddress, jobCity, jobProvince, jobPostalCode, user_id, status, ...jobData } = req.body;
+
+    if (!user_id) {
+      console.error("Missing user_id in job post data");
+      return res.status(400).json({ message: "User ID is required to post a job" });
+    }
+
     const locationData = { jobStreetAddress, jobCity, jobProvince, jobPostalCode };
 
     const location = await job_queries.insertLocation(locationData);
@@ -49,6 +55,7 @@ router.post("/post-job", async (req, res) => {
     // Pass status through — defaults to 'open' in the query if not provided
     const newJob = await job_queries.postJob({
       ...jobData,
+      user_id,
       location_id,
       status: VALID_STATUSES.includes(status) ? status : 'open',
     });

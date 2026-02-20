@@ -18,7 +18,11 @@ const HomePage = () => {
   const fetchAllJobs = async () => {
     try {
       const response = await axios.get(`/api/all-jobs`, { withCredentials: true });
-      setJobs(response.data);
+      const filteredJobs = response.data.filter((job) =>
+        job.jobfilled === false &&
+        !['draft', 'filled', 'complete', 'completed'].includes(job.status)
+      );
+      setJobs(filteredJobs);
     } catch (error) {
       console.error("Error fetching jobs:", error);
     }
@@ -36,7 +40,11 @@ const HomePage = () => {
       if (filterDate.endDate) params.append("endDate", filterDate.endDate);
 
       const response = await axios.get(`/api/all-jobs?${params.toString()}`, { withCredentials: true });
-      setJobs(response.data);
+      const filteredJobs = response.data.filter((job) =>
+        job.jobfilled === false &&
+        !['draft', 'filled', 'complete', 'completed'].includes(job.status)
+      );
+      setJobs(filteredJobs);
     } catch (error) {
       console.error("Error fetching jobs:", error);
     }
