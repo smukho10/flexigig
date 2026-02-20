@@ -1,3 +1,10 @@
+/* ─────────────────────────────────────────────
+   JobPosting.css  —  all existing styles kept,
+   new tab / badge / card styles appended below
+───────────────────────────────────────────── */
+
+/* ── Existing styles (unchanged) ─────────────── */
+
 .job-posting-container {
     display: flex;
     flex-direction: column;
@@ -38,44 +45,45 @@
     height: 203px;
     box-sizing: border-box;
     justify-content: space-between;
+}
 
-    .left div {
-        margin: 0 0 25px 0;
-        display: flex;
-        justify-content: left;
-        align-items: center;
-        font-size: 16px;
-        font-weight: 400;
+.job-posting-container ul li .left div {
+    margin: 0 0 25px 0;
+    display: flex;
+    justify-content: left;
+    align-items: center;
+    font-size: 16px;
+    font-weight: 400;
+}
 
-        img {
-            margin: 0 10px 0 0;
-        }
-    }
+.job-posting-container ul li .left div img {
+    margin: 0 10px 0 0;
+}
 
-    .right {
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        align-items: flex-end;
+.job-posting-container ul li .right {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-end;
+}
 
-        button {
-            background-color: #4EBBC2;
-            color: white;
-            width: 103px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: 500;
-            border-radius: 5px;
-            border: none;
-        }
+.job-posting-container ul li .right button {
+    background-color: #4EBBC2;
+    color: white;
+    width: 103px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+}
 
-        #remove-btn {
-            background-color: #C2554E;
-        }
-    }
+.job-posting-container ul li .right #remove-btn {
+    background-color: #C2554E;
 }
 
 .job-posting-container #calendar-icon {
@@ -90,16 +98,18 @@
     justify-content: space-between;
     align-items: center;
     padding: 0 17px;
-    margin: 20px 0 35px;
+    margin: 20px 0 24px;
     border-radius: 5px;
     width: 142px;
     height: 30px;
     font-size: 12px;
     font-weight: 500;
+    cursor: pointer;
 }
 
 .job-posting-container .create-new-btn:hover {
     background-color: #4EBBC2;
+    color: white;
 }
 
 .job-posting-container #back-btn {
@@ -117,44 +127,485 @@
     right: 0;
     bottom: 0;
     left: 0;
+}
 
-    .prompt {
-        background-color: white;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        border-radius: 19px;
-        padding: 10px;
-    }
+.job-posting-container .remove-job-container .prompt {
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 19px;
+    padding: 10px;
+}
 
-    .prompt-text {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        margin: 0 0 20px 0;
-    }
+.job-posting-container .remove-job-container .prompt-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 0 20px 0;
+}
 
-    .prompt-buttons {
-        display: flex;
+.job-posting-container .remove-job-container .prompt-buttons {
+    display: flex;
+}
 
-        button {
-            margin: 0 10px 0;
-            background-color: #4EBBC2;
-            color: white;
-            width: 103px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: 500;
-            border-radius: 5px;
-        }
+.job-posting-container .remove-job-container .prompt-buttons button {
+    margin: 0 10px 0;
+    background-color: #4EBBC2;
+    color: white;
+    width: 103px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+}
 
-        .remove-btn {
-            background-color: #C2554E;
-        }
-    }
+.job-posting-container .remove-job-container .prompt-buttons .remove-btn {
+    background-color: #C2554E;
+}
+
+
+/* ── NEW: Status Tabs ─────────────────────────── */
+
+.status-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+}
+
+.status-tab {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 18px;
+    border-radius: 20px;
+    border: 1.5px solid var(--tab-color, #4EBBC2);
+    background-color: white;
+    color: var(--tab-color, #4EBBC2);
+    font-family: "Poppins";
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.18s ease, color 0.18s ease;
+    white-space: nowrap;
+}
+
+.status-tab:hover {
+    background-color: var(--tab-color, #4EBBC2);
+    color: white;
+}
+
+.status-tab.active {
+    background-color: var(--tab-color, #4EBBC2);
+    color: white;
+}
+
+/* Count bubble on tab */
+.tab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border-radius: 10px;
+    background-color: white;
+    color: var(--tab-color, #4EBBC2);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    transition: color 0.18s ease, background-color 0.18s ease;
+}
+
+.status-tab:not(.active) .tab-badge {
+    background-color: var(--tab-color, #4EBBC2);
+    color: white;
+}
+
+
+/* ── NEW: Job card enhancements ──────────────── */
+
+/* Left-border accent strip */
+.job-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.job-card-accent {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    border-radius: 19px 0 0 19px;
+    background-color: var(--status-color, #4EBBC2);
+}
+
+/* Status badge top-right of card */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: white;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+/* Card action buttons group */
+.card-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    align-items: flex-end;
+}
+
+/* Advance-status button (Publish / Mark In Review / etc.) */
+.advance-btn {
+    color: white;
+    width: auto !important;
+    min-width: 130px !important;
+    height: 30px;
+    padding: 0 14px;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    font-family: "Poppins";
+    transition: opacity 0.15s ease;
+}
+
+.advance-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+
+/* ── NEW: Empty tab state ────────────────────── */
+
+.empty-tab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 120px;
+    border-radius: 19px;
+    border: 1.5px dashed #D0D5DD;
+    color: #9CA3AF;
+    font-size: 15px;
+    width: 1114px;
+    box-sizing: border-box;
+}
+
+.empty-tab strong {
+    color: #6B7280;
+}
+
+
+/* ─────────────────────────────────────────────
+   JobPostingForm.css  —  existing + new buttons
+   (kept here since both files are often bundled)
+───────────────────────────────────────────── */
+
+.job-posting-form-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-radius: 19px;
+    box-shadow: 0 4px 4px rgb(0, 0, 0, .25);
+    font-family: "Poppins";
+    overflow: hidden;
+    width: 1114px;
+}
+
+.job-posting-form-container form {
+    width: 100%;
+}
+
+.job-posting-form-container input,
+.job-posting-form-container textarea,
+.job-posting-form-container select {
+    box-sizing: border-box;
+    font-size: 16px;
+    font-family: 'Nunito';
+    border-radius: 8px;
+    border: 1px solid #D0D5DD;
+}
+
+.job-posting-form-container .top {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    border-bottom: 0.5px solid #C8CBD9;
+}
+
+.job-posting-form-container .top label {
+    color: black;
+    margin: 0;
+    font-weight: 500;
+    font-size: 18px;
+    letter-spacing: 0.5px;
+}
+
+.job-posting-form-container .top .top-left {
+    box-sizing: content-box;
+    padding: 40px 30px;
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 5px;
+}
+
+.job-posting-form-container .top .top-right {
+    padding: 40px 50px;
+    display: flex;
+    gap: 10px;
+    justify-content: right;
+    align-content: flex-start;
+    flex-wrap: wrap;
+}
+
+.job-posting-form-container h1 {
+    color: black;
+    margin: 0;
+    font-weight: 500;
+    font-size: 18px;
+    letter-spacing: 0.5px;
+}
+
+/* Base form button reset */
+.job-posting-form-container button {
+    padding: 0;
+    margin: 0;
+    height: 30px;
+    font-family: "Poppins";
+    font-size: 12px;
+    font-weight: 400;
+    color: white;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+}
+
+/* Post Job — primary teal */
+.job-posting-form-container .post-btn {
+    width: 103px;
+    background-color: #4EBBC2;
+    transition: background-color 0.15s ease;
+}
+
+.job-posting-form-container .post-btn:hover {
+    background-color: #3aa3aa;
+}
+
+.job-posting-form-container .post-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Save as Draft — outlined style */
+.job-posting-form-container .draft-btn {
+    width: 120px;
+    background-color: white;
+    color: #6B7280;
+    border: 1.5px solid #D0D5DD;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.job-posting-form-container .draft-btn:hover {
+    background-color: #F9FAFB;
+    border-color: #9CA3AF;
+}
+
+.job-posting-form-container .draft-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.job-posting-form-container .bottom {
+    display: flex;
+}
+
+.job-posting-form-container .bottom .bottom-left {
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    min-width: 50%;
+    padding: 30px;
+    border-right: 0.5px solid #C8CBD9;
+}
+
+.job-posting-form-container .bottom .bottom-left .details {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 5px;
+    height: 100px;
+    justify-content: space-between;
+    margin-bottom: 25px;
+}
+
+.job-posting-form-container .bottom .bottom-left .location {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 5px 20px;
+}
+
+.job-posting-form-container .bottom .bottom-left .location .province {
+    display: flex;
+    justify-content: space-between;
+}
+
+.job-posting-form-container .bottom .bottom-left .location .postal {
+    display: flex;
+    justify-content: space-between;
+}
+
+.job-posting-form-container .bottom .bottom-left .location select {
+    width: fit-content;
+}
+
+.job-posting-form-container .bottom .bottom-right {
+    display: flex;
+    flex-direction: column;
+    max-height: 500px;
+    box-sizing: border-box;
+    min-width: 50%;
+    padding: 40px 40px 30px 50px;
+}
+
+.job-posting-form-container .bottom .bottom-right label {
+    color: black;
+    margin: 0;
+    font-weight: 500;
+    font-size: 18px;
+    letter-spacing: 0.5px;
+}
+
+.job-posting-form-container .bottom .bottom-right textarea {
+    width: 100%;
+    height: 100%;
+}
+
+.job-posting-form-container .error-message {
+    color: #C2554E;
+    font-size: 13px;
+    margin: 8px 0;
+}
+
+/* form-inner replaces <form> tag — same layout, no browser validation */
+.job-posting-form-container .form-inner {
+    width: 100%;
+}
+
+/* ── Draft prompt modal ────────────────────── */
+
+.draft-prompt-overlay {
+    background-color: #00000033;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1000;
+}
+
+.draft-prompt {
+    background-color: white;
+    border-radius: 19px;
+    padding: 32px 36px;
+    max-width: 420px;
+    width: 90%;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    font-family: "Poppins";
+}
+
+.draft-prompt h3 {
+    margin: 0 0 12px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #0340BE;
+}
+
+.draft-prompt p {
+    margin: 0 0 24px;
+    font-size: 14px;
+    color: #4B5563;
+    line-height: 1.5;
+}
+
+.draft-prompt-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.draft-prompt-buttons button {
+    height: 34px;
+    padding: 0 18px;
+    border-radius: 5px;
+    border: none;
+    font-family: "Poppins";
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.draft-prompt-cancel {
+    background-color: white;
+    color: #6B7280;
+    border: 1.5px solid #D0D5DD !important;
+}
+
+.draft-prompt-cancel:hover {
+    background-color: #F9FAFB;
+}
+
+.draft-prompt-discard {
+    background-color: #FEE2E2;
+    color: #C2554E;
+}
+
+.draft-prompt-discard:hover {
+    background-color: #FECACA;
+}
+
+.draft-prompt-save {
+    background-color: #4EBBC2 !important;
+    color: white !important;
+}
+
+.draft-prompt-save:hover {
+    background-color: #3aa3aa !important;
+}
+
+.draft-prompt-save:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Missing fields list in publish modal */
+.missing-fields-list {
+    margin: 8px 0 12px 0;
+    padding-left: 20px;
+    color: #C2554E;
+    font-size: 13px;
+    font-family: "Poppins";
+}
+
+.missing-fields-list li {
+    margin-bottom: 4px;
 }
