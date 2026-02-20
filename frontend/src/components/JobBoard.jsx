@@ -20,7 +20,10 @@ const JobBoard = () => {
         const fetchJobs = async () => {
             try {
                 const res = await axios.get(`/api/all-jobs`);
-                setJobs(res.data.filter((job) => job.jobfilled === false).sort(((a, b) => {
+                setJobs(res.data.filter((job) =>
+                    job.jobfilled === false &&
+                    !['draft', 'filled', 'complete', 'completed'].includes(job.status)
+                ).sort(((a, b) => {
                     return a.jobstart.localeCompare(b.jobstart)
                 })));
             } catch (error) {

@@ -18,46 +18,51 @@ jest.mock("../../src/database/connection.js", () => ({
 }));
 
 jest.mock("../../src/database/queries/user_queries.js", () => ({
-  getUserByEmail:         jest.fn(),
-  addUser:                jest.fn(),
-  addWorker:              jest.fn(),
-  addBusiness:            jest.fn(),
-  saveVerificationToken:  jest.fn(),
-  getUserById:            jest.fn(),
-  setCurrentSession:      jest.fn(),
-  insertOrUpdateToken:    jest.fn(),
-  validateToken:          jest.fn(),
-  checkLoginCredentials:  jest.fn(), // ← add this
+  getUserByEmail: jest.fn(),
+  addUser: jest.fn(),
+  addWorker: jest.fn(),
+  addBusiness: jest.fn(),
+  saveVerificationToken: jest.fn(),
+  getUserById: jest.fn(),
+  setCurrentSession: jest.fn(),
+  insertOrUpdateToken: jest.fn(),
+  validateToken: jest.fn(),
+  checkLoginCredentials: jest.fn(),
+  getUserResetToken: jest.fn(),
+  deleteUserResetToken: jest.fn(),
+  saveUserResetToken: jest.fn(),
+  getUserIdAndToken: jest.fn(),
+  updateUserPassword: jest.fn(),
 }));
 
 jest.mock("../../src/database/queries/workers_queries.js", () => ({
-  addWorkerSkill:      jest.fn(),
+  addWorkerSkill: jest.fn(),
   addWorkerExperience: jest.fn(),
-  addWorkerTrait:      jest.fn(),
+  addWorkerTrait: jest.fn(),
 }));
 
 // ─── Imports ───────────────────────────────────────────────────────────────────
-const request     = require("supertest");
-const app         = require("../../src/app");
-const db          = require("../../src/database/connection.js");
+const request = require("supertest");
+const app = require("../../src/app");
+const db = require("../../src/database/connection.js");
 const userQueries = require("../../src/database/queries/user_queries.js");
 const workersQueries = require("../../src/database/queries/workers_queries.js");
-const sgMail      = require("@sendgrid/mail");
+const sgMail = require("@sendgrid/mail");
 
 // Mount the router (guard against double-registration across test runs)
-const userRouter  = require("../../src/database/routes/user_routes.js");
+const userRouter = require("../../src/database/routes/user_routes.js");
 app.use("/api", userRouter);
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 const WORKER_BODY = {
-  email:       "worker@example.com",
-  password:    "pass123",
+  email: "worker@example.com",
+  password: "pass123",
   accountType: "Worker",
-  firstName:   "Alice",
-  lastName:    "Smith",
-  skills:      [],
+  firstName: "Alice",
+  lastName: "Smith",
+  skills: [],
   experiences: [],
-  traits:      [],
+  traits: [],
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -138,20 +143,20 @@ describe("GET /api/verify/:token", () => {
   // ── Test 6 ──────────────────────────────────────────────────────────────────
   test("200 + creates Worker account and deletes pending row", async () => {
     const pending = {
-      email:                "worker@example.com",
-      password:             "hashed_pw",
-      account_type:         "Worker",
-      first_name:           "Alice",
-      last_name:            "Smith",
-      phone_number:         "555-0100",
-      photo:                null,
-      street_address:       "123 Main St",
-      city:                 "Vancouver",
-      province:             "BC",
-      postal_code:          "V6B 1A1",
-      skills:               JSON.stringify([{ skill_id: 3 }]),
-      experiences:          JSON.stringify([{ experience_id: 7 }]),
-      traits:               JSON.stringify([{ trait_id: 2 }]),
+      email: "worker@example.com",
+      password: "hashed_pw",
+      account_type: "Worker",
+      first_name: "Alice",
+      last_name: "Smith",
+      phone_number: "555-0100",
+      photo: null,
+      street_address: "123 Main St",
+      city: "Vancouver",
+      province: "BC",
+      postal_code: "V6B 1A1",
+      skills: JSON.stringify([{ skill_id: 3 }]),
+      experiences: JSON.stringify([{ experience_id: 7 }]),
+      traits: JSON.stringify([{ trait_id: 2 }]),
     };
 
     db.query
@@ -191,22 +196,22 @@ describe("GET /api/verify/:token", () => {
   // ── Test 7 ──────────────────────────────────────────────────────────────────
   test("200 + creates Employer account and deletes pending row", async () => {
     const pending = {
-      email:                "biz@example.com",
-      password:             "hashed_pw",
-      account_type:         "Employer",
-      first_name:           "Bob",
-      last_name:            "Corp",
-      business_name:        "Bob's Builds",
+      email: "biz@example.com",
+      password: "hashed_pw",
+      account_type: "Employer",
+      first_name: "Bob",
+      last_name: "Corp",
+      business_name: "Bob's Builds",
       business_description: "Construction services",
-      phone_number:         "555-0200",
-      photo:                null,
-      street_address:       "99 Business Ave",
-      city:                 "Toronto",
-      province:             "ON",
-      postal_code:          "M5V 3A8",
-      skills:               JSON.stringify([]),
-      experiences:          JSON.stringify([]),
-      traits:               JSON.stringify([]),
+      phone_number: "555-0200",
+      photo: null,
+      street_address: "99 Business Ave",
+      city: "Toronto",
+      province: "ON",
+      postal_code: "M5V 3A8",
+      skills: JSON.stringify([]),
+      experiences: JSON.stringify([]),
+      traits: JSON.stringify([]),
     };
 
     db.query
@@ -388,5 +393,187 @@ describe("POST /api/resend-verification", () => {
     const tokenCallOrder = userQueries.insertOrUpdateToken.mock.invocationCallOrder[0];
     const emailCallOrder = sgMail.send.mock.invocationCallOrder[0];
     expect(tokenCallOrder).toBeLessThan(emailCallOrder);
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Forgot Password API
+// ══════════════════════════════════════════════════════════════════════════════
+describe("Forgot Password API", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe("POST /api/initiate-password-reset", () => {
+    test("returns 404 when email is not registered", async () => {
+      userQueries.getUserByEmail.mockResolvedValueOnce(null);
+
+      const res = await request(app)
+        .post("/api/initiate-password-reset")
+        .send({ email: "unknown@example.com" });
+
+      expect(res.statusCode).toBe(404);
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toMatch(/user not found/i);
+      expect(userQueries.getUserByEmail).toHaveBeenCalledWith("unknown@example.com");
+    });
+
+    test("sends reset email and returns 200 when user exists and no previous token", async () => {
+      userQueries.getUserByEmail.mockResolvedValueOnce({ id: 1, email: "user@example.com" });
+      userQueries.getUserResetToken.mockResolvedValueOnce(null);
+      userQueries.saveUserResetToken.mockResolvedValueOnce();
+      sgMail.send.mockResolvedValueOnce([{ statusCode: 202 }]);
+
+      const res = await request(app)
+        .post("/api/initiate-password-reset")
+        .send({ email: "user@example.com" });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.message).toMatch(/password reset link sent/i);
+      expect(userQueries.deleteUserResetToken).not.toHaveBeenCalled();
+      expect(userQueries.saveUserResetToken).toHaveBeenCalledWith(1, expect.any(String));
+    });
+
+    test("deletes old token before saving a new one when one already exists", async () => {
+      userQueries.getUserByEmail.mockResolvedValueOnce({ id: 42, email: "user@example.com" });
+      userQueries.getUserResetToken.mockResolvedValueOnce("old-token-here");
+      userQueries.deleteUserResetToken.mockResolvedValueOnce();
+      userQueries.saveUserResetToken.mockResolvedValueOnce();
+      sgMail.send.mockResolvedValueOnce([{ statusCode: 202 }]);
+
+      const res = await request(app)
+        .post("/api/initiate-password-reset")
+        .send({ email: "user@example.com" });
+
+      expect(res.statusCode).toBe(200);
+      expect(userQueries.deleteUserResetToken).toHaveBeenCalledWith(42);
+      expect(userQueries.saveUserResetToken).toHaveBeenCalledWith(42, expect.any(String));
+    });
+
+    test("trims and lowercases the email before lookup", async () => {
+      userQueries.getUserByEmail.mockResolvedValueOnce(null);
+
+      await request(app)
+        .post("/api/initiate-password-reset")
+        .send({ email: "  User@Example.COM  " });
+
+      expect(userQueries.getUserByEmail).toHaveBeenCalledWith("user@example.com");
+    });
+
+    test("returns 500 when email sending fails", async () => {
+      userQueries.getUserByEmail.mockResolvedValueOnce({ id: 5, email: "fail@example.com" });
+      userQueries.getUserResetToken.mockResolvedValueOnce(null);
+      userQueries.saveUserResetToken.mockResolvedValueOnce();
+      sgMail.send.mockRejectedValueOnce(new Error("SendGrid error"));
+
+      const res = await request(app)
+        .post("/api/initiate-password-reset")
+        .send({ email: "fail@example.com" });
+
+      expect(res.statusCode).toBe(500);
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toMatch(/failed to send reset email/i);
+    });
+
+    test("returns 500 when a database query throws", async () => {
+      userQueries.getUserByEmail.mockRejectedValueOnce(new Error("DB connection error"));
+
+      const res = await request(app)
+        .post("/api/initiate-password-reset")
+        .send({ email: "user@example.com" });
+
+      expect(res.statusCode).toBe(500);
+      expect(res.body.success).toBe(false);
+    });
+  });
+
+  describe("POST /api/reset-password", () => {
+    test("returns 404 when the reset token is invalid", async () => {
+      userQueries.getUserIdAndToken.mockResolvedValueOnce(null);
+
+      const res = await request(app)
+        .post("/api/reset-password")
+        .send({
+          uniqueIdentifier: "bad-token",
+          newPassword: "NewPass123!",
+          confirmPassword: "NewPass123!",
+        });
+
+      expect(res.statusCode).toBe(404);
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toMatch(/invalid reset link/i);
+    });
+
+    test("returns 400 when newPassword and confirmPassword do not match", async () => {
+      userQueries.getUserIdAndToken.mockResolvedValueOnce({ userId: 7 });
+
+      const res = await request(app)
+        .post("/api/reset-password")
+        .send({
+          uniqueIdentifier: "valid-token",
+          newPassword: "NewPass123!",
+          confirmPassword: "DifferentPass!",
+        });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toMatch(/passwords do not match/i);
+    });
+
+    test("successfully resets password and deletes token", async () => {
+      userQueries.getUserIdAndToken.mockResolvedValueOnce({ userId: 7 });
+      userQueries.updateUserPassword.mockResolvedValueOnce();
+      userQueries.deleteUserResetToken.mockResolvedValueOnce();
+
+      const res = await request(app)
+        .post("/api/reset-password")
+        .send({
+          uniqueIdentifier: "valid-token",
+          newPassword: "NewSecurePass1!",
+          confirmPassword: "NewSecurePass1!",
+        });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.message).toMatch(/password reset successful/i);
+      expect(userQueries.updateUserPassword).toHaveBeenCalledWith(7, expect.any(String));
+      expect(userQueries.deleteUserResetToken).toHaveBeenCalledWith(7);
+    });
+
+    test("stores a bcrypt hash, not the plain-text password", async () => {
+      userQueries.getUserIdAndToken.mockResolvedValueOnce({ userId: 8 });
+      userQueries.updateUserPassword.mockResolvedValueOnce();
+      userQueries.deleteUserResetToken.mockResolvedValueOnce();
+
+      const plainPassword = "MyPlainPassword!";
+
+      await request(app)
+        .post("/api/reset-password")
+        .send({
+          uniqueIdentifier: "valid-token",
+          newPassword: plainPassword,
+          confirmPassword: plainPassword,
+        });
+
+      const savedHash = userQueries.updateUserPassword.mock.calls[0][1];
+      expect(savedHash).not.toBe(plainPassword);
+      expect(savedHash).toMatch(/^\$2[aby]\$/);
+    });
+
+    test("returns 500 when database query throws", async () => {
+      userQueries.getUserIdAndToken.mockRejectedValueOnce(new Error("DB error"));
+
+      const res = await request(app)
+        .post("/api/reset-password")
+        .send({
+          uniqueIdentifier: "valid-token",
+          newPassword: "NewPass123!",
+          confirmPassword: "NewPass123!",
+        });
+
+      expect(res.statusCode).toBe(500);
+      expect(res.body.success).toBe(false);
+    });
   });
 });

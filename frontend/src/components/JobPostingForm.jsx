@@ -6,13 +6,13 @@ import { JOB_STATUS } from "./JobPosting";
 
 // Fields required to publish a job
 const REQUIRED_FIELDS = [
-    { key: "jobTitle",      label: "Job Title" },
-    { key: "jobType",       label: "Job Type" },
-    { key: "hourlyRate",    label: "Hourly Rate" },
-    { key: "jobStart",      label: "Job Start Date & Time" },
-    { key: "jobEnd",        label: "Job End Date & Time" },
-    { key: "jobCity",       label: "City" },
-    { key: "jobProvince",   label: "Province" },
+    { key: "jobTitle", label: "Job Title" },
+    { key: "jobType", label: "Job Type" },
+    { key: "hourlyRate", label: "Hourly Rate" },
+    { key: "jobStart", label: "Job Start Date & Time" },
+    { key: "jobEnd", label: "Job End Date & Time" },
+    { key: "jobCity", label: "City" },
+    { key: "jobProvince", label: "Province" },
     { key: "jobPostalCode", label: "Postal Code" },
 ];
 
@@ -21,13 +21,13 @@ const getMissingFields = (jobPost) =>
 
 const JobPostingForm = ({ job, setDone, onBackClick }) => {
     const { user } = useUser();
-    const [editing, setEditing]           = useState(false);
+    const [editing, setEditing] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
-    const [submitting, setSubmitting]     = useState(null);
-    const [isDirty, setIsDirty]           = useState(false);
+    const [submitting, setSubmitting] = useState(null);
+    const [isDirty, setIsDirty] = useState(false);
 
     // prompt state: null | "nav-with-title" | "nav-no-title"
-    const [promptType, setPromptType]         = useState(null);
+    const [promptType, setPromptType] = useState(null);
     const [pendingNavigation, setPendingNavigation] = useState(null);
 
     const [jobPost, setJobPost] = useState({
@@ -37,12 +37,19 @@ const JobPostingForm = ({ job, setDone, onBackClick }) => {
         user_id: user ? user.id : null,
     });
 
+    // Ensure user_id is updated once user object is available
+    useEffect(() => {
+        if (user && user.id && !jobPost.user_id) {
+            setJobPost(prev => ({ ...prev, user_id: user.id }));
+        }
+    }, [user, jobPost.user_id]);
+
     const formatDateTimeForInput = (dateTime) => {
         if (!dateTime) return "";
-        const date  = new Date(dateTime);
-        const year  = date.getFullYear();
+        const date = new Date(dateTime);
+        const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, "0");
-        const day   = String(date.getDate()).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
         return `${year}-${month}-${day}T${date.toTimeString().slice(0, 5)}`;
     };
 
@@ -51,18 +58,18 @@ const JobPostingForm = ({ job, setDone, onBackClick }) => {
             setEditing(true);
             setJobPost({
                 ...job,
-                jobTitle:        job.jobtitle,
-                jobType:         job.jobtype,
-                jobDescription:  job.jobdescription,
-                hourlyRate:      job.hourlyrate.toString(),
-                jobStreetAddress:job.streetaddress,
-                jobCity:         job.city,
-                jobProvince:     job.province,
-                jobPostalCode:   job.postalcode,
-                jobStart:        formatDateTimeForInput(job.jobstart),
-                jobEnd:          formatDateTimeForInput(job.jobend),
-                job_id:          job.job_id,
-                location_id:     job.location_id,
+                jobTitle: job.jobtitle,
+                jobType: job.jobtype,
+                jobDescription: job.jobdescription,
+                hourlyRate: job.hourlyrate.toString(),
+                jobStreetAddress: job.streetaddress,
+                jobCity: job.city,
+                jobProvince: job.province,
+                jobPostalCode: job.postalcode,
+                jobStart: formatDateTimeForInput(job.jobstart),
+                jobEnd: formatDateTimeForInput(job.jobend),
+                job_id: job.job_id,
+                location_id: job.location_id,
             });
         }
     }, [job]);
@@ -129,9 +136,9 @@ const JobPostingForm = ({ job, setDone, onBackClick }) => {
 
         const locationData = {
             streetAddress: jobPost.jobStreetAddress || "",
-            city:          jobPost.jobCity          || (isDraft ? "N/A" : ""),
-            province:      jobPost.jobProvince       || (isDraft ? "N/A" : ""),
-            postalCode:    jobPost.jobPostalCode     || (isDraft ? "N/A" : ""),
+            city: jobPost.jobCity || (isDraft ? "N/A" : ""),
+            province: jobPost.jobProvince || (isDraft ? "N/A" : ""),
+            postalCode: jobPost.jobPostalCode || (isDraft ? "N/A" : ""),
         };
 
         const updatedJobData = { ...jobPost, locationData, status };
@@ -198,135 +205,135 @@ const JobPostingForm = ({ job, setDone, onBackClick }) => {
 
     return (
         <>
-        <div className="job-posting-form-container">
-            <div className="form-inner">
-                <div className="top">
-                    <div className="top-left">
-                        <label htmlFor="jobTitle">Job Title</label>
-                        <input type="text" id="jobTitle" name="jobTitle"
-                            value={jobPost.jobTitle} onChange={handleChange} />
-                        <label htmlFor="jobType">Job Type</label>
-                        <input type="text" id="jobType" name="jobType"
-                            value={jobPost.jobType} onChange={handleChange} />
+            <div className="job-posting-form-container">
+                <div className="form-inner">
+                    <div className="top">
+                        <div className="top-left">
+                            <label htmlFor="jobTitle">Job Title</label>
+                            <input type="text" id="jobTitle" name="jobTitle"
+                                value={jobPost.jobTitle} onChange={handleChange} />
+                            <label htmlFor="jobType">Job Type</label>
+                            <input type="text" id="jobType" name="jobType"
+                                value={jobPost.jobType} onChange={handleChange} />
+                        </div>
+                        <div className="top-right">
+                            {isDraftMode && (
+                                <button type="button" className="draft-btn"
+                                    onClick={handleSaveAsDraft} disabled={submitting !== null}>
+                                    {submitting === JOB_STATUS.DRAFT ? "Saving..." : "Save as Draft"}
+                                </button>
+                            )}
+                            <button type="button" className="post-btn"
+                                onClick={handlePost} disabled={submitting !== null}>
+                                {submitting && submitting !== JOB_STATUS.DRAFT
+                                    ? "Posting..."
+                                    : editing
+                                        ? job?.status === JOB_STATUS.DRAFT ? "Post Job" : "Update Job"
+                                        : "Post Job"}
+                            </button>
+                        </div>
                     </div>
-                    <div className="top-right">
-                        {isDraftMode && (
-                            <button type="button" className="draft-btn"
-                                onClick={handleSaveAsDraft} disabled={submitting !== null}>
+
+                    <div className="bottom">
+                        <div className="bottom-left">
+                            <h1>Job Details</h1>
+                            <div className="details">
+                                <label htmlFor="hourlyRate">Hourly Rate ($)</label>
+                                <input type="number" min="0" id="hourlyRate" name="hourlyRate"
+                                    value={jobPost.hourlyRate} onChange={handleChange} />
+                                <label htmlFor="jobStart">Job Start Date, Time</label>
+                                <input type="datetime-local" id="jobStart" name="jobStart"
+                                    value={jobPost.jobStart} onChange={handleChange} />
+                                <label htmlFor="jobEnd">Job End Date, Time</label>
+                                <input type="datetime-local" id="jobEnd" name="jobEnd"
+                                    value={jobPost.jobEnd} onChange={handleChange} />
+                            </div>
+                            <h1>Location</h1>
+                            <div className="location">
+                                <label htmlFor="jobStreetAddress">Street Address</label>
+                                <input type="text" id="jobStreetAddress" name="jobStreetAddress"
+                                    value={jobPost.jobStreetAddress} onChange={handleChange} />
+                                <label htmlFor="jobCity">City</label>
+                                <input type="text" id="jobCity" name="jobCity"
+                                    value={jobPost.jobCity} onChange={handleChange} />
+                                <div className="province">
+                                    <label htmlFor="jobProvince">Province</label>
+                                    <select id="jobProvince" name="jobProvince"
+                                        value={jobPost.jobProvince} onChange={handleChange}>
+                                        <option value="">Select</option>
+                                        <option value="Alberta">AB</option>
+                                        <option value="British Columbia">BC</option>
+                                        <option value="Manitoba">MB</option>
+                                        <option value="New Brunswick">NB</option>
+                                        <option value="Newfoundland and Labrador">NL</option>
+                                        <option value="Nova Scotia">NS</option>
+                                        <option value="Ontario">ON</option>
+                                        <option value="Prince Edward Island">PE</option>
+                                        <option value="Quebec">QC</option>
+                                        <option value="Saskatchewan">SK</option>
+                                        <option value="Northwest Territories">NT</option>
+                                        <option value="Nunavut">NU</option>
+                                        <option value="Yukon">YT</option>
+                                    </select>
+                                </div>
+                                <div className="postal">
+                                    <label htmlFor="jobPostalCode">Postal Code</label>
+                                    <input type="text" id="jobPostalCode" name="jobPostalCode"
+                                        value={jobPost.jobPostalCode} onChange={handleChange} />
+                                </div>
+                            </div>
+                        </div>
+                        <div className="bottom-right">
+                            <label htmlFor="jobDescription">Job Description</label>
+                            <textarea id="jobDescription" name="jobDescription"
+                                value={jobPost.jobDescription} onChange={handleChange} />
+                        </div>
+                    </div>
+                </div>
+                {errorMessage && <p className="error-message">{errorMessage}</p>}
+            </div>
+
+            {/* ── Prompt: has title — Stay / Discard / Save as Draft ── */}
+            {promptType === "nav-with-title" && (
+                <div className="draft-prompt-overlay">
+                    <div className="draft-prompt">
+                        <h3>Save as Draft?</h3>
+                        <p>
+                            You have unsaved changes to <strong>"{jobPost.jobTitle}"</strong>.
+                            Would you like to save it as a draft before leaving?
+                        </p>
+                        <div className="draft-prompt-buttons">
+                            <button className="draft-prompt-cancel" onClick={handlePromptStay}>Stay</button>
+                            <button className="draft-prompt-discard" onClick={handlePromptDiscard}>Discard</button>
+                            <button className="draft-prompt-save" onClick={handlePromptSaveDraft}
+                                disabled={submitting !== null}>
                                 {submitting === JOB_STATUS.DRAFT ? "Saving..." : "Save as Draft"}
                             </button>
-                        )}
-                        <button type="button" className="post-btn"
-                            onClick={handlePost} disabled={submitting !== null}>
-                            {submitting && submitting !== JOB_STATUS.DRAFT
-                                ? "Posting..."
-                                : editing
-                                    ? job?.status === JOB_STATUS.DRAFT ? "Post Job" : "Update Job"
-                                    : "Post Job"}
-                        </button>
-                    </div>
-                </div>
-
-                <div className="bottom">
-                    <div className="bottom-left">
-                        <h1>Job Details</h1>
-                        <div className="details">
-                            <label htmlFor="hourlyRate">Hourly Rate ($)</label>
-                            <input type="number" min="0" id="hourlyRate" name="hourlyRate"
-                                value={jobPost.hourlyRate} onChange={handleChange} />
-                            <label htmlFor="jobStart">Job Start Date, Time</label>
-                            <input type="datetime-local" id="jobStart" name="jobStart"
-                                value={jobPost.jobStart} onChange={handleChange} />
-                            <label htmlFor="jobEnd">Job End Date, Time</label>
-                            <input type="datetime-local" id="jobEnd" name="jobEnd"
-                                value={jobPost.jobEnd} onChange={handleChange} />
-                        </div>
-                        <h1>Location</h1>
-                        <div className="location">
-                            <label htmlFor="jobStreetAddress">Street Address</label>
-                            <input type="text" id="jobStreetAddress" name="jobStreetAddress"
-                                value={jobPost.jobStreetAddress} onChange={handleChange} />
-                            <label htmlFor="jobCity">City</label>
-                            <input type="text" id="jobCity" name="jobCity"
-                                value={jobPost.jobCity} onChange={handleChange} />
-                            <div className="province">
-                                <label htmlFor="jobProvince">Province</label>
-                                <select id="jobProvince" name="jobProvince"
-                                    value={jobPost.jobProvince} onChange={handleChange}>
-                                    <option value="">Select</option>
-                                    <option value="Alberta">AB</option>
-                                    <option value="British Columbia">BC</option>
-                                    <option value="Manitoba">MB</option>
-                                    <option value="New Brunswick">NB</option>
-                                    <option value="Newfoundland and Labrador">NL</option>
-                                    <option value="Nova Scotia">NS</option>
-                                    <option value="Ontario">ON</option>
-                                    <option value="Prince Edward Island">PE</option>
-                                    <option value="Quebec">QC</option>
-                                    <option value="Saskatchewan">SK</option>
-                                    <option value="Northwest Territories">NT</option>
-                                    <option value="Nunavut">NU</option>
-                                    <option value="Yukon">YT</option>
-                                </select>
-                            </div>
-                            <div className="postal">
-                                <label htmlFor="jobPostalCode">Postal Code</label>
-                                <input type="text" id="jobPostalCode" name="jobPostalCode"
-                                    value={jobPost.jobPostalCode} onChange={handleChange} />
-                            </div>
                         </div>
                     </div>
-                    <div className="bottom-right">
-                        <label htmlFor="jobDescription">Job Description</label>
-                        <textarea id="jobDescription" name="jobDescription"
-                            value={jobPost.jobDescription} onChange={handleChange} />
-                    </div>
                 </div>
-            </div>
-            {errorMessage && <p className="error-message">{errorMessage}</p>}
-        </div>
+            )}
 
-        {/* ── Prompt: has title — Stay / Discard / Save as Draft ── */}
-        {promptType === "nav-with-title" && (
-            <div className="draft-prompt-overlay">
-                <div className="draft-prompt">
-                    <h3>Save as Draft?</h3>
-                    <p>
-                        You have unsaved changes to <strong>"{jobPost.jobTitle}"</strong>.
-                        Would you like to save it as a draft before leaving?
-                    </p>
-                    <div className="draft-prompt-buttons">
-                        <button className="draft-prompt-cancel" onClick={handlePromptStay}>Stay</button>
-                        <button className="draft-prompt-discard" onClick={handlePromptDiscard}>Discard</button>
-                        <button className="draft-prompt-save" onClick={handlePromptSaveDraft}
-                            disabled={submitting !== null}>
-                            {submitting === JOB_STATUS.DRAFT ? "Saving..." : "Save as Draft"}
-                        </button>
+            {/* ── Prompt: no title — Stay / Discard only ── */}
+            {promptType === "nav-no-title" && (
+                <div className="draft-prompt-overlay">
+                    <div className="draft-prompt">
+                        <h3>Leave without saving?</h3>
+                        <p>
+                            You need to enter a <strong>Job Title</strong> to save as a draft.
+                            Would you like to stay and add a title, or discard your changes?
+                        </p>
+                        <div className="draft-prompt-buttons">
+                            <button className="draft-prompt-cancel" onClick={handlePromptStay}>
+                                Stay &amp; Add Title
+                            </button>
+                            <button className="draft-prompt-discard" onClick={handlePromptDiscard}>
+                                Discard
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        )}
-
-        {/* ── Prompt: no title — Stay / Discard only ── */}
-        {promptType === "nav-no-title" && (
-            <div className="draft-prompt-overlay">
-                <div className="draft-prompt">
-                    <h3>Leave without saving?</h3>
-                    <p>
-                        You need to enter a <strong>Job Title</strong> to save as a draft.
-                        Would you like to stay and add a title, or discard your changes?
-                    </p>
-                    <div className="draft-prompt-buttons">
-                        <button className="draft-prompt-cancel" onClick={handlePromptStay}>
-                            Stay &amp; Add Title
-                        </button>
-                        <button className="draft-prompt-discard" onClick={handlePromptDiscard}>
-                            Discard
-                        </button>
-                    </div>
-                </div>
-            </div>
-        )}
+            )}
         </>
     );
 };

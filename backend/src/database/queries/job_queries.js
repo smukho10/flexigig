@@ -109,10 +109,10 @@ const updateJob = async (jobId, { jobTitle, jobType, jobDescription, hourlyRate,
       WHERE locations.location_id = jobPostings.location_id AND jobPostings.job_id = $5;
     `;
     await db.query(locationUpdateQuery, [
-      locationData.streetAddress,
-      locationData.city,
-      locationData.province,
-      locationData.postalCode,
+      locationData.streetAddress || "",
+      locationData.city || "",
+      locationData.province || "",
+      locationData.postalCode || "",
       jobId
     ]);
 
@@ -166,11 +166,13 @@ const deleteJobById = async (jobId) => {
 
 const fetchAllJobs = async (filters) => {
   let query = `
-    SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode, bs.business_name
+    SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode, 
+           COALESCE(bs.business_name, 'Unknown Business') AS business_name
     FROM jobPostings jp
     JOIN locations loc ON jp.location_id = loc.location_id
-    JOIN businesses bs ON jp.user_id = bs.user_id
-    WHERE 1=1
+    LEFT JOIN businesses bs ON jp.user_id = bs.user_id
+    WHERE jp.jobfilled = false 
+    AND jp.status NOT IN ('draft', 'filled', 'complete', 'completed')
   `;
 
   const params = [];
@@ -225,10 +227,11 @@ const applyForJob = async (jobId, applicantId) => {
 const fetchAppliedJobs = async (applicantId) => {
   try {
     const result = await db.query(`
-      SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode, bs.business_name
+      SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode, 
+             COALESCE(bs.business_name, 'Unknown Business') AS business_name
       FROM jobPostings jp
       JOIN locations loc ON jp.location_id = loc.location_id
-      JOIN businesses bs ON jp.user_id = bs.user_id
+      LEFT JOIN businesses bs ON jp.user_id = bs.user_id
       WHERE jp.applicant_id = $1`,
       [applicantId]
     );
