@@ -321,19 +321,21 @@ const JobPosting = () => {
 
             {/* ── Publish blocked — missing fields modal ── */}
             {publishMissingPrompt && (
-                <div className="draft-prompt-overlay">
-                    <div className="draft-prompt">
+                <div className="draft-prompt-overlay" onClick={() => setPublishMissingPrompt(null)}>
+                    <div className="draft-prompt" onClick={e => e.stopPropagation()}>
                         <h3>Can't Publish Yet</h3>
                         <p>
                             <strong>"{publishMissingPrompt.job.jobtitle}"</strong> is missing the
                             following required fields:
                         </p>
-                        <ul className="missing-fields-list">
+                        <div className="missing-fields-chips">
                             {publishMissingPrompt.missingFields.map(f => (
-                                <li key={f}>{f}</li>
+                                <span key={f} className="missing-field-chip">{f}</span>
                             ))}
-                        </ul>
-                        <p>Please fill them in before publishing.</p>
+                        </div>
+                        <p style={{ fontSize: "13px", color: "#6B7280", marginBottom: "20px" }}>
+                            Click <strong>Fill in Fields</strong> to open the editor and complete them.
+                        </p>
                         <div className="draft-prompt-buttons">
                             <button className="draft-prompt-cancel"
                                 onClick={() => setPublishMissingPrompt(null)}>

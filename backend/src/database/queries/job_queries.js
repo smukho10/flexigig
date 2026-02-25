@@ -8,8 +8,13 @@ const insertLocation = async ({ jobStreetAddress, jobCity, jobProvince, jobPosta
   `;
 
   try {
-    const locationResult = await db.query(locationQuery, [jobStreetAddress, jobCity, jobProvince, jobPostalCode]);
-    return locationResult.rows[0];
+      const locationResult = await db.query(locationQuery, [
+        jobStreetAddress || null,
+        jobCity          || null,
+        jobProvince      || null,
+        jobPostalCode    || null,
+      ]);    
+return locationResult.rows[0];
   } catch (err) {
     console.error("Error inserting location:", err);
     throw err;
@@ -21,12 +26,18 @@ const postJob = async ({ jobTitle, jobType, jobDescription, hourlyRate, jobStart
   const jobQuery = `
     INSERT INTO jobPostings (
       jobTitle, jobType, jobDescription, hourlyRate, jobStart, jobEnd, location_id, user_id, jobfilled, status
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false, $9) 
+    ) VALUES ($1, $2, $3, $4::numeric, $5::timestamp, $6::timestamp, $7, $8, false, $9) 
     RETURNING *;
   `;
 
   try {
-    const jobResult = await db.query(jobQuery, [jobTitle, jobType, jobDescription, hourlyRate, jobStart, jobEnd, location_id, user_id, status]);
+    const jobResult = await db.query(jobQuery, [
+      jobTitle, jobType, jobDescription,
+      hourlyRate || null,
+      jobStart   || null,
+      jobEnd     || null,
+      location_id, user_id, status
+    ]);
     return jobResult.rows[0];
   } catch (err) {
     console.error("Error posting job:", err);
@@ -109,21 +120,25 @@ const updateJob = async (jobId, { jobTitle, jobType, jobDescription, hourlyRate,
       WHERE locations.location_id = jobPostings.location_id AND jobPostings.job_id = $5;
     `;
     await db.query(locationUpdateQuery, [
-      locationData.streetAddress || "",
-      locationData.city || "",
-      locationData.province || "",
-      locationData.postalCode || "",
+      locationData.streetAddress || null,
+      locationData.city          || null,
+      locationData.province      || null,
+      locationData.postalCode    || null,
       jobId
     ]);
 
     const jobUpdateQuery = `
       UPDATE jobPostings
-      SET jobTitle = $1, jobType = $2, jobDescription = $3, hourlyRate = $4, jobStart = $5, jobEnd = $6, status = $7
+      SET jobTitle = $1, jobType = $2, jobDescription = $3, hourlyRate = $4::numeric, jobStart = $5::timestamp, jobEnd = $6::timestamp, status = $7
       WHERE job_id = $8 AND user_id = $9
       RETURNING *;
     `;
     const result = await db.query(jobUpdateQuery, [
-      jobTitle, jobType, jobDescription, hourlyRate, jobStart, jobEnd, status, jobId, user_id
+      jobTitle, jobType, jobDescription,
+      hourlyRate || null,
+      jobStart   || null,
+      jobEnd     || null,
+      status, jobId, user_id
     ]);
 
     return result.rows[0];
