@@ -61,7 +61,7 @@ const JobPostingForm = ({ job, setDone, onBackClick }) => {
                 jobTitle: job.jobtitle,
                 jobType: job.jobtype,
                 jobDescription: job.jobdescription,
-                hourlyRate: job.hourlyrate.toString(),
+                hourlyRate: job.hourlyrate != null ? job.hourlyrate.toString() : "",
                 jobStreetAddress: job.streetaddress,
                 jobCity: job.city,
                 jobProvince: job.province,
@@ -132,16 +132,23 @@ const JobPostingForm = ({ job, setDone, onBackClick }) => {
     const handleSubmit = async (status) => {
         setSubmitting(status);
         setErrorMessage("");
-        const isDraft = status === JOB_STATUS.DRAFT;
 
         const locationData = {
             streetAddress: jobPost.jobStreetAddress || "",
-            city: jobPost.jobCity || (isDraft ? "N/A" : ""),
-            province: jobPost.jobProvince || (isDraft ? "N/A" : ""),
-            postalCode: jobPost.jobPostalCode || (isDraft ? "N/A" : ""),
+            city:          jobPost.jobCity          || "",
+            province:      jobPost.jobProvince      || "",
+            postalCode:    jobPost.jobPostalCode    || "",
         };
 
-        const updatedJobData = { ...jobPost, locationData, status };
+        const updatedJobData = {
+            ...jobPost,
+            hourlyRate: jobPost.hourlyRate === "" ? null : jobPost.hourlyRate,
+            jobStart:   jobPost.jobStart   === "" ? null : jobPost.jobStart,
+            jobEnd:     jobPost.jobEnd     === "" ? null : jobPost.jobEnd,
+            locationData,
+            status,
+        };
+
         const apiUrl = editing ? `/api/edit-job/${jobPost.job_id}` : `/api/post-job`;
 
         try {
@@ -153,7 +160,7 @@ const JobPostingForm = ({ job, setDone, onBackClick }) => {
             setDone();
         } catch (error) {
             console.error("Failed to process job:", error.message);
-            setErrorMessage("Failed to process job. Please try again.");
+            setErrorMessage("Something went wrong. Please check your inputs and try again.");
         } finally {
             setSubmitting(null);
         }
@@ -161,8 +168,16 @@ const JobPostingForm = ({ job, setDone, onBackClick }) => {
 
     // ── Save as Draft button ──────────────────────────────────────────────────
     const handleSaveAsDraft = () => {
+        if (!jobPost.jobTitle.trim() && !jobPost.jobType.trim()) {
+            setErrorMessage("Please enter a Job Title and Job Type to save as a draft.");
+            return;
+        }
         if (!jobPost.jobTitle.trim()) {
             setErrorMessage("Please enter a Job Title to save as a draft.");
+            return;
+        }
+        if (!jobPost.jobType.trim()) {
+            setErrorMessage("Please enter a Job Type to save as a draft.");
             return;
         }
         setErrorMessage("");
@@ -184,10 +199,19 @@ const JobPostingForm = ({ job, setDone, onBackClick }) => {
 
     // ── Prompt actions ────────────────────────────────────────────────────────
     const handlePromptSaveDraft = async () => {
+    if (!jobPost.jobTitle.trim() || !jobPost.jobType.trim()) {
         setPromptType(null);
-        await handleSubmit(JOB_STATUS.DRAFT);
-        if (pendingNavigation) { pendingNavigation(); setPendingNavigation(null); }
-    };
+        setErrorMessage(
+            !jobPost.jobTitle.trim()
+                ? "Please enter a Job Title to save as a draft."
+                : "Please enter a Job Type to save as a draft."
+        );
+        return;
+    }
+    setPromptType(null);
+    await handleSubmit(JOB_STATUS.DRAFT);
+    if (pendingNavigation) { pendingNavigation(); setPendingNavigation(null); }
+};
 
     const handlePromptDiscard = () => {
         setPromptType(null);
