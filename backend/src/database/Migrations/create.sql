@@ -176,7 +176,8 @@ CREATE TABLE messages (
     sender_id INT REFERENCES users(id) ON DELETE CASCADE,
     receiver_id INT REFERENCES users(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_read BOOLEAN DEFAULT FALSE
 );
 
 -- Reviews table

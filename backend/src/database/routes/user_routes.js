@@ -698,6 +698,34 @@ router.get("/search-users", async (req, res) => {
   }
 });
 
+router.put('/mark-as-read', async (req, res) => {
+  const { receiverId, senderId } = req.body;
+
+  if (!receiverId || !senderId) {
+    return res.status(400).json({ success: false, message: 'Missing receiverId or senderId' });
+  }
+
+  try {
+    await user_queries.markMessagesAsRead(receiverId, senderId);
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Error marking messages as read:', error);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
+router.get('/unread-count/:userId', async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const unreadCount = await user_queries.getUnreadCount(userId);
+    res.status(200).json({ success: true, unreadCount });
+  } catch (error) {
+    console.error('Error fetching unread count:', error);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
 router.get('/user-details/:userId', async (req, res) => {
   const { userId } = req.params;
 

@@ -416,7 +416,7 @@ const getConversationPartners = async (userId) => {
 const getMessageHistory = async (senderId, receiverId) => {
   try {
     const query = `
-      SELECT content, sender_id, receiver_id, timestamp
+      SELECT message_id, content, sender_id, receiver_id, timestamp, is_read
       FROM messages
       WHERE (sender_id = $1 AND receiver_id = $2)
          OR (sender_id = $2 AND receiver_id = $1)
@@ -469,6 +469,37 @@ const getLatestMessages = async (userId) => {
     return result.rows; // Return the latest messages
   } catch (error) {
     console.error('Error fetching latest messages:', error);
+    throw error;
+  }
+};
+
+const markMessagesAsRead = async (receiverId, senderId) => {
+  try {
+    const query = `
+      UPDATE messages
+      SET is_read = TRUE
+      WHERE receiver_id = $1 AND sender_id = $2 AND is_read = FALSE
+      RETURNING *;
+    `;
+    const result = await db.query(query, [receiverId, senderId]);
+    return result.rows;
+  } catch (error) {
+    console.error('Error marking messages as read:', error);
+    throw error;
+  }
+};
+
+const getUnreadCount = async (userId) => {
+  try {
+    const query = `
+      SELECT COUNT(*) AS unread_count
+      FROM messages
+      WHERE receiver_id = $1 AND is_read = FALSE;
+    `;
+    const result = await db.query(query, [userId]);
+    return parseInt(result.rows[0].unread_count, 10);
+  } catch (error) {
+    console.error('Error fetching unread count:', error);
     throw error;
   }
 };
@@ -539,6 +570,8 @@ module.exports = {
   getMessageHistory,
   sendMessage,
   getLatestMessages,
+  markMessagesAsRead,
+  getUnreadCount,
   getUserDetails,
 
   //NEW EXPORTS
