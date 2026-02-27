@@ -147,12 +147,43 @@ router.delete("/delete-job/:jobId", async (req, res) => {
 
 router.get("/all-jobs", async (req, res) => {
   try {
-    const filters = req.query;
-    const allJobs = await job_queries.fetchAllJobs(filters);
-    res.json(allJobs);
+    // Separate pagination params from filters
+    const { page: pageRaw, perPage: perPageRaw, ...filters } = req.query;
+
+    // Parse pagination params with defaults
+    const page = pageRaw ? parseInt(pageRaw, 10) : 1;
+    const perPage = perPageRaw ? parseInt(perPageRaw, 10) : 10;
+
+    // Validate page
+    if (!Number.isInteger(page) || page < 1) {
+      return res.status(400).json({ message: "page must be an integer >= 1" });
+    }
+
+    // Validate perPage (only 10 or 20 allowed)
+    if (!Number.isInteger(perPage) || ![10, 20].includes(perPage)) {
+      return res.status(400).json({ message: "perPage must be either 10 or 20" });
+    }
+
+    // Query must now return { jobs, total }
+    const { jobs, total } = await job_queries.fetchAllJobs({ filters, page, perPage });
+
+    const totalPages = Math.ceil(total / perPage);
+
+    return res.json({
+      jobs,
+      pagination: {
+        page,
+        perPage,
+        total,
+        totalPages,
+      },
+    });
   } catch (error) {
     console.error("Failed to fetch all jobs:", error);
-    res.status(500).send({ message: "Failed to fetch all jobs", error: error.message });
+    return res.status(500).json({
+      message: "Failed to fetch all jobs",
+      error: error.message,
+    });
   }
 });
 
