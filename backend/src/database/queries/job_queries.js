@@ -179,16 +179,91 @@ const deleteJobById = async (jobId) => {
   }
 };
 
-const fetchAllJobs = async (filters) => {
-  let query = `
-    SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode, 
-           COALESCE(bs.business_name, 'Unknown Business') AS business_name
+const fetchAllJobs = async (input = {}) => {
+  const isNewShape =
+    input &&
+    typeof input === "object" &&
+    Object.prototype.hasOwnProperty.call(input, "filters");
+
+  const filters = isNewShape ? (input.filters || {}) : (input || {});
+  const page = isNewShape ? input.page : 1;
+  const perPage = isNewShape ? input.perPage : 10;
+
+  // Defensive normalization (route validates, but keep this safe)
+  const pageNum = Number.isInteger(page) && page >= 1 ? page : 1;
+  const limitNum = [10, 20].includes(perPage) ? perPage : 10;
+  const offsetNum = (pageNum - 1) * limitNum;
+
+  // ---- Build the reusable FROM/JOIN/WHERE block (same as your existing query) ----
+  let baseQuery = `
     FROM jobPostings jp
     JOIN locations loc ON jp.location_id = loc.location_id
     LEFT JOIN businesses bs ON jp.user_id = bs.user_id
-    WHERE jp.jobfilled = false 
+    WHERE jp.jobfilled = false
     AND jp.status NOT IN ('draft', 'filled', 'complete', 'completed')
   `;
+
+  const params = [];
+
+  // ---- Filters (same logic as your current function) ----
+  if (filters.jobType) {
+    baseQuery += ` AND jp.jobType = $${params.length + 1}`;
+    params.push(filters.jobType);
+  }
+
+  if (filters.hourlyRate) {
+    const [minRateRaw, maxRateRaw] = String(filters.hourlyRate).split("-");
+    const minRate = minRateRaw;
+    const maxRate = maxRateRaw ? maxRateRaw : minRateRaw;
+
+    baseQuery += ` AND jp.hourlyRate BETWEEN $${params.length + 1} AND $${params.length + 2}`;
+    params.push(minRate, maxRate);
+  }
+
+  if (filters.startDate) {
+    baseQuery += ` AND date_trunc('minute', jp.jobStart) = date_trunc('minute', $${params.length + 1}::timestamp)`;
+    params.push(filters.startDate);
+  }
+
+  if (filters.endDate) {
+    baseQuery += ` AND date_trunc('minute', jp.jobEnd) = date_trunc('minute', $${params.length + 1}::timestamp)`;
+    params.push(filters.endDate);
+  }
+
+  // ---- 1) COUNT query (same filters, no LIMIT/OFFSET) ----
+  const countQuery = `
+    SELECT COUNT(*)::int AS total
+    ${baseQuery};
+  `;
+
+  // ---- 2) DATA query (same filters + stable ordering + pagination) ----
+  const dataQuery = `
+    SELECT
+      jp.*,
+      loc.StreetAddress,
+      loc.city,
+      loc.province,
+      loc.postalCode,
+      COALESCE(bs.business_name, 'Unknown Business') AS business_name
+    ${baseQuery}
+    ORDER BY jp.jobStart DESC, jp.job_id DESC
+    LIMIT $${params.length + 1}
+    OFFSET $${params.length + 2};
+  `;
+
+  try {
+    const countResult = await db.query(countQuery, params);
+    const total = countResult.rows[0]?.total ?? 0;
+
+    const dataParams = [...params, limitNum, offsetNum];
+    const dataResult = await db.query(dataQuery, dataParams);
+
+    return { jobs: dataResult.rows, total };
+  } catch (err) {
+    console.error("Error fetching all jobs with pagination:", err);
+    throw err;
+  }
+};
 
   const params = [];
 
