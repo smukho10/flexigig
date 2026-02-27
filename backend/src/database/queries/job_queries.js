@@ -1,6 +1,12 @@
-const db = require('../connection.js');
+// backend/src/database/queries/job_queries.js
+const db = require("../connection.js");
 
-const insertLocation = async ({ jobStreetAddress, jobCity, jobProvince, jobPostalCode }) => {
+const insertLocation = async ({
+  jobStreetAddress,
+  jobCity,
+  jobProvince,
+  jobPostalCode,
+}) => {
   const locationQuery = `
     INSERT INTO locations (StreetAddress, city, province, postalCode)
     VALUES ($1, $2, $3, $4)
@@ -8,13 +14,13 @@ const insertLocation = async ({ jobStreetAddress, jobCity, jobProvince, jobPosta
   `;
 
   try {
-      const locationResult = await db.query(locationQuery, [
-        jobStreetAddress || null,
-        jobCity          || null,
-        jobProvince      || null,
-        jobPostalCode    || null,
-      ]);    
-return locationResult.rows[0];
+    const locationResult = await db.query(locationQuery, [
+      jobStreetAddress || null,
+      jobCity || null,
+      jobProvince || null,
+      jobPostalCode || null,
+    ]);
+    return locationResult.rows[0];
   } catch (err) {
     console.error("Error inserting location:", err);
     throw err;
@@ -22,21 +28,35 @@ return locationResult.rows[0];
 };
 
 // status param added — defaults to 'open' if not provided
-const postJob = async ({ jobTitle, jobType, jobDescription, hourlyRate, jobStart, jobEnd, location_id, user_id, status = 'open' }) => {
+const postJob = async ({
+  jobTitle,
+  jobType,
+  jobDescription,
+  hourlyRate,
+  jobStart,
+  jobEnd,
+  location_id,
+  user_id,
+  status = "open",
+}) => {
   const jobQuery = `
     INSERT INTO jobPostings (
       jobTitle, jobType, jobDescription, hourlyRate, jobStart, jobEnd, location_id, user_id, jobfilled, status
-    ) VALUES ($1, $2, $3, $4::numeric, $5::timestamp, $6::timestamp, $7, $8, false, $9) 
+    ) VALUES ($1, $2, $3, $4::numeric, $5::timestamp, $6::timestamp, $7, $8, false, $9)
     RETURNING *;
   `;
 
   try {
     const jobResult = await db.query(jobQuery, [
-      jobTitle, jobType, jobDescription,
+      jobTitle,
+      jobType,
+      jobDescription,
       hourlyRate || null,
-      jobStart   || null,
-      jobEnd     || null,
-      location_id, user_id, status
+      jobStart || null,
+      jobEnd || null,
+      location_id,
+      user_id,
+      status,
     ]);
     return jobResult.rows[0];
   } catch (err) {
@@ -67,7 +87,7 @@ const fetchUnfilledJobsByUserId = async (userId) => {
     SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode
     FROM jobPostings jp
     JOIN locations loc ON jp.location_id = loc.location_id
-    WHERE jp.user_id = $1 AND jp.jobFilled = false;
+    WHERE jp.user_id = $1 AND jp.jobfilled = false;
   `;
   try {
     const result = await db.query(query, [userId]);
@@ -83,7 +103,7 @@ const fetchFilledJobsByUserId = async (userId) => {
     SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode
     FROM jobPostings jp
     JOIN locations loc ON jp.location_id = loc.location_id
-    WHERE jp.user_id = $1 AND jp.jobFilled = true;
+    WHERE jp.user_id = $1 AND jp.jobfilled = true;
   `;
   try {
     const result = await db.query(query, [userId]);
@@ -111,7 +131,20 @@ const fetchJobByJobId = async (jobId) => {
 };
 
 // status param added to updateJob
-const updateJob = async (jobId, { jobTitle, jobType, jobDescription, hourlyRate, jobStart, jobEnd, locationData, user_id, status }) => {
+const updateJob = async (
+  jobId,
+  {
+    jobTitle,
+    jobType,
+    jobDescription,
+    hourlyRate,
+    jobStart,
+    jobEnd,
+    locationData,
+    user_id,
+    status,
+  }
+) => {
   try {
     const locationUpdateQuery = `
       UPDATE locations
@@ -120,11 +153,11 @@ const updateJob = async (jobId, { jobTitle, jobType, jobDescription, hourlyRate,
       WHERE locations.location_id = jobPostings.location_id AND jobPostings.job_id = $5;
     `;
     await db.query(locationUpdateQuery, [
-      locationData.streetAddress || null,
-      locationData.city          || null,
-      locationData.province      || null,
-      locationData.postalCode    || null,
-      jobId
+      locationData?.streetAddress || null,
+      locationData?.city || null,
+      locationData?.province || null,
+      locationData?.postalCode || null,
+      jobId,
     ]);
 
     const jobUpdateQuery = `
@@ -134,11 +167,15 @@ const updateJob = async (jobId, { jobTitle, jobType, jobDescription, hourlyRate,
       RETURNING *;
     `;
     const result = await db.query(jobUpdateQuery, [
-      jobTitle, jobType, jobDescription,
+      jobTitle,
+      jobType,
+      jobDescription,
       hourlyRate || null,
-      jobStart   || null,
-      jobEnd     || null,
-      status, jobId, user_id
+      jobStart || null,
+      jobEnd || null,
+      status,
+      jobId,
+      user_id,
     ]);
 
     return result.rows[0];
@@ -179,22 +216,28 @@ const deleteJobById = async (jobId) => {
   }
 };
 
+/**
+ * Paginated "all jobs" query.
+ * Supports BOTH call styles:
+ * 1) fetchAllJobs(filters)
+ * 2) fetchAllJobs({ filters, page, perPage })
+ *
+ * Returns: { jobs, total }
+ */
 const fetchAllJobs = async (input = {}) => {
   const isNewShape =
     input &&
     typeof input === "object" &&
     Object.prototype.hasOwnProperty.call(input, "filters");
 
-  const filters = isNewShape ? (input.filters || {}) : (input || {});
+  const filters = isNewShape ? input.filters || {} : input || {};
   const page = isNewShape ? input.page : 1;
   const perPage = isNewShape ? input.perPage : 10;
 
-  // Defensive normalization (route validates, but keep this safe)
   const pageNum = Number.isInteger(page) && page >= 1 ? page : 1;
   const limitNum = [10, 20].includes(perPage) ? perPage : 10;
   const offsetNum = (pageNum - 1) * limitNum;
 
-  // ---- Build the reusable FROM/JOIN/WHERE block (same as your existing query) ----
   let baseQuery = `
     FROM jobPostings jp
     JOIN locations loc ON jp.location_id = loc.location_id
@@ -205,7 +248,6 @@ const fetchAllJobs = async (input = {}) => {
 
   const params = [];
 
-  // ---- Filters (same logic as your current function) ----
   if (filters.jobType) {
     baseQuery += ` AND jp.jobType = $${params.length + 1}`;
     params.push(filters.jobType);
@@ -216,7 +258,9 @@ const fetchAllJobs = async (input = {}) => {
     const minRate = minRateRaw;
     const maxRate = maxRateRaw ? maxRateRaw : minRateRaw;
 
-    baseQuery += ` AND jp.hourlyRate BETWEEN $${params.length + 1} AND $${params.length + 2}`;
+    baseQuery += ` AND jp.hourlyRate BETWEEN $${params.length + 1} AND $${
+      params.length + 2
+    }`;
     params.push(minRate, maxRate);
   }
 
@@ -230,13 +274,11 @@ const fetchAllJobs = async (input = {}) => {
     params.push(filters.endDate);
   }
 
-  // ---- 1) COUNT query (same filters, no LIMIT/OFFSET) ----
   const countQuery = `
     SELECT COUNT(*)::int AS total
     ${baseQuery};
   `;
 
-  // ---- 2) DATA query (same filters + stable ordering + pagination) ----
   const dataQuery = `
     SELECT
       jp.*,
@@ -251,50 +293,13 @@ const fetchAllJobs = async (input = {}) => {
     OFFSET $${params.length + 2};
   `;
 
-  try {
-    const countResult = await db.query(countQuery, params);
-    const total = countResult.rows[0]?.total ?? 0;
+  const countResult = await db.query(countQuery, params);
+  const total = countResult.rows[0]?.total ?? 0;
 
-    const dataParams = [...params, limitNum, offsetNum];
-    const dataResult = await db.query(dataQuery, dataParams);
+  const dataParams = [...params, limitNum, offsetNum];
+  const dataResult = await db.query(dataQuery, dataParams);
 
-    return { jobs: dataResult.rows, total };
-  } catch (err) {
-    console.error("Error fetching all jobs with pagination:", err);
-    throw err;
-  }
-};
-
-  const params = [];
-
-  if (filters.jobType) {
-    query += ` AND jp.jobType = $${params.length + 1}`;
-    params.push(filters.jobType);
-  }
-
-  if (filters.hourlyRate) {
-    const [minRate, maxRate] = filters.hourlyRate.split('-');
-    query += ` AND jp.hourlyRate BETWEEN $${params.length + 1} AND $${params.length + 2}`;
-    params.push(minRate, maxRate ? maxRate : minRate);
-  }
-
-  if (filters.startDate) {
-    query += ` AND date_trunc('minute', jp.jobStart) = date_trunc('minute', $${params.length + 1}::timestamp)`;
-    params.push(filters.startDate);
-  }
-
-  if (filters.endDate) {
-    query += ` AND date_trunc('minute', jp.jobEnd) = date_trunc('minute', $${params.length + 1}::timestamp)`;
-    params.push(filters.endDate);
-  }
-
-  try {
-    const result = await db.query(query, params);
-    return result.rows;
-  } catch (err) {
-    console.error("Error fetching all jobs with location details:", err);
-    throw err;
-  }
+  return { jobs: dataResult.rows, total };
 };
 
 const applyForJob = async (jobId, applicantId) => {
@@ -316,8 +321,9 @@ const applyForJob = async (jobId, applicantId) => {
 
 const fetchAppliedJobs = async (applicantId) => {
   try {
-    const result = await db.query(`
-      SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode, 
+    const result = await db.query(
+      `
+      SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode,
              COALESCE(bs.business_name, 'Unknown Business') AS business_name
       FROM jobPostings jp
       JOIN locations loc ON jp.location_id = loc.location_id
@@ -334,10 +340,12 @@ const fetchAppliedJobs = async (applicantId) => {
 
 const removeApplication = async (applicantId, jobId) => {
   try {
-    const result = await db.query(`
+    const result = await db.query(
+      `
       UPDATE jobpostings
       SET jobfilled = false, applicant_id = NULL
-      WHERE applicant_id = $1 AND job_id = $2`,
+      WHERE applicant_id = $1 AND job_id = $2
+      RETURNING *;`,
       [applicantId, jobId]
     );
     return result.rows[0];
@@ -355,7 +363,7 @@ module.exports = {
   fetchFilledJobsByUserId,
   fetchJobByJobId,
   updateJob,
-  updateJobStatus,   // ← new
+  updateJobStatus,
   deleteJobById,
   fetchAllJobs,
   applyForJob,
