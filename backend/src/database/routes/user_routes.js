@@ -595,14 +595,14 @@ router.get('/conversation-partners/:userId', async (req, res) => {
 });
 
 router.get('/message-history', async (req, res) => {
-  const { senderId, receiverId } = req.query;
+  const { senderId, receiverId, jobId } = req.query;
 
   if (!senderId || !receiverId) {
     return res.status(400).json({ success: false, message: 'Missing senderId or receiverId' });
   }
 
   try {
-    const messages = await user_queries.getMessageHistory(senderId, receiverId);
+    const messages = await user_queries.getMessageHistory(senderId, receiverId, jobId || null);
     res.status(200).json({ success: true, messages });
   } catch (error) {
     console.error('Error fetching message history:', error);
@@ -611,14 +611,14 @@ router.get('/message-history', async (req, res) => {
 });
 
 router.post('/send-message', async (req, res) => {
-  const { senderId, receiverId, content } = req.body;
+  const { senderId, receiverId, content, jobId, isSystem } = req.body;
 
   if (!senderId || !receiverId || !content) {
     return res.status(400).json({ success: false, message: 'Missing senderId, receiverId, or content' });
   }
 
   try {
-    const message = await user_queries.sendMessage(senderId, receiverId, content);
+    const message = await user_queries.sendMessage(senderId, receiverId, content, jobId || null, isSystem || false);
     res.status(200).json({ success: true, message });
   } catch (error) {
     console.error('Error sending message:', error);
