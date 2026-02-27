@@ -251,11 +251,14 @@ router.get("/all-jobs", async (req, res) => {
    Apply endpoints
    ------------------------------ */
 
-// old route (existing frontend)
-router.patch("/apply-job/:jobId", handleApplyRequest);
-
-// new route (your updated frontend)
-router.post("/gigs/:jobId/apply", handleApplyRequest);
+  try {
+    await job_queries.applyForJob(jobId, applicantId);
+    res.json({ message: "Applied successfully" });
+  } catch (error) {
+    console.error("Error applying for job:", error);
+    res.status(500).json({ message: "Error applying for job", error: error.message });
+  }
+});
 
 router.get("/applied-jobs/:applicantId", async (req, res) => {
   const { applicantId } = req.params;
