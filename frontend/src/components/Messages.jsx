@@ -50,6 +50,7 @@ const Messages = () => {
                 setConversationPartners((prev) => [...prev, state.partnerId]);
                 fetchPartnerDetails([state.partnerId]);
                 setSelectedPartner(state.partnerId);
+                fetchMessageHistory(state.partnerId);
             }
         }
     }, [location.state, conversationPartners]);
@@ -83,6 +84,11 @@ const Messages = () => {
             .then((response) => {
                 setMessageHistory(response.data.messages || []);
                 setSelectedPartner(partnerId);
+                axios.put(`/api/mark-as-read`, {
+                    receiverId: user.id,
+                    senderId: partnerId,
+                }, { withCredentials: true })
+                .catch((err) => console.error("Error marking messages as read:", err));
             })
             .catch((error) => {
                 console.error("Error fetching message history:", error);
