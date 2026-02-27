@@ -398,32 +398,36 @@ const getConversationPartners = async (userId) => {
     const query = `
       SELECT DISTINCT
         CASE
-          WHEN sender_id = $1 THEN receiver_id
-          WHEN receiver_id = $1 THEN sender_id
-        END AS partner_id
-      FROM messages
-      WHERE sender_id = $1 OR receiver_id = $1;
+          WHEN m.sender_id = $1 THEN m.receiver_id
+          WHEN m.receiver_id = $1 THEN m.sender_id
+        END AS partner_id,
+        m.job_id,
+        jp.jobtitle AS job_title
+      FROM messages m
+      LEFT JOIN jobPostings jp ON m.job_id = jp.job_id
+      WHERE m.sender_id = $1 OR m.receiver_id = $1;
     `;
 
     const result = await db.query(query, [userId]);
-    return result.rows.map(row => row.partner_id); // Return an array of partner IDs
+    return result.rows; // Return array of { partner_id, job_id, job_title }
   } catch (error) {
     console.error('Error fetching conversation partners:', error);
     throw error;
   }
 };
 
-const getMessageHistory = async (senderId, receiverId) => {
+const getMessageHistory = async (senderId, receiverId, jobId) => {
   try {
     const query = `
-      SELECT message_id, content, sender_id, receiver_id, timestamp, is_read
+      SELECT message_id, content, sender_id, receiver_id, timestamp, is_read, is_system, job_id
       FROM messages
-      WHERE (sender_id = $1 AND receiver_id = $2)
-         OR (sender_id = $2 AND receiver_id = $1)
+      WHERE ((sender_id = $1 AND receiver_id = $2)
+          OR (sender_id = $2 AND receiver_id = $1))
+        AND ($3::int IS NULL OR job_id = $3)
       ORDER BY timestamp ASC;
     `;
 
-    const result = await db.query(query, [senderId, receiverId]);
+    const result = await db.query(query, [senderId, receiverId, jobId || null]);
     if (result.rows.length === 0) {
       return null; // No messages found
     }
@@ -434,15 +438,15 @@ const getMessageHistory = async (senderId, receiverId) => {
   }
 };
 
-const sendMessage = async (senderId, receiverId, content) => {
+const sendMessage = async (senderId, receiverId, content, jobId, isSystem) => {
   try {
     const query = `
-      INSERT INTO messages (sender_id, receiver_id, content, timestamp)
-      VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+      INSERT INTO messages (sender_id, receiver_id, content, timestamp, job_id, is_system)
+      VALUES ($1, $2, $3, CURRENT_TIMESTAMP, $4, $5)
       RETURNING *;
     `;
 
-    const result = await db.query(query, [senderId, receiverId, content]);
+    const result = await db.query(query, [senderId, receiverId, content, jobId || null, isSystem || false]);
     return result.rows[0]; // Return the inserted message
   } catch (error) {
     console.error('Error sending message:', error);
@@ -506,6 +510,10 @@ const getUnreadCount = async (userId) => {
 
 const getUserDetails = async (userId) => {
   try {
+    const userImageQuery = `SELECT userimage AS "userImage" FROM users WHERE id = $1;`;
+    const userImageResult = await db.query(userImageQuery, [userId]);
+    const userImage = userImageResult.rows[0]?.userImage || null;
+
     // Check if the user is in the workers table
     const workerQuery = `
       SELECT first_name, last_name
@@ -520,6 +528,7 @@ const getUserDetails = async (userId) => {
         type: 'worker',
         firstName: workerResult.rows[0].first_name,
         lastName: workerResult.rows[0].last_name,
+        userImage,
       };
     }
 
@@ -536,6 +545,7 @@ const getUserDetails = async (userId) => {
       return {
         type: 'business',
         businessName: businessResult.rows[0].business_name,
+        userImage,
       };
     }
 
