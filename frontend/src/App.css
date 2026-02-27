@@ -12,12 +12,20 @@ body {
   overflow: hidden;
 }
 
+#root {
+  height: 100%;
+}
+
 button {
   font-family: "Poppins";
 }
 
 .App {
   text-align: center;
+
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .App-logo {
