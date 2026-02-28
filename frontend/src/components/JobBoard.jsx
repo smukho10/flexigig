@@ -39,9 +39,7 @@ const JobBoard = () => {
         const pagination = res.data?.pagination;
 
         // Keep a stable sort in the UI if you want newest first:
-        const sorted = [...jobsFromApi].sort((a, b) => 
-          new Date(b.jobposteddate) - new Date(a.jobposteddate)
-        );
+        setJobs(jobsFromApi);
 
         setJobs(sorted);
 
