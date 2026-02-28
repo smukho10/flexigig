@@ -216,14 +216,6 @@ const deleteJobById = async (jobId) => {
   }
 };
 
-/**
- * Paginated "all jobs" query.
- * Supports BOTH call styles:
- * 1) fetchAllJobs(filters)
- * 2) fetchAllJobs({ filters, page, perPage })
- *
- * Returns: { jobs, total }
- */
 const fetchAllJobs = async (input = {}) => {
   const isNewShape =
     input &&
@@ -238,40 +230,114 @@ const fetchAllJobs = async (input = {}) => {
   const limitNum = [10, 20].includes(perPage) ? perPage : 10;
   const offsetNum = (pageNum - 1) * limitNum;
 
+  // Sorting whitelist
+  const SORT_COLUMNS = {
+    jobStart: "jp.jobStart",
+    hourlyRate: "jp.hourlyRate",
+    jobId: "jp.job_id",
+  };
+
+  const sortBy = SORT_COLUMNS[filters.sortBy] ? filters.sortBy : "jobStart";
+  const sortOrder = String(filters.sortOrder || "desc").toLowerCase() === "asc" ? "ASC" : "DESC";
+  const orderClause = `ORDER BY ${SORT_COLUMNS[sortBy]} ${sortOrder}, jp.job_id DESC`;
+
+  // Base query
   let baseQuery = `
     FROM jobPostings jp
     JOIN locations loc ON jp.location_id = loc.location_id
     LEFT JOIN businesses bs ON jp.user_id = bs.user_id
-    WHERE jp.jobfilled = false
-    AND jp.status NOT IN ('draft', 'filled', 'complete', 'completed')
+    WHERE 1=1
   `;
 
   const params = [];
 
+  // Default behavior: show gigs that are NOT filled and NOT in draft/filled/completed-ish statuses
+  // If status filter is supplied, we respect it (and relax defaults as needed).
+  const statusList =
+    Array.isArray(filters.status) && filters.status.length > 0
+      ? filters.status
+      : null;
+
+  const statusIncludesFilledLike =
+    statusList &&
+    statusList.some((s) =>
+      ["filled", "complete", "completed"].includes(String(s).toLowerCase())
+    );
+
+  if (!statusList) {
+    baseQuery += `
+      AND jp.jobfilled = false
+      AND jp.status NOT IN ('draft', 'filled', 'complete', 'completed')
+    `;
+  } else {
+    // If user explicitly asks for statuses including filled/completed, do NOT force jobfilled=false
+    if (!statusIncludesFilledLike) {
+      baseQuery += ` AND jp.jobfilled = false`;
+    }
+    baseQuery += ` AND jp.status = ANY($${params.length + 1})`;
+    params.push(statusList);
+  }
+
+  // jobType
   if (filters.jobType) {
     baseQuery += ` AND jp.jobType = $${params.length + 1}`;
     params.push(filters.jobType);
   }
 
-  if (filters.hourlyRate) {
-    const [minRateRaw, maxRateRaw] = String(filters.hourlyRate).split("-");
-    const minRate = minRateRaw;
-    const maxRate = maxRateRaw ? maxRateRaw : minRateRaw;
-
-    baseQuery += ` AND jp.hourlyRate BETWEEN $${params.length + 1} AND $${
-      params.length + 2
-    }`;
-    params.push(minRate, maxRate);
+  // Optional poster filter
+  if (filters.userId) {
+    baseQuery += ` AND jp.user_id = $${params.length + 1}`;
+    params.push(filters.userId);
   }
 
-  if (filters.startDate) {
-    baseQuery += ` AND date_trunc('minute', jp.jobStart) = date_trunc('minute', $${params.length + 1}::timestamp)`;
-    params.push(filters.startDate);
+  // Hourly rate range
+  if (filters.hourlyRateMin != null) {
+    baseQuery += ` AND jp.hourlyRate >= $${params.length + 1}::numeric`;
+    params.push(filters.hourlyRateMin);
+  }
+  if (filters.hourlyRateMax != null) {
+    baseQuery += ` AND jp.hourlyRate <= $${params.length + 1}::numeric`;
+    params.push(filters.hourlyRateMax);
   }
 
-  if (filters.endDate) {
-    baseQuery += ` AND date_trunc('minute', jp.jobEnd) = date_trunc('minute', $${params.length + 1}::timestamp)`;
-    params.push(filters.endDate);
+  // Date range (jobStart)
+  if (filters.startFrom) {
+    baseQuery += ` AND jp.jobStart >= $${params.length + 1}::timestamp`;
+    params.push(filters.startFrom);
+  }
+  if (filters.startTo) {
+    baseQuery += ` AND jp.jobStart <= $${params.length + 1}::timestamp`;
+    params.push(filters.startTo);
+  }
+
+  // Date range (jobEnd)
+  if (filters.endFrom) {
+    baseQuery += ` AND jp.jobEnd >= $${params.length + 1}::timestamp`;
+    params.push(filters.endFrom);
+  }
+  if (filters.endTo) {
+    baseQuery += ` AND jp.jobEnd <= $${params.length + 1}::timestamp`;
+    params.push(filters.endTo);
+  }
+
+  // Location filters (ILIKE)
+  if (filters.city) {
+    baseQuery += ` AND loc.city ILIKE $${params.length + 1}`;
+    params.push(`%${filters.city}%`);
+  }
+  if (filters.province) {
+    baseQuery += ` AND loc.province ILIKE $${params.length + 1}`;
+    params.push(`%${filters.province}%`);
+  }
+  if (filters.postalCode) {
+    baseQuery += ` AND loc.postalCode ILIKE $${params.length + 1}`;
+    params.push(`%${filters.postalCode}%`);
+  }
+
+  // Keyword search (title/description)
+  if (filters.q) {
+    baseQuery += ` AND (jp.jobTitle ILIKE $${params.length + 1} OR jp.jobDescription ILIKE $${params.length + 1})`;
+    params.push(`%${filters.q}%`);
   }
 
   const countQuery = `
@@ -288,7 +354,7 @@ const fetchAllJobs = async (input = {}) => {
       loc.postalCode,
       COALESCE(bs.business_name, 'Unknown Business') AS business_name
     ${baseQuery}
-    ORDER BY jp.jobStart DESC, jp.job_id DESC
+    ${orderClause}
     LIMIT $${params.length + 1}
     OFFSET $${params.length + 2};
   `;
