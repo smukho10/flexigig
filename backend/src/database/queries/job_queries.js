@@ -258,9 +258,8 @@ const fetchAllJobs = async (input = {}) => {
     const minRate = minRateRaw;
     const maxRate = maxRateRaw ? maxRateRaw : minRateRaw;
 
-    baseQuery += ` AND jp.hourlyRate BETWEEN $${params.length + 1} AND $${
-      params.length + 2
-    }`;
+    baseQuery += ` AND jp.hourlyRate BETWEEN $${params.length + 1} AND $${params.length + 2
+      }`;
     params.push(minRate, maxRate);
   }
 
@@ -355,6 +354,80 @@ const removeApplication = async (applicantId, jobId) => {
   }
 };
 
+const fetchRecommendedJobs = async (userId) => {
+  try {
+    // 1. Get worker profiles (names and biographies)
+    const workerProfiles = await db.query(
+      `SELECT profile_name, biography FROM workers WHERE user_id = $1`,
+      [userId]
+    );
+
+    // 2. Get worker skills
+    const workerSkills = await db.query(
+      `SELECT s.skill_name 
+       FROM workers w
+       JOIN workers_skills ws ON w.id = ws.workers_id
+       JOIN skills s ON ws.skill_id = s.skill_id
+       WHERE w.user_id = $1`,
+      [userId]
+    );
+
+    // 3. Extract keywords
+    const keywords = new Set();
+
+    workerProfiles.rows.forEach(p => {
+      if (p.profile_name) p.profile_name.split(/\s+/).forEach(word => { if (word.length > 2) keywords.add(word.toLowerCase()); });
+      if (p.biography) p.biography.split(/\s+/).forEach(word => { if (word.length > 2) keywords.add(word.toLowerCase()); });
+    });
+
+    workerSkills.rows.forEach(s => {
+      if (s.skill_name) s.skill_name.split(/\s+/).forEach(word => { if (word.length > 2) keywords.add(word.toLowerCase()); });
+    });
+
+    if (keywords.size === 0) {
+      return [];
+    }
+
+    // 4. Build search query
+    // We'll use a series of ILIKE conditions joined by OR
+    const keywordArray = Array.from(keywords);
+    let whereClause = `
+      WHERE jp.jobfilled = false 
+      AND jp.status = 'open'
+      AND (jp.applicant_id IS NULL OR jp.applicant_id != $1)
+      AND (
+    `;
+
+    const conditions = [];
+    const params = [userId];
+
+    keywordArray.forEach((word, idx) => {
+      const paramIdx = params.length + 1;
+      conditions.push(`jp.jobTitle ILIKE $${paramIdx} OR jp.jobDescription ILIKE $${paramIdx}`);
+      params.push(`%${word}%`);
+    });
+
+    whereClause += conditions.join(' OR ') + ')';
+
+    const query = `
+      SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode,
+             COALESCE(bs.business_name, 'Unknown Business') AS business_name
+      FROM jobPostings jp
+      JOIN locations loc ON jp.location_id = loc.location_id
+      LEFT JOIN businesses bs ON jp.user_id = bs.user_id
+      ${whereClause}
+      ORDER BY jp.jobStart DESC
+      LIMIT 10;
+    `;
+
+    const result = await db.query(query, params);
+    return result.rows;
+  } catch (err) {
+    console.error("Error fetching recommended jobs:", err);
+    throw err;
+  }
+};
+
 module.exports = {
   postJob,
   insertLocation,
@@ -369,4 +442,5 @@ module.exports = {
   applyForJob,
   fetchAppliedJobs,
   removeApplication,
+  fetchRecommendedJobs,
 };

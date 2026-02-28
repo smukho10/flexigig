@@ -3,6 +3,7 @@ const express = require('express');
 const db = require('../connection.js');
 const router = express.Router();
 const user_queries = require('../queries/user_queries.js');
+const job_queries = require('../queries/job_queries.js');
 const bcrypt = require('bcryptjs');
 const crypto = require("crypto");
 const workers_queries = require('../queries/workers_queries.js');
@@ -740,6 +741,21 @@ router.get('/user-details/:userId', async (req, res) => {
   } catch (error) {
     console.error('Error fetching user details:', error);
     res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
+router.get("/recommended-jobs", async (req, res) => {
+  const userId = req.session?.user_id;
+  if (!userId) {
+    return res.status(401).json({ message: "User not logged in" });
+  }
+
+  try {
+    const jobs = await job_queries.fetchRecommendedJobs(userId);
+    res.json({ jobs });
+  } catch (error) {
+    console.error("Failed to fetch recommended jobs:", error);
+    res.status(500).json({ message: "Failed to fetch recommended jobs", error: error.message });
   }
 });
 
