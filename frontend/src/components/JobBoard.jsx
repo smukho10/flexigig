@@ -17,25 +17,27 @@ const JobBoard = () => {
   const [applying, setApplying] = useState(false);
   const [refresh, setRefresh] = useState(false);
 
+  // NEW: selected worker sub-profile id for application
+  const [selectedWorkerId, setSelectedWorkerId] = useState(null);
+
   // Pagination state
   const [page, setPage] = useState(1);
   const [perPage] = useState(10); // allowed: 10 or 20
   const [totalPages, setTotalPages] = useState(1);
 
+  // Fetch jobs
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        // NEW: backend now returns { jobs: [...], pagination: {...} }
+        // backend returns { jobs: [...], pagination: {...} }
         const res = await axios.get(`/api/all-jobs`, {
           params: { page, perPage },
-          // withCredentials is not required for this endpoint, but safe to keep if your backend uses cookies
           withCredentials: true,
         });
 
         const jobsFromApi = Array.isArray(res.data?.jobs) ? res.data.jobs : [];
         const pagination = res.data?.pagination;
 
-        // NOTE: Backend already filters out filled/draft/completed; no need to filter again.
         // Keep a stable sort in the UI if you want newest first:
         const sorted = [...jobsFromApi].sort((a, b) => {
           const aDate = new Date(a.jobstart || a.jobStart);
@@ -45,12 +47,8 @@ const JobBoard = () => {
 
         setJobs(sorted);
 
-        if (pagination?.totalPages) {
-          setTotalPages(pagination.totalPages);
-        } else {
-          // fallback if pagination missing
-          setTotalPages(1);
-        }
+        if (pagination?.totalPages) setTotalPages(pagination.totalPages);
+        else setTotalPages(1);
       } catch (error) {
         console.error("Error fetching all jobs:", error);
         setJobs([]);
@@ -60,6 +58,30 @@ const JobBoard = () => {
 
     fetchJobs();
   }, [refresh, page, perPage]);
+
+  // Fetch worker profiles and default to first profile
+    useEffect(() => {
+      const fetchWorkerProfiles = async () => {
+        try {
+          const res = await axios.get(`/api/profile/worker-profiles/${user.id}`, {
+            withCredentials: true,
+          });
+
+          if (Array.isArray(res.data) && res.data.length > 0) {
+            setSelectedWorkerId(res.data[0].id);
+          } else {
+            setSelectedWorkerId(null);
+          }
+        } catch (err) {
+          console.error("Failed to fetch worker profiles:", err);
+          setSelectedWorkerId(null);
+        }
+      };
+
+      if (user?.id && !user?.isbusiness) fetchWorkerProfiles();
+      else setSelectedWorkerId(null);
+    }, [user]);
+
 
   // convert timestamp to readable date
   const formatDateForDisplay = (dateTime) => {
@@ -85,7 +107,8 @@ const JobBoard = () => {
     console.log("Skill Match Filter");
   };
 
-  // handle applying to a job
+  // UPDATED: apply now uses gig_applications endpoint
+  // 2-step UX stays the same: first click opens confirm modal, second click submits
   const handleApply = async (e) => {
     const jobId = e.target.value;
 
@@ -94,18 +117,27 @@ const JobBoard = () => {
       return;
     }
 
-    const applicantId = user.id;
+    if (user.isbusiness) {
+      console.error("Business users cannot apply for gigs.");
+      return;
+    }
+
+    if (!selectedWorkerId) {
+      console.error("No worker profile selected yet.");
+      return;
+    }
 
     if (!applying) {
       setApplying(jobs.find((job) => job.job_id.toString() === jobId));
     } else {
       try {
-        await axios.patch(
-          `/api/apply-job/${jobId}`,
-          { applicantId },
+        await axios.post(
+          `/api/gigs/${jobId}/apply`,
+          { worker_profile_id: selectedWorkerId },
           { withCredentials: true }
         );
-        if (jobDetails) setJobDetails(false);
+
+        if (jobDetails) setJobDetails(null);
         setApplying(false);
         setRefresh(!refresh);
       } catch (error) {
@@ -117,12 +149,14 @@ const JobBoard = () => {
   // handle going back from seeing job details
   const handleBack = () => {
     if (applying) setApplying(false);
-    else if (jobDetails) setJobDetails(false);
+    else if (jobDetails) setJobDetails(null);
   };
 
   // handle showing selected job details
   const handleJobDetails = (e) => {
-    setJobDetails(jobs.find((job) => job.job_id.toString() === e.target.dataset.id));
+    setJobDetails(
+      jobs.find((job) => job.job_id.toString() === e.target.dataset.id)
+    );
   };
 
   // Pagination handlers
@@ -162,6 +196,7 @@ const JobBoard = () => {
                   {formatDateForDisplay(job.jobstart)}
                 </div>
               </div>
+
               <div className="right">
                 <img
                   src={ChevronRight}
@@ -171,7 +206,13 @@ const JobBoard = () => {
                   onClick={handleJobDetails}
                   data-id={job.job_id}
                 />
-                <button id="apply-btn" value={job.job_id} onClick={handleApply}>
+
+                <button
+                  id="apply-btn"
+                  value={job.job_id}
+                  onClick={handleApply}
+                  disabled={!selectedWorkerId || !!user?.isbusiness}
+                >
                   Apply
                 </button>
               </div>
@@ -197,7 +238,14 @@ const JobBoard = () => {
               <ul style={{ listStyleType: "none" }}>{listItems}</ul>
 
               {/* Pagination UI */}
-              <div style={{ display: "flex", gap: "12px", alignItems: "center", marginTop: "16px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "12px",
+                  alignItems: "center",
+                  marginTop: "16px",
+                }}
+              >
                 <button onClick={handlePrevPage} disabled={page <= 1}>
                   Prev
                 </button>
@@ -240,6 +288,7 @@ const JobBoard = () => {
                 className="apply-btn"
                 onClick={handleApply}
                 value={applying.job_id}
+                disabled={!selectedWorkerId || !!user?.isbusiness}
               >
                 Apply
               </button>
