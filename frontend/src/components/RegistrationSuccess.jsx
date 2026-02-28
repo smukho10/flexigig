@@ -59,10 +59,10 @@ const RegistrationSuccess = () => {
               fontSize: "14px",
             }}
           >
-            {cooldown > 0
-              ? `Resend in ${cooldown}s`
-              : resendCount >= MAX_RESENDS
-                ? "Resend limit reached"
+            {resendCount >= MAX_RESENDS
+              ? "Resend limit reached"
+              : cooldown > 0
+                ? `Resend in ${cooldown}s`
                 : "Resend Verification Email"}
           </button>
 
