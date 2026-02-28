@@ -109,7 +109,7 @@ const Register = () => {
         { withCredentials: true }
       );
 
-      navigate("/registration-success");
+      navigate("/registration-success", { state: { email: registrationData.email } });
 
       setRegistrationData({
         firstName: accountType === "Worker" ? "" : undefined,
