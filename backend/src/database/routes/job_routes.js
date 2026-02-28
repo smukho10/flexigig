@@ -219,20 +219,26 @@ router.delete("/delete-job/:jobId", async (req, res) => {
 
 router.get("/all-jobs", async (req, res) => {
   try {
+    // Separate pagination params from filters
     const { page: pageRaw, perPage: perPageRaw, ...filters } = req.query;
 
+    // Parse pagination params with defaults
     const page = pageRaw ? parseInt(pageRaw, 10) : 1;
     const perPage = perPageRaw ? parseInt(perPageRaw, 10) : 10;
 
+    // Validate page
     if (!Number.isInteger(page) || page < 1) {
       return res.status(400).json({ message: "page must be an integer >= 1" });
     }
 
+    // Validate perPage (only 10 or 20 allowed)
     if (!Number.isInteger(perPage) || ![10, 20].includes(perPage)) {
       return res.status(400).json({ message: "perPage must be either 10 or 20" });
     }
 
+    // Query must now return { jobs, total }
     const { jobs, total } = await job_queries.fetchAllJobs({ filters, page, perPage });
+
     const totalPages = Math.ceil(total / perPage);
 
     return res.json({
@@ -248,37 +254,43 @@ router.get("/all-jobs", async (req, res) => {
   }
 });
 
-/* ------------------------------
-   Apply endpoints
-   ------------------------------ */
+router.patch("/apply-job/:jobId", async (req, res) => {
+  const { jobId } = req.params;
+  const worker_profile_id = req.body.worker_profile_id;
 
   try {
-    await job_queries.applyForJob(jobId, applicantId);
-    res.json({ message: "Applied successfully" });
-  } catch (error) {
-    console.error("Error applying for job:", error);
-    return res.status(500).json({ message: "Error applying for job", error: error.message });
-  }
-
-  // Send system message after response — errors here must not touch res again
-  try {
-    const job = await job_queries.fetchJobByJobId(jobId);
-    if (job && job.user_id && applicantId) {
-      await user_queries.sendMessage(
-        job.user_id,
-        applicantId,
-        `Booking confirmed for "${job.jobtitle}". You have been booked for this gig.`,
-        parseInt(jobId),
-        true
-      );
+    const jobIdInt = parseInt(jobId, 10);
+    if (isNaN(jobIdInt) || !worker_profile_id) {
+      return res.status(400).json({ message: "jobId and worker_profile_id are required" });
     }
-  } catch (msgErr) {
-    console.error("Error sending booking confirmation message:", msgErr);
+
+    const jobRes = await job_queries.getEmployerIdForJob(jobIdInt);
+    if (!jobRes) {
+      return res.status(404).json({ message: "Job not found" });
+    }
+
+    const employerId = jobRes.employer_id;
+
+    const application = await job_queries.insertGigApplication({
+      job_id: jobIdInt,
+      employer_id: employerId,
+      worker_profile_id
+    });
+
+    return res.status(201).json({ message: "Applied successfully", application });
+
+  } catch (err) {
+    if (err.code === "23505") {
+      return res.status(409).json({ message: "Duplicate application not allowed." });
+    }
+    console.error("Error applying for job:", err);
+    return res.status(500).json({ message: "Error applying for job" });
   }
 });
 
 router.get("/applied-jobs/:applicantId", async (req, res) => {
   const { applicantId } = req.params;
+
   try {
     const appliedJobs = await job_queries.fetchAppliedJobs(applicantId);
     res.json({ jobs: appliedJobs });
@@ -290,6 +302,7 @@ router.get("/applied-jobs/:applicantId", async (req, res) => {
 
 router.patch("/remove-application/:applicantId/job/:jobId", async (req, res) => {
   const { applicantId, jobId } = req.params;
+
   try {
     await job_queries.removeApplication(applicantId, jobId);
     res.json({ message: "Application removed successfully" });
