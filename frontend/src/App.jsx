@@ -30,6 +30,7 @@ import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoutes";
 import AccountSelection from './components/AccountSelection';
 import CompleteProfile from './components/CompleteProfile';
+import ResendVerificationEmail from "./components/ResendVerificationEmail";
 import SearchPage from "./components/SearchPage";
 
 const App = () => {
@@ -66,6 +67,7 @@ const App = () => {
               <Route path="/initiate-password-reset" element={<PasswordResetInitiation />} />
               <Route path="/password-reset/:uniqueIdentifier" element={<PasswordReset />} />
               <Route path="/registration-success" element={<RegistrationSuccess />} />
+              <Route path="/resend-verification" element={<ResendVerificationEmail />} />
 
               {/* Protected Routes with Layout */}
               <Route element={<Layout />}>

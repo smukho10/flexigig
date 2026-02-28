@@ -18,6 +18,17 @@ const RegistrationSuccess = () => {
       >
         Back to Sign In
       </Link>
+      <Link
+        to="/resend-verification"
+        style={{
+          marginTop: "10px",
+          color: "#4CAF50",
+          textDecoration: "underline",
+          cursor: "pointer",
+        }}
+      >
+        Didn't receive the email? Resend verification link
+      </Link>
     </div>
   );
 };
