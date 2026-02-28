@@ -247,39 +247,15 @@ router.get("/all-jobs", async (req, res) => {
   }
 });
 
-router.patch("/apply-job/:jobId", async (req, res) => {
-  const { jobId } = req.params;
-  const worker_profile_id = req.body.worker_profile_id;
+/* ------------------------------
+   Apply endpoints
+   ------------------------------ */
 
-  try {
-    const jobIdInt = parseInt(jobId, 10);
-    if (isNaN(jobIdInt) || !worker_profile_id) {
-      return res.status(400).json({ message: "jobId and worker_profile_id are required" });
-    }
+// old route (existing frontend)
+router.patch("/apply-job/:jobId", handleApplyRequest);
 
-    const jobRes = await job_queries.getEmployerIdForJob(jobIdInt);
-    if (!jobRes) {
-      return res.status(404).json({ message: "Job not found" });
-    }
-
-    const employerId = jobRes.employer_id;
-
-    const application = await job_queries.insertGigApplication({
-      job_id: jobIdInt,
-      employer_id: employerId,
-      worker_profile_id
-    });
-
-    return res.status(201).json({ message: "Applied successfully", application });
-
-  } catch (err) {
-    if (err.code === "23505") {
-      return res.status(409).json({ message: "Duplicate application not allowed." });
-    }
-    console.error("Error applying for job:", err);
-    return res.status(500).json({ message: "Error applying for job" });
-  }
-});
+// new route (your updated frontend)
+router.post("/gigs/:jobId/apply", handleApplyRequest);
 
 router.get("/applied-jobs/:applicantId", async (req, res) => {
   const { applicantId } = req.params;
