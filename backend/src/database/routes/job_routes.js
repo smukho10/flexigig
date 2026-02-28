@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const job_queries = require("../queries/job_queries.js");
+const user_queries = require("../queries/user_queries.js");
 
 const VALID_STATUSES = ['draft', 'open', 'in-review', 'filled', 'completed'];
 
@@ -196,7 +197,23 @@ router.patch("/apply-job/:jobId", async (req, res) => {
     res.json({ message: "Applied successfully" });
   } catch (error) {
     console.error("Error applying for job:", error);
-    res.status(500).json({ message: "Error applying for job", error: error.message });
+    return res.status(500).json({ message: "Error applying for job", error: error.message });
+  }
+
+  // Send system message after response — errors here must not touch res again
+  try {
+    const job = await job_queries.fetchJobByJobId(jobId);
+    if (job && job.user_id && applicantId) {
+      await user_queries.sendMessage(
+        job.user_id,
+        applicantId,
+        `Booking confirmed for "${job.jobtitle}". You have been booked for this gig.`,
+        parseInt(jobId),
+        true
+      );
+    }
+  } catch (msgErr) {
+    console.error("Error sending booking confirmation message:", msgErr);
   }
 });
 
