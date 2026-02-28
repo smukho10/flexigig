@@ -270,22 +270,32 @@ router.post('/resend-verification', async (req, res) => {
   const { email } = req.body;
 
   try {
+    // Check existing users first
     const user = await user_queries.getUserByEmail(email);
 
-    if (!user) {
-      res.status(400).json({ success: false, message: 'User not found.' });
-      return;
+    if (user) {
+      const token = crypto.randomBytes(64).toString('hex');
+      await user_queries.insertOrUpdateToken(user.id, token);
+      const sent = await sendVerificationEmail(email, token);
+      return res.status(sent ? 200 : 500).json({
+        success: sent,
+        message: sent ? 'Verification email sent successfully.' : 'Failed to send verification email.'
+      });
     }
 
-    const token = crypto.randomBytes(64).toString('hex');
-    await user_queries.insertOrUpdateToken(user.id, token);
+    // Check pending users
+    const pendingResult = await db.query('SELECT * FROM pending_users WHERE email = $1;', [email]);
+    if (pendingResult.rows.length > 0) {
+      const token = crypto.randomBytes(64).toString('hex');
+      await db.query('UPDATE pending_users SET token = $1 WHERE email = $2', [token, email]);
+      const sent = await sendVerificationEmail(email, token);
+      return res.status(sent ? 200 : 500).json({
+        success: sent,
+        message: sent ? 'Verification email sent successfully.' : 'Failed to send verification email.'
+      });
+    }
 
-    const sent = await sendVerificationEmail(email, token);
-
-    res.status(sent ? 200 : 500).json({
-      success: sent,
-      message: sent ? 'Verification email sent successfully.' : 'Failed to send verification email.'
-    });
+    res.status(400).json({ success: false, message: 'User not found.' });
   } catch (error) {
     console.error("Error resending verification email:", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
