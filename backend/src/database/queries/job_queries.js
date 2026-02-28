@@ -323,12 +323,15 @@ const fetchAppliedJobs = async (applicantId) => {
   try {
     const result = await db.query(
       `
-      SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode,
+      SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode,ga.application_id,
+      ga.status AS application_status,ga.applied_at,
              COALESCE(bs.business_name, 'Unknown Business') AS business_name
       FROM jobPostings jp
       JOIN locations loc ON jp.location_id = loc.location_id
       LEFT JOIN businesses bs ON jp.user_id = bs.user_id
-      WHERE jp.applicant_id = $1`,
+      LEFT JOIN gig_applications ga ON ga.job_id = jp.job_id AND ga.worker_profile_id = $1
+  WHERE ga.worker_profile_id = $1 
+`,
       [applicantId]
     );
     return result.rows;
