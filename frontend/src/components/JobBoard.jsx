@@ -38,7 +38,6 @@ const JobBoard = () => {
         const jobsFromApi = Array.isArray(res.data?.jobs) ? res.data.jobs : [];
         const pagination = res.data?.pagination;
 
-        // NOTE: Backend already filters out filled/draft/completed; no need to filter again.
         // Keep a stable sort in the UI if you want newest first:
         setJobs(jobsFromApi);
 
