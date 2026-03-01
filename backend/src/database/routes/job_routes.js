@@ -1,7 +1,9 @@
 // backend/src/database/routes/job_routes.js
 const express = require("express");
 const router = express.Router();
+
 const job_queries = require("../queries/job_queries.js");
+const user_queries = require("../queries/user_queries.js"); // <-- adjust if your path/name differs
 
 const VALID_STATUSES = ["draft", "open", "in-review", "filled", "completed"];
 
@@ -9,10 +11,10 @@ router.get("/jobs/posted-jobs/:userId", async (req, res) => {
   const { userId } = req.params;
   try {
     const jobs = await job_queries.fetchPostedJobsByUserId(userId);
-    res.json({ jobs });
+    return res.json({ jobs });
   } catch (error) {
     console.error("Failed to fetch posted jobs:", error);
-    res.status(500).json({
+    return res.status(500).json({
       message: "Failed to fetch posted jobs",
       error: error.message,
     });
@@ -23,10 +25,10 @@ router.get("/jobs/unfilled-jobs/:userId", async (req, res) => {
   const { userId } = req.params;
   try {
     const jobs = await job_queries.fetchUnfilledJobsByUserId(userId);
-    res.json({ jobs });
+    return res.json({ jobs });
   } catch (error) {
     console.error("Failed to fetch unfilled jobs:", error);
-    res.status(500).json({
+    return res.status(500).json({
       message: "Failed to fetch unfilled jobs",
       error: error.message,
     });
@@ -37,10 +39,10 @@ router.get("/jobs/filled-jobs/:userId", async (req, res) => {
   const { userId } = req.params;
   try {
     const jobs = await job_queries.fetchFilledJobsByUserId(userId);
-    res.json({ jobs });
+    return res.json({ jobs });
   } catch (error) {
     console.error("Failed to fetch filled jobs:", error);
-    res.status(500).json({
+    return res.status(500).json({
       message: "Failed to fetch filled jobs",
       error: error.message,
     });
@@ -61,7 +63,6 @@ router.post("/jobs/post-job", async (req, res) => {
     } = req.body;
 
     if (!user_id) {
-      console.error("Missing user_id in job post data");
       return res.status(400).json({
         message: "User ID is required to post a job",
       });
@@ -84,14 +85,14 @@ router.post("/jobs/post-job", async (req, res) => {
       status: VALID_STATUSES.includes(status) ? status : "open",
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       message: "Job and Location successfully created",
       job: newJob,
-      location: location,
+      location,
     });
   } catch (error) {
     console.error("Failed to create job and location:", error);
-    res.status(500).json({
+    return res.status(500).json({
       message: "Failed to create job and location",
       error: error.message,
     });
@@ -100,45 +101,38 @@ router.post("/jobs/post-job", async (req, res) => {
 
 router.get("/jobs/edit-job/:jobId", async (req, res) => {
   const { jobId } = req.params;
-  console.log("Received jobId:", jobId);
   try {
     const job = await job_queries.fetchJobByJobId(jobId);
-    if (job) {
-      res.json(job);
-    } else {
-      res.status(404).send({ message: "Job not found" });
+    if (!job) {
+      return res.status(404).json({ message: "Job not found" });
     }
+    return res.json(job);
   } catch (error) {
     console.error("Failed to fetch job details:", error);
-    res.status(500).send({
+    return res.status(500).json({
       message: "Failed to fetch job details",
       error: error.message,
     });
   }
 });
 
-// --------------------
-// PATCH job (edit job)
-// --------------------
 router.patch("/jobs/edit-job/:jobId", async (req, res) => {
   const { jobId } = req.params;
   const jobData = req.body;
 
-  // Sanitise status before passing to query
   if (jobData.status && !VALID_STATUSES.includes(jobData.status)) {
     jobData.status = "open";
   }
 
   try {
     const updatedJob = await job_queries.updateJob(parseInt(jobId, 10), jobData);
-    if (updatedJob) {
-      res.json({ message: "Job successfully updated", job: updatedJob });
-    } else {
-      res.status(404).json({ message: "Job not found" });
+    if (!updatedJob) {
+      return res.status(404).json({ message: "Job not found" });
     }
+    return res.json({ message: "Job successfully updated", job: updatedJob });
   } catch (error) {
     console.error("Failed to update job:", error);
-    res.status(500).json({
+    return res.status(500).json({
       message: "Failed to update job",
       error: error.message,
     });
@@ -157,14 +151,13 @@ router.patch("/jobs/job-status/:jobId", async (req, res) => {
 
   try {
     const updatedJob = await job_queries.updateJobStatus(parseInt(jobId, 10), status);
-    if (updatedJob) {
-      res.json({ message: "Job status updated", job: updatedJob });
-    } else {
-      res.status(404).json({ message: "Job not found" });
+    if (!updatedJob) {
+      return res.status(404).json({ message: "Job not found" });
     }
+    return res.json({ message: "Job status updated", job: updatedJob });
   } catch (error) {
     console.error("Failed to update job status:", error);
-    res.status(500).json({
+    return res.status(500).json({
       message: "Failed to update job status",
       error: error.message,
     });
@@ -175,10 +168,10 @@ router.delete("/jobs/delete-job/:jobId", async (req, res) => {
   try {
     const { jobId } = req.params;
     await job_queries.deleteJobById(jobId);
-    res.json({ message: "Job successfully deleted" });
+    return res.json({ message: "Job successfully deleted" });
   } catch (error) {
     console.error("Failed to delete job:", error);
-    res.status(500).json({
+    return res.status(500).json({
       message: "Failed to delete job",
       error: error.message,
     });
@@ -187,26 +180,20 @@ router.delete("/jobs/delete-job/:jobId", async (req, res) => {
 
 router.get("/jobs/all-jobs", async (req, res) => {
   try {
-    // Separate pagination params from filters
     const { page: pageRaw, perPage: perPageRaw, ...filters } = req.query;
 
-    // Parse pagination params with defaults
     const page = pageRaw ? parseInt(pageRaw, 10) : 1;
     const perPage = perPageRaw ? parseInt(perPageRaw, 10) : 10;
 
-    // Validate page
     if (!Number.isInteger(page) || page < 1) {
       return res.status(400).json({ message: "page must be an integer >= 1" });
     }
 
-    // Validate perPage (only 10 or 20 allowed)
     if (!Number.isInteger(perPage) || ![10, 20].includes(perPage)) {
       return res.status(400).json({ message: "perPage must be either 10 or 20" });
     }
 
-    // Query must now return { jobs, total }
     const { jobs, total } = await job_queries.fetchAllJobs({ filters, page, perPage });
-
     const totalPages = Math.ceil(total / perPage);
 
     return res.json({
@@ -233,10 +220,36 @@ router.patch("/jobs/apply-job/:jobId", async (req, res) => {
 
   try {
     await job_queries.applyForJob(jobId, applicantId);
+
+    // Respond immediately
     res.json({ message: "Applied successfully" });
+
+    // Fire-and-forget: send system message AFTER response; never touch res again.
+    setImmediate(async () => {
+      try {
+        const job = await job_queries.fetchJobByJobId(jobId);
+
+        // job field names from DB appear to be lowercase in your JSON output:
+        // job.jobtitle, job.user_id, etc.
+        const posterId = job?.user_id;
+        const title = job?.jobtitle || job?.jobTitle || "this gig";
+
+        if (posterId && applicantId) {
+          await user_queries.sendMessage(
+            posterId,
+            applicantId,
+            `Booking confirmed for "${title}". You have been booked for this gig.`,
+            parseInt(jobId, 10),
+            true
+          );
+        }
+      } catch (msgErr) {
+        console.error("Error sending booking confirmation message:", msgErr);
+      }
+    });
   } catch (error) {
     console.error("Error applying for job:", error);
-    res.status(500).json({
+    return res.status(500).json({
       message: "Error applying for job",
       error: error.message,
     });
@@ -248,10 +261,10 @@ router.get("/jobs/applied-jobs/:applicantId", async (req, res) => {
 
   try {
     const appliedJobs = await job_queries.fetchAppliedJobs(applicantId);
-    res.json({ jobs: appliedJobs });
+    return res.json({ jobs: appliedJobs });
   } catch (error) {
     console.error("Error fetching applied jobs:", error);
-    res.status(500).json({ message: "Error fetching applied jobs" });
+    return res.status(500).json({ message: "Error fetching applied jobs" });
   }
 });
 
@@ -260,10 +273,10 @@ router.patch("/jobs/remove-application/:applicantId/job/:jobId", async (req, res
 
   try {
     await job_queries.removeApplication(applicantId, jobId);
-    res.json({ message: "Application removed successfully" });
+    return res.json({ message: "Application removed successfully" });
   } catch (error) {
     console.error("Error removing job application:", error);
-    res.status(500).json({ message: "Error removing job application" });
+    return res.status(500).json({ message: "Error removing job application" });
   }
 });
 
