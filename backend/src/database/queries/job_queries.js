@@ -355,6 +355,29 @@ const removeApplication = async (applicantId, jobId) => {
   }
 };
 
+// NEW: fetch employer_id (job poster) for a job
+const getEmployerIdForJob = async (jobId) => {
+  const result = await db.query(
+    `SELECT user_id AS employer_id FROM jobPostings WHERE job_id = $1`,
+    [jobId]
+  );
+  return result.rows[0] || null;
+};
+
+// NEW: insert into gig_applications when worker applies
+const insertGigApplication = async ({ job_id, employer_id, worker_profile_id }) => {
+  const result = await db.query(
+    `
+    INSERT INTO gig_applications (job_id, employer_id, worker_profile_id, status)
+    VALUES ($1, $2, $3, 'APPLIED')
+    RETURNING application_id, job_id, employer_id, worker_profile_id, status, applied_at, updated_at
+    `,
+    [job_id, employer_id, worker_profile_id]
+  );
+
+  return result.rows[0];
+};
+
 module.exports = {
   postJob,
   insertLocation,
@@ -369,4 +392,6 @@ module.exports = {
   applyForJob,
   fetchAppliedJobs,
   removeApplication,
+  getEmployerIdForJob,
+  insertGigApplication
 };
