@@ -3,7 +3,7 @@ const express = require("express");
 const router = express.Router();
 
 const job_queries = require("../queries/job_queries.js");
-const user_queries = require("../queries/user_queries.js"); // <-- adjust if your path/name differs
+const user_queries = require("../queries/user_queries.js");
 
 const VALID_STATUSES = ["draft", "open", "in-review", "filled", "completed"];
 
@@ -229,8 +229,6 @@ router.patch("/jobs/apply-job/:jobId", async (req, res) => {
       try {
         const job = await job_queries.fetchJobByJobId(jobId);
 
-        // job field names from DB appear to be lowercase in your JSON output:
-        // job.jobtitle, job.user_id, etc.
         const posterId = job?.user_id;
         const title = job?.jobtitle || job?.jobTitle || "this gig";
 
