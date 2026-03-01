@@ -37,13 +37,7 @@ const JobBoard = () => {
 
         // NOTE: Backend already filters out filled/draft/completed; no need to filter again.
         // Keep a stable sort in the UI if you want newest first:
-        const sorted = [...jobsFromApi].sort((a, b) => {
-          const aDate = new Date(a.jobstart || a.jobStart);
-          const bDate = new Date(b.jobstart || b.jobStart);
-          return bDate - aDate; // newest first
-        });
-
-        setJobs(sorted);
+        setJobs(jobsFromApi);
 
         if (pagination?.totalPages) {
           setTotalPages(pagination.totalPages);
