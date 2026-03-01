@@ -230,15 +230,20 @@ const fetchAllJobs = async (input = {}) => {
   const limitNum = [10, 20].includes(perPage) ? perPage : 10;
   const offsetNum = (pageNum - 1) * limitNum;
 
-  // Sorting whitelist
   const SORT_COLUMNS = {
+    jobPostedDate: "jp.jobposteddate", // main behavior
     jobStart: "jp.jobStart",
     hourlyRate: "jp.hourlyRate",
     jobId: "jp.job_id",
   };
 
-  const sortBy = SORT_COLUMNS[filters.sortBy] ? filters.sortBy : "jobStart";
-  const sortOrder = String(filters.sortOrder || "desc").toLowerCase() === "asc" ? "ASC" : "DESC";
+  // Default to newest posted first (same as main)
+  const sortBy =
+    SORT_COLUMNS[filters.sortBy] ? filters.sortBy : "jobPostedDate";
+  const sortOrder =
+    String(filters.sortOrder || "desc").toLowerCase() === "asc"
+      ? "ASC"
+      : "DESC";
   const orderClause = `ORDER BY ${SORT_COLUMNS[sortBy]} ${sortOrder}, jp.job_id DESC`;
 
   // Base query
@@ -251,8 +256,6 @@ const fetchAllJobs = async (input = {}) => {
 
   const params = [];
 
-  // Default behavior: show gigs that are NOT filled and NOT in draft/filled/completed-ish statuses
-  // If status filter is supplied, we respect it (and relax defaults as needed).
   const statusList =
     Array.isArray(filters.status) && filters.status.length > 0
       ? filters.status
@@ -270,7 +273,6 @@ const fetchAllJobs = async (input = {}) => {
       AND jp.status NOT IN ('draft', 'filled', 'complete', 'completed')
     `;
   } else {
-    // If user explicitly asks for statuses including filled/completed, do NOT force jobfilled=false
     if (!statusIncludesFilledLike) {
       baseQuery += ` AND jp.jobfilled = false`;
     }
@@ -278,19 +280,16 @@ const fetchAllJobs = async (input = {}) => {
     params.push(statusList);
   }
 
-  // jobType
   if (filters.jobType) {
     baseQuery += ` AND jp.jobType = $${params.length + 1}`;
     params.push(filters.jobType);
   }
 
-  // Optional poster filter
   if (filters.userId) {
     baseQuery += ` AND jp.user_id = $${params.length + 1}`;
     params.push(filters.userId);
   }
 
-  // Hourly rate range
   if (filters.hourlyRateMin != null) {
     baseQuery += ` AND jp.hourlyRate >= $${params.length + 1}::numeric`;
     params.push(filters.hourlyRateMin);
@@ -300,7 +299,6 @@ const fetchAllJobs = async (input = {}) => {
     params.push(filters.hourlyRateMax);
   }
 
-  // Date range (jobStart)
   if (filters.startFrom) {
     baseQuery += ` AND jp.jobStart >= $${params.length + 1}::timestamp`;
     params.push(filters.startFrom);
@@ -310,7 +308,6 @@ const fetchAllJobs = async (input = {}) => {
     params.push(filters.startTo);
   }
 
-  // Date range (jobEnd)
   if (filters.endFrom) {
     baseQuery += ` AND jp.jobEnd >= $${params.length + 1}::timestamp`;
     params.push(filters.endFrom);
@@ -320,7 +317,6 @@ const fetchAllJobs = async (input = {}) => {
     params.push(filters.endTo);
   }
 
-  // Location filters (ILIKE)
   if (filters.city) {
     baseQuery += ` AND loc.city ILIKE $${params.length + 1}`;
     params.push(`%${filters.city}%`);
@@ -334,7 +330,6 @@ const fetchAllJobs = async (input = {}) => {
     params.push(`%${filters.postalCode}%`);
   }
 
-  // Keyword search (title/description)
   if (filters.q) {
     baseQuery += ` AND (jp.jobTitle ILIKE $${params.length + 1} OR jp.jobDescription ILIKE $${params.length + 1})`;
     params.push(`%${filters.q}%`);
