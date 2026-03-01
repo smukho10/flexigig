@@ -251,6 +251,23 @@ router.patch("/jobs/apply-job/:jobId", async (req, res) => {
       message: "Error applying for job",
       error: error.message,
     });
+    return res.status(500).json({ message: "Error applying for job", error: error.message });
+  }
+
+  // Send system message after response — errors here must not touch res again
+  try {
+    const job = await job_queries.fetchJobByJobId(jobId);
+    if (job && job.user_id && applicantId) {
+      await user_queries.sendMessage(
+        job.user_id,
+        applicantId,
+        `Booking confirmed for "${job.jobtitle}". You have been booked for this gig.`,
+        parseInt(jobId),
+        true
+      );
+    }
+  } catch (msgErr) {
+    console.error("Error sending booking confirmation message:", msgErr);
   }
 });
 
