@@ -288,7 +288,7 @@ const fetchAllJobs = async (input = {}) => {
       loc.postalCode,
       COALESCE(bs.business_name, 'Unknown Business') AS business_name
     ${baseQuery}
-    ORDER BY jp.jobposteddate DESC, jp.job_id DESC
+    ORDER BY jp.jobposteddate DESC
     LIMIT $${params.length + 1}
     OFFSET $${params.length + 2};
   `;
