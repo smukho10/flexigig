@@ -41,8 +41,6 @@ const JobBoard = () => {
         // Keep a stable sort in the UI if you want newest first:
         setJobs(jobsFromApi);
 
-        // setJobs(sorted);
-
         if (pagination?.totalPages) {
           setTotalPages(pagination.totalPages);
         } else {
