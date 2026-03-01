@@ -10,10 +10,32 @@ const HomePage = () => {
   const [filterRate, setFilterRate] = useState("");
   const [filterLocation, setFilterLocation] = useState("");
   const [filterDate, setFilterDate] = useState({ startDate: "", endDate: "" });
+  const [selectedWorkerId, setSelectedWorkerId] = useState(null);
 
   useEffect(() => {
     fetchAllJobs();
   }, []);
+
+  useEffect(() => {
+    const fetchWorkerProfiles = async () => {
+      try {
+        const res = await axios.get(
+          `/api/profile/worker-profiles/${user.id}`,
+          { withCredentials: true }
+        );
+
+        if (res.data.length > 0) {
+          setSelectedWorkerId(res.data[0].id); // default to first profile
+        }
+      } catch (err) {
+        console.error("Failed to fetch worker profiles:", err);
+      }
+    };
+
+    if (user?.id && !user.isbusiness) {
+      fetchWorkerProfiles();
+    }
+  }, [user]);
 
   const fetchAllJobs = async () => {
     try {
@@ -54,18 +76,26 @@ const HomePage = () => {
     fetchFilteredJobs();
   };
 
-  const handleApply = async (jobId) => {
-    const userId = user.id;
+const handleApply = async (jobId) => {
+  if (!selectedWorkerId) {
+    console.error("No worker profile selected yet.");
+    return;
+  }
 
-    try {
-      await axios.patch(`/api/apply-job/${jobId}`, { userId }, { withCredentials: true });
-      setJobs((currentJobs) =>
-        currentJobs.filter((job) => job.job_id !== jobId)
-      );
-    } catch (error) {
-      console.error("Error applying for job:", error);
-    }
-  };
+  try {
+    await axios.post(
+      `/api/gigs/${jobId}/apply`,
+      { worker_profile_id: selectedWorkerId },
+      { withCredentials: true }
+    );
+
+    setJobs((currentJobs) =>
+      currentJobs.filter((job) => job.job_id !== jobId)
+    );
+  } catch (error) {
+    console.error("Error applying for job:", error);
+  }
+};
 
   const formatDateForDisplay = (dateTime) => {
     if (!dateTime) return "";
@@ -182,7 +212,12 @@ const HomePage = () => {
               </p>
             </div>
             <div className="job-actions">
-              <button onClick={() => handleApply(job.job_id)}>Apply</button>
+              <button
+                onClick={() => handleApply(job.job_id)}
+                disabled={!selectedWorkerId}
+              >
+                Apply
+              </button>
             </div>
           </li>
         ))}

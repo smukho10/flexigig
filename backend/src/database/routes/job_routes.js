@@ -5,6 +5,57 @@ const job_queries = require("../queries/job_queries.js");
 
 const VALID_STATUSES = ["draft", "open", "in-review", "filled", "completed"];
 
+/* ------------------------------
+   Helper: shared apply logic
+   Supports:
+   - req.body.worker_profile_id (new)
+   - req.body.applicantId (older)
+   ------------------------------ */
+const handleApplyRequest = async (req, res) => {
+  const { jobId } = req.params;
+  const jobIdInt = parseInt(jobId, 10);
+
+  const worker_profile_id =
+    req.body.worker_profile_id ?? req.body.applicantId ?? req.body.applicant_id;
+
+  if (isNaN(jobIdInt) || !worker_profile_id) {
+    return res
+      .status(400)
+      .json({ message: "jobId and worker_profile_id are required" });
+  }
+
+  try {
+    // 1) Get employer_id from jobPostings
+    const jobRes = await job_queries.getEmployerIdForJob(jobIdInt);
+    if (!jobRes) {
+      return res.status(404).json({ message: "Job not found" });
+    }
+
+    const employerId = jobRes.employer_id;
+
+    // 2) Insert application
+    const application = await job_queries.insertGigApplication({
+      job_id: jobIdInt,
+      employer_id: employerId,
+      worker_profile_id,
+    });
+
+    return res.status(201).json({ message: "Applied successfully", application });
+  } catch (err) {
+    // UNIQUE index violation (duplicate active application)
+    if (err && err.code === "23505") {
+      return res.status(409).json({ message: "Duplicate application not allowed." });
+    }
+
+    console.error("Error applying for job:", err);
+    return res.status(500).json({ message: "Error applying for job" });
+  }
+};
+
+/* ------------------------------
+   Existing endpoints
+   ------------------------------ */
+
 router.get("/jobs/posted-jobs/:userId", async (req, res) => {
   const { userId } = req.params;
   try {
@@ -12,10 +63,9 @@ router.get("/jobs/posted-jobs/:userId", async (req, res) => {
     res.json({ jobs });
   } catch (error) {
     console.error("Failed to fetch posted jobs:", error);
-    res.status(500).json({
-      message: "Failed to fetch posted jobs",
-      error: error.message,
-    });
+    res
+      .status(500)
+      .json({ message: "Failed to fetch posted jobs", error: error.message });
   }
 });
 
@@ -141,7 +191,8 @@ router.patch("/jobs/edit-job/:jobId", async (req, res) => {
   }
 });
 
-router.patch("/jobs/job-status/:jobId", async (req, res) => {
+// update just the status of a job
+router.patch("/job-status/:jobId", async (req, res) => {
   const { jobId } = req.params;
   const { status } = req.body;
 
@@ -188,28 +239,20 @@ router.get("/jobs/all-jobs", async (req, res) => {
     const page = pageRaw ? parseInt(pageRaw, 10) : 1;
     const perPage = perPageRaw ? parseInt(perPageRaw, 10) : 10;
 
-    // Validate page
     if (!Number.isInteger(page) || page < 1) {
       return res.status(400).json({ message: "page must be an integer >= 1" });
     }
 
-    // Validate perPage (only 10 or 20 allowed)
     if (!Number.isInteger(perPage) || ![10, 20].includes(perPage)) {
       return res.status(400).json({ message: "perPage must be either 10 or 20" });
     }
 
     const { jobs, total } = await job_queries.fetchAllJobs({ filters, page, perPage });
-
     const totalPages = Math.ceil(total / perPage);
 
     return res.json({
       jobs,
-      pagination: {
-        page,
-        perPage,
-        total,
-        totalPages,
-      },
+      pagination: { page, perPage, total, totalPages },
     });
   } catch (error) {
     console.error("Failed to fetch all jobs:", error);
@@ -238,7 +281,6 @@ router.patch("/jobs/apply-job/:jobId", async (req, res) => {
 
 router.get("/jobs/applied-jobs/:applicantId", async (req, res) => {
   const { applicantId } = req.params;
-
   try {
     const appliedJobs = await job_queries.fetchAppliedJobs(applicantId);
     res.json({ jobs: appliedJobs });
@@ -250,7 +292,6 @@ router.get("/jobs/applied-jobs/:applicantId", async (req, res) => {
 
 router.patch("/jobs/remove-application/:applicantId/job/:jobId", async (req, res) => {
   const { applicantId, jobId } = req.params;
-
   try {
     await job_queries.removeApplication(applicantId, jobId);
     res.json({ message: "Application removed successfully" });
