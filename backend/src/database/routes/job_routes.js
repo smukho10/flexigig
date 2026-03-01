@@ -1,7 +1,7 @@
+// backend/src/database/routes/job_routes.js
 const express = require("express");
 const router = express.Router();
 const job_queries = require("../queries/job_queries.js");
-const user_queries = require("../queries/user_queries.js");
 
 const VALID_STATUSES = ["draft", "open", "in-review", "filled", "completed"];
 
@@ -56,7 +56,7 @@ const handleApplyRequest = async (req, res) => {
    Existing endpoints
    ------------------------------ */
 
-router.get("/posted-jobs/:userId", async (req, res) => {
+router.get("/jobs/posted-jobs/:userId", async (req, res) => {
   const { userId } = req.params;
   try {
     const jobs = await job_queries.fetchPostedJobsByUserId(userId);
@@ -69,7 +69,7 @@ router.get("/posted-jobs/:userId", async (req, res) => {
   }
 });
 
-router.get("/unfilled-jobs/:userId", async (req, res) => {
+router.get("/jobs/unfilled-jobs/:userId", async (req, res) => {
   const { userId } = req.params;
   try {
     const jobs = await job_queries.fetchUnfilledJobsByUserId(userId);
@@ -83,20 +83,21 @@ router.get("/unfilled-jobs/:userId", async (req, res) => {
   }
 });
 
-router.get("/filled-jobs/:userId", async (req, res) => {
+router.get("/jobs/filled-jobs/:userId", async (req, res) => {
   const { userId } = req.params;
   try {
     const jobs = await job_queries.fetchFilledJobsByUserId(userId);
     res.json({ jobs });
   } catch (error) {
     console.error("Failed to fetch filled jobs:", error);
-    res
-      .status(500)
-      .json({ message: "Failed to fetch filled jobs", error: error.message });
+    res.status(500).json({
+      message: "Failed to fetch filled jobs",
+      error: error.message,
+    });
   }
 });
 
-router.post("/post-job", async (req, res) => {
+router.post("/jobs/post-job", async (req, res) => {
   console.log("Received job post data:", JSON.stringify(req.body, null, 2));
   try {
     const {
@@ -111,15 +112,21 @@ router.post("/post-job", async (req, res) => {
 
     if (!user_id) {
       console.error("Missing user_id in job post data");
-      return res.status(400).json({ message: "User ID is required to post a job" });
+      return res.status(400).json({
+        message: "User ID is required to post a job",
+      });
     }
 
-    const locationData = { jobStreetAddress, jobCity, jobProvince, jobPostalCode };
+    const locationData = {
+      jobStreetAddress,
+      jobCity,
+      jobProvince,
+      jobPostalCode,
+    };
 
     const location = await job_queries.insertLocation(locationData);
     const location_id = location.location_id;
 
-    // Pass status through — defaults to 'open' in the query if not provided
     const newJob = await job_queries.postJob({
       ...jobData,
       user_id,
@@ -141,7 +148,7 @@ router.post("/post-job", async (req, res) => {
   }
 });
 
-router.get("/edit-job/:jobId", async (req, res) => {
+router.get("/jobs/edit-job/:jobId", async (req, res) => {
   const { jobId } = req.params;
   console.log("Received jobId:", jobId);
   try {
@@ -153,13 +160,14 @@ router.get("/edit-job/:jobId", async (req, res) => {
     }
   } catch (error) {
     console.error("Failed to fetch job details:", error);
-    res
-      .status(500)
-      .send({ message: "Failed to fetch job details", error: error.message });
+    res.status(500).send({
+      message: "Failed to fetch job details",
+      error: error.message,
+    });
   }
 });
 
-router.patch("/edit-job/:jobId", async (req, res) => {
+router.patch("/jobs/edit-job/:jobId", async (req, res) => {
   const { jobId } = req.params;
   const jobData = req.body;
 
@@ -176,7 +184,10 @@ router.patch("/edit-job/:jobId", async (req, res) => {
     }
   } catch (error) {
     console.error("Failed to update job:", error);
-    res.status(500).json({ message: "Failed to update job", error: error.message });
+    res.status(500).json({
+      message: "Failed to update job",
+      error: error.message,
+    });
   }
 });
 
@@ -200,24 +211,28 @@ router.patch("/job-status/:jobId", async (req, res) => {
     }
   } catch (error) {
     console.error("Failed to update job status:", error);
-    res
-      .status(500)
-      .json({ message: "Failed to update job status", error: error.message });
+    res.status(500).json({
+      message: "Failed to update job status",
+      error: error.message,
+    });
   }
 });
 
-router.delete("/delete-job/:jobId", async (req, res) => {
+router.delete("/jobs/delete-job/:jobId", async (req, res) => {
   try {
     const { jobId } = req.params;
     await job_queries.deleteJobById(jobId);
     res.json({ message: "Job successfully deleted" });
   } catch (error) {
     console.error("Failed to delete job:", error);
-    res.status(500).json({ message: "Failed to delete job", error: error.message });
+    res.status(500).json({
+      message: "Failed to delete job",
+      error: error.message,
+    });
   }
 });
 
-router.get("/all-jobs", async (req, res) => {
+router.get("/jobs/all-jobs", async (req, res) => {
   try {
     const { page: pageRaw, perPage: perPageRaw, ...filters } = req.query;
 
@@ -248,36 +263,23 @@ router.get("/all-jobs", async (req, res) => {
   }
 });
 
-/* ------------------------------
-   Apply endpoints
-   ------------------------------ */
+router.patch("/jobs/apply-job/:jobId", async (req, res) => {
+  const { jobId } = req.params;
+  const applicantId = req.body.applicantId;
 
   try {
     await job_queries.applyForJob(jobId, applicantId);
     res.json({ message: "Applied successfully" });
   } catch (error) {
     console.error("Error applying for job:", error);
-    return res.status(500).json({ message: "Error applying for job", error: error.message });
-  }
-
-  // Send system message after response — errors here must not touch res again
-  try {
-    const job = await job_queries.fetchJobByJobId(jobId);
-    if (job && job.user_id && applicantId) {
-      await user_queries.sendMessage(
-        job.user_id,
-        applicantId,
-        `Booking confirmed for "${job.jobtitle}". You have been booked for this gig.`,
-        parseInt(jobId),
-        true
-      );
-    }
-  } catch (msgErr) {
-    console.error("Error sending booking confirmation message:", msgErr);
+    res.status(500).json({
+      message: "Error applying for job",
+      error: error.message,
+    });
   }
 });
 
-router.get("/applied-jobs/:applicantId", async (req, res) => {
+router.get("/jobs/applied-jobs/:applicantId", async (req, res) => {
   const { applicantId } = req.params;
   try {
     const appliedJobs = await job_queries.fetchAppliedJobs(applicantId);
@@ -288,7 +290,7 @@ router.get("/applied-jobs/:applicantId", async (req, res) => {
   }
 });
 
-router.patch("/remove-application/:applicantId/job/:jobId", async (req, res) => {
+router.patch("/jobs/remove-application/:applicantId/job/:jobId", async (req, res) => {
   const { applicantId, jobId } = req.params;
   try {
     await job_queries.removeApplication(applicantId, jobId);
