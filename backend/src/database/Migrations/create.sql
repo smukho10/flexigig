@@ -177,7 +177,9 @@ CREATE TABLE messages (
     receiver_id INT REFERENCES users(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    is_read BOOLEAN DEFAULT FALSE
+    is_read BOOLEAN DEFAULT FALSE,
+    job_id INT REFERENCES jobPostings(job_id) ON DELETE SET NULL,
+    is_system BOOLEAN DEFAULT FALSE
 );
 
 -- Reviews table
