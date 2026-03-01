@@ -41,10 +41,12 @@ const JobBoard = () => {
         // Keep a stable sort in the UI if you want newest first:
         setJobs(jobsFromApi);
 
-        // setJobs(sorted);
-
-        if (pagination?.totalPages) setTotalPages(pagination.totalPages);
-        else setTotalPages(1);
+        if (pagination?.totalPages) {
+          setTotalPages(pagination.totalPages);
+        } else {
+          // fallback if pagination missing
+          setTotalPages(1);
+        }
       } catch (error) {
         console.error("Error fetching all jobs:", error);
         setJobs([]);
