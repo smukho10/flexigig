@@ -28,7 +28,7 @@ CREATE TABLE gig_applications (
 -- Prevent more than one ACTIVE application per (job_id, worker_user_id)
 -- Allows re-apply after CANCELLED/WITHDRAWN/REJECTED
 CREATE UNIQUE INDEX ux_one_active_application_per_user_per_job
-  ON gig_applications (job_id, employer_id)
+  ON gig_applications (job_id, worker_profile_id)
   WHERE status IN ('APPLIED','IN_REVIEW','ACCEPTED');
 
 -- Helpful indexes
