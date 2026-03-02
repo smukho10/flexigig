@@ -5,12 +5,6 @@ const job_queries = require("../queries/job_queries.js");
 
 const VALID_STATUSES = ["draft", "open", "in-review", "filled", "completed"];
 
-/* ------------------------------
-   Helper: shared apply logic
-   Supports:
-   - req.body.worker_profile_id (new)
-   - req.body.applicantId (older)
-   ------------------------------ */
 const handleApplyRequest = async (req, res) => {
   const { jobId } = req.params;
   const jobIdInt = parseInt(jobId, 10);
@@ -42,9 +36,10 @@ const handleApplyRequest = async (req, res) => {
 
     return res.status(201).json({ message: "Applied successfully", application });
   } catch (err) {
-    // UNIQUE index violation (duplicate active application)
     if (err && err.code === "23505") {
-      return res.status(409).json({ message: "Duplicate application not allowed." });
+      return res
+        .status(409)
+        .json({ message: "Duplicate application not allowed." });
     }
 
     console.error("Error applying for job:", err);
@@ -53,10 +48,10 @@ const handleApplyRequest = async (req, res) => {
 };
 
 /* ------------------------------
-   Existing endpoints
+   Existing endpoints (RESTORED to /api/* paths)
    ------------------------------ */
 
-router.get("/jobs/posted-jobs/:userId", async (req, res) => {
+router.get("/posted-jobs/:userId", async (req, res) => {
   const { userId } = req.params;
   try {
     const jobs = await job_queries.fetchPostedJobsByUserId(userId);
@@ -69,7 +64,7 @@ router.get("/jobs/posted-jobs/:userId", async (req, res) => {
   }
 });
 
-router.get("/jobs/unfilled-jobs/:userId", async (req, res) => {
+router.get("/unfilled-jobs/:userId", async (req, res) => {
   const { userId } = req.params;
   try {
     const jobs = await job_queries.fetchUnfilledJobsByUserId(userId);
@@ -83,7 +78,7 @@ router.get("/jobs/unfilled-jobs/:userId", async (req, res) => {
   }
 });
 
-router.get("/jobs/filled-jobs/:userId", async (req, res) => {
+router.get("/filled-jobs/:userId", async (req, res) => {
   const { userId } = req.params;
   try {
     const jobs = await job_queries.fetchFilledJobsByUserId(userId);
@@ -97,7 +92,7 @@ router.get("/jobs/filled-jobs/:userId", async (req, res) => {
   }
 });
 
-router.post("/jobs/post-job", async (req, res) => {
+router.post("/post-job", async (req, res) => {
   console.log("Received job post data:", JSON.stringify(req.body, null, 2));
   try {
     const {
@@ -148,7 +143,7 @@ router.post("/jobs/post-job", async (req, res) => {
   }
 });
 
-router.get("/jobs/edit-job/:jobId", async (req, res) => {
+router.get("/edit-job/:jobId", async (req, res) => {
   const { jobId } = req.params;
   console.log("Received jobId:", jobId);
   try {
@@ -167,7 +162,7 @@ router.get("/jobs/edit-job/:jobId", async (req, res) => {
   }
 });
 
-router.patch("/jobs/edit-job/:jobId", async (req, res) => {
+router.patch("/edit-job/:jobId", async (req, res) => {
   const { jobId } = req.params;
   const jobData = req.body;
 
@@ -191,7 +186,7 @@ router.patch("/jobs/edit-job/:jobId", async (req, res) => {
   }
 });
 
-// update just the status of a job
+// update just the status of a job (already no /jobs prefix)
 router.patch("/job-status/:jobId", async (req, res) => {
   const { jobId } = req.params;
   const { status } = req.body;
@@ -218,7 +213,7 @@ router.patch("/job-status/:jobId", async (req, res) => {
   }
 });
 
-router.delete("/jobs/delete-job/:jobId", async (req, res) => {
+router.delete("/delete-job/:jobId", async (req, res) => {
   try {
     const { jobId } = req.params;
     await job_queries.deleteJobById(jobId);
@@ -232,7 +227,7 @@ router.delete("/jobs/delete-job/:jobId", async (req, res) => {
   }
 });
 
-router.get("/jobs/all-jobs", async (req, res) => {
+router.get("/all-jobs", async (req, res) => {
   try {
     const { page: pageRaw, perPage: perPageRaw, ...filters } = req.query;
 
@@ -263,7 +258,8 @@ router.get("/jobs/all-jobs", async (req, res) => {
   }
 });
 
-router.patch("/jobs/apply-job/:jobId", async (req, res) => {
+// Legacy apply endpoint (unchanged behavior)
+router.patch("/apply-job/:jobId", async (req, res) => {
   const { jobId } = req.params;
   const applicantId = req.body.applicantId;
 
@@ -279,7 +275,7 @@ router.patch("/jobs/apply-job/:jobId", async (req, res) => {
   }
 });
 
-router.get("/jobs/applied-jobs/:applicantId", async (req, res) => {
+router.get("/applied-jobs/:applicantId", async (req, res) => {
   const { applicantId } = req.params;
   try {
     const appliedJobs = await job_queries.fetchAppliedJobs(applicantId);
@@ -290,7 +286,7 @@ router.get("/jobs/applied-jobs/:applicantId", async (req, res) => {
   }
 });
 
-router.patch("/jobs/remove-application/:applicantId/job/:jobId", async (req, res) => {
+router.patch("/remove-application/:applicantId/job/:jobId", async (req, res) => {
   const { applicantId, jobId } = req.params;
   try {
     await job_queries.removeApplication(applicantId, jobId);
