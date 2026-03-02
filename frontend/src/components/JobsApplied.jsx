@@ -14,7 +14,6 @@ const JobsApplied = () => {
   const [appliedJobs, setAppliedJobs] = useState([]);
   const [refresh, setRefresh] = useState();
   const [removing, setRemoving] = useState();
-  const [jobStatuses, setJobStatuses] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,17 +21,8 @@ const JobsApplied = () => {
       if (user && user.id) {
         try {
           const res = await axios.get(`/api/applied-jobs/${user.id}`, { withCredentials: true });
-          
-          // Load statuses from localStorage
-          const storedStatuses = JSON.parse(localStorage.getItem('jobStatuses') || '{}');
-          setJobStatuses(storedStatuses);
-          
-          // Filter out approved jobs
-          const filteredJobs = res.data.jobs.filter(job => 
-            storedStatuses[job.job_id] !== 'approved'
-          ).sort((a, b) => a.jobstart.localeCompare(b.jobstart));
-          
-          setAppliedJobs(filteredJobs);
+          const sorted = [...res.data.jobs].sort((a, b) => a.jobstart.localeCompare(b.jobstart));
+          setAppliedJobs(sorted);
         } catch (error) {
           console.error("Error fetching filled jobs:", error);
         }
@@ -40,23 +30,6 @@ const JobsApplied = () => {
     };
     fetchAppliedJobs();
   }, [user, refresh]);
-
-  const handleStatusChange = (jobId, newStatus) => {
-    const updatedStatuses = {
-      ...jobStatuses,
-      [jobId]: newStatus
-    };
-    
-    // Save to localStorage
-    localStorage.setItem('jobStatuses', JSON.stringify(updatedStatuses));
-    setJobStatuses(updatedStatuses);
-    
-    // Trigger storage event for MyGigs component
-    window.dispatchEvent(new Event('storage'));
-    
-    // Refresh the jobs list to remove approved jobs
-    setRefresh(!refresh);
-  };
 
   const handleRemove = async (e) => {
     const jobId = e.target.value;
@@ -99,12 +72,20 @@ const JobsApplied = () => {
     if (removing) setRemoving(false);
   }
 
-  const getStatusDisplay = (jobId) => {
-    const status = jobStatuses[jobId];
-    if (status === 'rejected') {
-      return <span className="status-badge rejected">Rejected</span>;
-    }
-    return null;
+  const STATUS_LABELS = {
+    'APPLIED':   'Applied',
+    'IN_REVIEW': 'In Review',
+    'ACCEPTED':  'Accepted',
+    'CANCELLED': 'Cancelled',
+    'WITHDRAWN': 'Withdrawn',
+    'REJECTED':  'Rejected',
+  };
+
+  const getStatusDisplay = (status) => {
+    if (!status) return null;
+    const label = STATUS_LABELS[status] ?? status;
+    const cssKey = status.toLowerCase().replace('_', '-');
+    return <span className={`status-badge status-${cssKey}`}>{label}</span>;
   };
 
   return (
@@ -120,19 +101,10 @@ const JobsApplied = () => {
               <div className="top-left">
                 <div className="title-row">
                   <h1>{job.jobtitle}</h1>
-                  {getStatusDisplay(job.job_id)}
+                  {getStatusDisplay(job.application_status)}
                 </div>
                 <div className="action-buttons">
                   <button onClick={handleRemove} value={job.job_id}>Remove</button>
-                  <select 
-                    className="status-dropdown"
-                    value={jobStatuses[job.job_id] || ''}
-                    onChange={(e) => handleStatusChange(job.job_id, e.target.value)}
-                  >
-                    <option value="">Select Status</option>
-                    <option value="approved">Approved</option>
-                    <option value="rejected">Rejected</option>
-                  </select>
                 </div>
               </div>
               <div className="top-right">

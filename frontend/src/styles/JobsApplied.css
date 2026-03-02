@@ -118,45 +118,43 @@
     cursor: pointer;
 }
 
-.job-item .status-dropdown {
-    padding: 0;
-    margin: 0;
-    width: 120px;
-    height: 30px;
-    font-family: "Poppins";
-    font-size: 12px;
-    font-weight: 400;
-    color: black;
-    background-color: white;
-    border-radius: 5px;
-    border: 1px solid #4EBBC2;
-    cursor: pointer;
-    outline: none;
-}
-
-.job-item .status-dropdown:hover {
-    background-color: #f0f9fa;
-}
-
-.job-item .status-dropdown:focus {
-    border-color: #4EBBC2;
-    box-shadow: 0 0 0 2px rgba(78, 187, 194, 0.1);
-}
-
 .job-item .status-badge {
     display: inline-block;
+    padding: 2px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
 }
 
-.job-item .status-badge.rejected {
-    padding: 2px 10px;
-    background-color: transparent;
+.job-item .status-badge.status-applied {
+    background-color: #E0ECFF;
+    color: #1A4FB5;
+}
+
+.job-item .status-badge.status-in-review {
+    background-color: #FFF5E0;
+    color: #B07800;
+}
+
+.job-item .status-badge.status-accepted {
+    background-color: #E6F9F0;
+    color: #1E8A4C;
+}
+
+.job-item .status-badge.status-cancelled {
+    background-color: #F0F0F0;
+    color: #6B6B6B;
+}
+
+.job-item .status-badge.status-withdrawn {
+    background-color: #F0F0F0;
+    color: #6B6B6B;
+}
+
+.job-item .status-badge.status-rejected {
+    background-color: #FDECEA;
     color: #C2554E;
-    border-radius: 3px;
-    font-size: 14px;
-    font-weight: 500;
-    font-style: italic;
-    border: 1px dashed #C2554E;
-    transform: rotate(-2deg);
 }
 
 .job-item .top-right button {
