@@ -259,7 +259,7 @@ router.get("/all-jobs", async (req, res) => {
 });
 
 // Legacy apply endpoint (unchanged behavior)
-router.patch("/apply-job/:jobId", async (req, res) => {
+router.post("/apply-job/:jobId", async (req, res) => {
   const { jobId } = req.params;
   const applicantId = req.body.applicantId;
 

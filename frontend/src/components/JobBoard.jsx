@@ -130,7 +130,7 @@ const JobBoard = () => {
     } else {
       try {
         await axios.post(
-          `/api/gigs/${jobId}/apply`,
+           `/api/apply-job/${jobId}`,
           { worker_profile_id: selectedWorkerId },
           { withCredentials: true }
         );
