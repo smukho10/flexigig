@@ -380,20 +380,22 @@ const applyForJob = async (jobId, applicantId) => {
   }
 };
 
-const fetchAppliedJobs = async (applicantId) => {
+const fetchAppliedJobs = async (userId) => {
   try {
     const result = await db.query(
       `
-      SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode,ga.application_id,
-      ga.status AS application_status,ga.applied_at,
+      SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode,
+             ga.application_id, ga.status AS application_status, ga.applied_at,
+             ga.worker_profile_id,
+             w.profile_name,
              COALESCE(bs.business_name, 'Unknown Business') AS business_name
-      FROM jobPostings jp
+      FROM gig_applications ga
+      JOIN workers w ON ga.worker_profile_id = w.id AND w.user_id = $1
+      JOIN jobPostings jp ON ga.job_id = jp.job_id
       JOIN locations loc ON jp.location_id = loc.location_id
       LEFT JOIN businesses bs ON jp.user_id = bs.user_id
-      LEFT JOIN gig_applications ga ON ga.job_id = jp.job_id AND ga.worker_profile_id = $1
-  WHERE ga.worker_profile_id = $1 
-`,
-      [applicantId]
+      `,
+      [userId]
     );
     return result.rows;
   } catch (error) {

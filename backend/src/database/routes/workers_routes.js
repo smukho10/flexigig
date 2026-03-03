@@ -21,7 +21,7 @@ router.get('/worker/:id', async (req, res) => {
 
   try {
     const result = await db.query(
-      `SELECT first_name, last_name FROM workers WHERE user_id = $1`,
+      `SELECT id, first_name, last_name FROM workers WHERE user_id = $1`,
       [userId]
     );
 
