@@ -259,21 +259,7 @@ router.get("/all-jobs", async (req, res) => {
 });
 
 // Legacy apply endpoint (unchanged behavior)
-router.post("/apply-job/:jobId", async (req, res) => {
-  const { jobId } = req.params;
-  const applicantId = req.body.applicantId;
-
-  try {
-    await job_queries.applyForJob(jobId, applicantId);
-    res.json({ message: "Applied successfully" });
-  } catch (error) {
-    console.error("Error applying for job:", error);
-    res.status(500).json({
-      message: "Error applying for job",
-      error: error.message,
-    });
-  }
-});
+router.post("/apply-job/:jobId", handleApplyRequest);
 
 router.get("/applied-jobs/:applicantId", async (req, res) => {
   const { applicantId } = req.params;
