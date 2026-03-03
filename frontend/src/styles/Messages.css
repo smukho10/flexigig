@@ -141,11 +141,61 @@
     background-color: #e0e0e0;
 }
 
+.chat-message.system {
+    align-self: center;
+    background-color: #f0f4ff;
+    color: #555;
+    font-style: italic;
+    font-size: 0.82rem;
+    max-width: 80%;
+    text-align: center;
+    border-radius: 10px;
+    padding: 6px 14px;
+    border: 1px dashed #b0b8d0;
+}
+
+.job-thread-label {
+    display: block;
+    font-size: 0.7rem;
+    color: #666;
+    margin-top: 2px;
+}
+
+.quick-replies {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+.quick-reply-btn {
+    padding: 6px 14px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background-color 0.2s ease;
+}
+
+.quick-reply-btn:hover {
+    background-color: #d1e7ff;
+    border-color: #007bff;
+}
+
 .no-chats {
     font-size: 1.5rem;
     text-align: center;
     color: #888;
     margin: auto;
+}
+
+.chat-message-time {
+    display: block;
+    font-size: 0.7rem;
+    color: #888;
+    margin-top: 4px;
+    text-align: right;
 }
 
 .chat-input {

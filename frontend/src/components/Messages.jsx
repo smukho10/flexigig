@@ -24,14 +24,14 @@ const Messages = () => {
         }
     }, [messageHistory]);
 
-    // Fetch conversation partners
+    // Fetch conversation partners on mount
     useEffect(() => {
         if (user) {
             axios
                 .get(`/api/conversation-partners/${user.id}`, { withCredentials: true })
                 .then((response) => {
                     setConversationPartners(response.data.partners);
-                    fetchPartnerDetails(response.data.partners);
+                    fetchPartnerDetails(response.data.partners.map(p => p.partner_id));
                 })
                 .catch((error) => {
                     console.error("Error fetching conversation partners:", error);
@@ -39,33 +39,40 @@ const Messages = () => {
         }
     }, [user]);
 
-    // Add new partner from location state
+    // Add new partner from location state (navigating from a job listing or profile)
     useEffect(() => {
         const state = location.state;
         if (state?.partnerId) {
-            if (conversationPartners.includes(state.partnerId)) {
-                setSelectedPartner(state.partnerId);
-                fetchMessageHistory(state.partnerId);
+            const jobId = state.jobId || null;
+            const jobTitle = state.jobTitle || null;
+            const exists = conversationPartners.some(
+                p => p.partner_id === state.partnerId && p.job_id === jobId
+            );
+            if (exists) {
+                setSelectedPartner({ partner_id: state.partnerId, job_id: jobId });
+                fetchMessageHistory(state.partnerId, jobId);
             } else {
-                setConversationPartners((prev) => [...prev, state.partnerId]);
+                setConversationPartners((prev) => [
+                    ...prev,
+                    { partner_id: state.partnerId, job_id: jobId, job_title: jobTitle }
+                ]);
                 fetchPartnerDetails([state.partnerId]);
-                setSelectedPartner(state.partnerId);
-                fetchMessageHistory(state.partnerId);
+                setSelectedPartner({ partner_id: state.partnerId, job_id: jobId });
+                fetchMessageHistory(state.partnerId, jobId);
             }
         }
     }, [location.state, conversationPartners]);
 
-    // Fetch details for each conversation partner
-    const fetchPartnerDetails = (partners) => {
+    // Fetch name for each unique partner
+    const fetchPartnerDetails = (partnerIds) => {
         const newDetails = {};
-        partners.forEach((partnerId) => {
+        partnerIds.forEach((partnerId) => {
             if (!partnerDetails[partnerId]) {
                 axios
                     .get(`/api/user-details/${partnerId}`, { withCredentials: true })
                     .then((response) => {
                         const { type, firstName, lastName, businessName } = response.data.userDetails;
                         newDetails[partnerId] = type === "worker" ? `${firstName} ${lastName}` : businessName;
-
                         setPartnerDetails((prev) => ({ ...prev, ...newDetails }));
                     })
                     .catch((error) => {
@@ -75,15 +82,15 @@ const Messages = () => {
         });
     };
 
-    // Fetch message history for the selected partner
-    const fetchMessageHistory = (partnerId) => {
+    // Fetch message history — filtered by gig thread if jobId provided
+    const fetchMessageHistory = (partnerId, jobId) => {
+        const params = { senderId: user.id, receiverId: partnerId };
+        if (jobId) params.jobId = jobId;
         axios
-            .get(`/api/message-history`, {
-                params: { senderId: user.id, receiverId: partnerId },
-            }, { withCredentials: true })
+            .get(`/api/message-history`, { params, withCredentials: true })
             .then((response) => {
                 setMessageHistory(response.data.messages || []);
-                setSelectedPartner(partnerId);
+                setSelectedPartner({ partner_id: partnerId, job_id: jobId || null });
                 axios.put(`/api/mark-as-read`, {
                     receiverId: user.id,
                     senderId: partnerId,
@@ -95,15 +102,15 @@ const Messages = () => {
             });
     };
 
-    // Send a new message
+    // Send a typed message
     const handleSendMessage = () => {
         if (!newMessage.trim()) return;
-
         axios
             .post(`/api/send-message`, {
                 senderId: user.id,
-                receiverId: selectedPartner,
+                receiverId: selectedPartner.partner_id,
                 content: newMessage,
+                jobId: selectedPartner.job_id || null,
             }, { withCredentials: true })
             .then((response) => {
                 setMessageHistory((prev) => [...prev, response.data.message]);
@@ -111,6 +118,23 @@ const Messages = () => {
             })
             .catch((error) => {
                 console.error("Error sending message:", error);
+            });
+    };
+
+    // Send a quick reply
+    const handleQuickReply = (text) => {
+        axios
+            .post(`/api/send-message`, {
+                senderId: user.id,
+                receiverId: selectedPartner.partner_id,
+                content: text,
+                jobId: selectedPartner.job_id || null,
+            }, { withCredentials: true })
+            .then((response) => {
+                setMessageHistory((prev) => [...prev, response.data.message]);
+            })
+            .catch((error) => {
+                console.error("Error sending quick reply:", error);
             });
     };
 
@@ -139,17 +163,18 @@ const Messages = () => {
                     />
                     <ul className="person-list-items">
                         {conversationPartners
-                            .filter((partner) => {
-                                const partnerName = partnerDetails[partner] || "";
+                            .filter((conv) => {
+                                const partnerName = partnerDetails[conv.partner_id] || "";
                                 return partnerName.toLowerCase().includes(search.toLowerCase());
                             })
-                            .map((partner) => (
+                            .map((conv) => (
                                 <li
-                                    key={partner}
-                                    className={`person-item ${selectedPartner === partner ? "active" : ""}`}
-                                    onClick={() => fetchMessageHistory(partner)}
+                                    key={`${conv.partner_id}-${conv.job_id || 'direct'}`}
+                                    className={`person-item ${selectedPartner?.partner_id === conv.partner_id && selectedPartner?.job_id === conv.job_id ? "active" : ""}`}
+                                    onClick={() => fetchMessageHistory(conv.partner_id, conv.job_id)}
                                 >
-                                    {partnerDetails[partner] || "Loading..."}
+                                    {partnerDetails[conv.partner_id] || "Loading..."}
+                                    {conv.job_title && <span className="job-thread-label">{conv.job_title}</span>}
                                 </li>
                             ))}
                     </ul>
@@ -162,9 +187,14 @@ const Messages = () => {
                             messageHistory.map((message, index) => (
                                 <div
                                     key={index}
-                                    className={`chat-message ${message.sender_id === user.id ? "sent" : "received"}`}
+                                    className={`chat-message ${message.is_system ? "system" : message.sender_id === user.id ? "sent" : "received"}`}
                                 >
                                     {message.content}
+                                    {!message.is_system && (
+                                        <span className="chat-message-time">
+                                            {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                    )}
                                 </div>
                             ))
                         ) : (
@@ -176,20 +206,33 @@ const Messages = () => {
                         )}
                     </div>
                     {selectedPartner && (
-                        <div className="chat-input">
-                            <input
-                                type="text"
-                                placeholder="Type a message..."
-                                value={newMessage}
-                                onChange={(e) => setNewMessage(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter") {
-                                        handleSendMessage(); // Trigger the send message function
-                                    }
-                                }}
-                            />
-                            <button onClick={handleSendMessage}>Send</button>
-                        </div>
+                        <>
+                            <div className="quick-replies">
+                                {["On my way", "Can't make it", "Confirmed"].map((reply) => (
+                                    <button
+                                        key={reply}
+                                        className="quick-reply-btn"
+                                        onClick={() => handleQuickReply(reply)}
+                                    >
+                                        {reply}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="chat-input">
+                                <input
+                                    type="text"
+                                    placeholder="Type a message..."
+                                    value={newMessage}
+                                    onChange={(e) => setNewMessage(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                            handleSendMessage();
+                                        }
+                                    }}
+                                />
+                                <button onClick={handleSendMessage}>Send</button>
+                            </div>
+                        </>
                     )}
                 </div>
             </div>

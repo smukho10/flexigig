@@ -216,14 +216,6 @@ const deleteJobById = async (jobId) => {
   }
 };
 
-/**
- * Paginated "all jobs" query.
- * Supports BOTH call styles:
- * 1) fetchAllJobs(filters)
- * 2) fetchAllJobs({ filters, page, perPage })
- *
- * Returns: { jobs, total }
- */
 const fetchAllJobs = async (input = {}) => {
   const isNewShape =
     input &&
@@ -238,39 +230,109 @@ const fetchAllJobs = async (input = {}) => {
   const limitNum = [10, 20].includes(perPage) ? perPage : 10;
   const offsetNum = (pageNum - 1) * limitNum;
 
+  const SORT_COLUMNS = {
+    jobPostedDate: "jp.jobposteddate", // main behavior
+    jobStart: "jp.jobStart",
+    hourlyRate: "jp.hourlyRate",
+    jobId: "jp.job_id",
+  };
+
+  // Default to newest posted first (same as main)
+  const sortBy =
+    SORT_COLUMNS[filters.sortBy] ? filters.sortBy : "jobPostedDate";
+  const sortOrder =
+    String(filters.sortOrder || "desc").toLowerCase() === "asc"
+      ? "ASC"
+      : "DESC";
+  const orderClause = `ORDER BY ${SORT_COLUMNS[sortBy]} ${sortOrder}, jp.job_id DESC`;
+
+  // Base query
   let baseQuery = `
     FROM jobPostings jp
     JOIN locations loc ON jp.location_id = loc.location_id
     LEFT JOIN businesses bs ON jp.user_id = bs.user_id
-    WHERE jp.jobfilled = false
-    AND jp.status NOT IN ('draft', 'filled', 'complete', 'completed')
+    WHERE 1=1
   `;
 
   const params = [];
+
+  const statusList =
+    Array.isArray(filters.status) && filters.status.length > 0
+      ? filters.status
+      : null;
+
+  const statusIncludesFilledLike =
+    statusList &&
+    statusList.some((s) =>
+      ["filled", "complete", "completed"].includes(String(s).toLowerCase())
+    );
+
+  if (!statusList) {
+    baseQuery += `
+      AND jp.jobfilled = false
+      AND jp.status NOT IN ('draft', 'filled', 'complete', 'completed')
+    `;
+  } else {
+    if (!statusIncludesFilledLike) {
+      baseQuery += ` AND jp.jobfilled = false`;
+    }
+    baseQuery += ` AND jp.status = ANY($${params.length + 1})`;
+    params.push(statusList);
+  }
 
   if (filters.jobType) {
     baseQuery += ` AND jp.jobType = $${params.length + 1}`;
     params.push(filters.jobType);
   }
 
-  if (filters.hourlyRate) {
-    const [minRateRaw, maxRateRaw] = String(filters.hourlyRate).split("-");
-    const minRate = minRateRaw;
-    const maxRate = maxRateRaw ? maxRateRaw : minRateRaw;
-
-    baseQuery += ` AND jp.hourlyRate BETWEEN $${params.length + 1} AND $${params.length + 2
-      }`;
-    params.push(minRate, maxRate);
+  if (filters.userId) {
+    baseQuery += ` AND jp.user_id = $${params.length + 1}`;
+    params.push(filters.userId);
   }
 
-  if (filters.startDate) {
-    baseQuery += ` AND date_trunc('minute', jp.jobStart) = date_trunc('minute', $${params.length + 1}::timestamp)`;
-    params.push(filters.startDate);
+  if (filters.hourlyRateMin != null) {
+    baseQuery += ` AND jp.hourlyRate >= $${params.length + 1}::numeric`;
+    params.push(filters.hourlyRateMin);
+  }
+  if (filters.hourlyRateMax != null) {
+    baseQuery += ` AND jp.hourlyRate <= $${params.length + 1}::numeric`;
+    params.push(filters.hourlyRateMax);
   }
 
-  if (filters.endDate) {
-    baseQuery += ` AND date_trunc('minute', jp.jobEnd) = date_trunc('minute', $${params.length + 1}::timestamp)`;
-    params.push(filters.endDate);
+  if (filters.startFrom) {
+    baseQuery += ` AND jp.jobStart >= $${params.length + 1}::timestamp`;
+    params.push(filters.startFrom);
+  }
+  if (filters.startTo) {
+    baseQuery += ` AND jp.jobStart <= $${params.length + 1}::timestamp`;
+    params.push(filters.startTo);
+  }
+
+  if (filters.endFrom) {
+    baseQuery += ` AND jp.jobEnd >= $${params.length + 1}::timestamp`;
+    params.push(filters.endFrom);
+  }
+  if (filters.endTo) {
+    baseQuery += ` AND jp.jobEnd <= $${params.length + 1}::timestamp`;
+    params.push(filters.endTo);
+  }
+
+  if (filters.city) {
+    baseQuery += ` AND loc.city ILIKE $${params.length + 1}`;
+    params.push(`%${filters.city}%`);
+  }
+  if (filters.province) {
+    baseQuery += ` AND loc.province ILIKE $${params.length + 1}`;
+    params.push(`%${filters.province}%`);
+  }
+  if (filters.postalCode) {
+    baseQuery += ` AND loc.postalCode ILIKE $${params.length + 1}`;
+    params.push(`%${filters.postalCode}%`);
+  }
+
+  if (filters.q) {
+    baseQuery += ` AND (jp.jobTitle ILIKE $${params.length + 1} OR jp.jobDescription ILIKE $${params.length + 1})`;
+    params.push(`%${filters.q}%`);
   }
 
   const countQuery = `
@@ -287,7 +349,7 @@ const fetchAllJobs = async (input = {}) => {
       loc.postalCode,
       COALESCE(bs.business_name, 'Unknown Business') AS business_name
     ${baseQuery}
-    ORDER BY jp.jobStart DESC, jp.job_id DESC
+    ${orderClause}
     LIMIT $${params.length + 1}
     OFFSET $${params.length + 2};
   `;
@@ -318,17 +380,22 @@ const applyForJob = async (jobId, applicantId) => {
   }
 };
 
-const fetchAppliedJobs = async (applicantId) => {
+const fetchAppliedJobs = async (userId) => {
   try {
     const result = await db.query(
       `
       SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode,
+             ga.application_id, ga.status AS application_status, ga.applied_at,
+             ga.worker_profile_id,
+             w.profile_name,
              COALESCE(bs.business_name, 'Unknown Business') AS business_name
-      FROM jobPostings jp
+      FROM gig_applications ga
+      JOIN workers w ON ga.worker_profile_id = w.id AND w.user_id = $1
+      JOIN jobPostings jp ON ga.job_id = jp.job_id
       JOIN locations loc ON jp.location_id = loc.location_id
       LEFT JOIN businesses bs ON jp.user_id = bs.user_id
-      WHERE jp.applicant_id = $1`,
-      [applicantId]
+      `,
+      [userId]
     );
     return result.rows;
   } catch (error) {
@@ -354,78 +421,27 @@ const removeApplication = async (applicantId, jobId) => {
   }
 };
 
-const fetchRecommendedJobs = async (userId) => {
-  try {
-    // 1. Get worker profiles (names and biographies)
-    const workerProfiles = await db.query(
-      `SELECT profile_name, biography FROM workers WHERE user_id = $1`,
-      [userId]
-    );
+// NEW: fetch employer_id (job poster) for a job
+const getEmployerIdForJob = async (jobId) => {
+  const result = await db.query(
+    `SELECT user_id AS employer_id FROM jobPostings WHERE job_id = $1`,
+    [jobId]
+  );
+  return result.rows[0] || null;
+};
 
-    // 2. Get worker skills
-    const workerSkills = await db.query(
-      `SELECT s.skill_name 
-       FROM workers w
-       JOIN workers_skills ws ON w.id = ws.workers_id
-       JOIN skills s ON ws.skill_id = s.skill_id
-       WHERE w.user_id = $1`,
-      [userId]
-    );
+// NEW: insert into gig_applications when worker applies
+const insertGigApplication = async ({ job_id, employer_id, worker_profile_id }) => {
+  const result = await db.query(
+    `
+    INSERT INTO gig_applications (job_id, employer_id, worker_profile_id, status)
+    VALUES ($1, $2, $3, 'APPLIED')
+    RETURNING application_id, job_id, employer_id, worker_profile_id, status, applied_at, updated_at
+    `,
+    [job_id, employer_id, worker_profile_id]
+  );
 
-    // 3. Extract keywords
-    const keywords = new Set();
-
-    workerProfiles.rows.forEach(p => {
-      if (p.profile_name) p.profile_name.split(/\s+/).forEach(word => { if (word.length > 2) keywords.add(word.toLowerCase()); });
-      if (p.biography) p.biography.split(/\s+/).forEach(word => { if (word.length > 2) keywords.add(word.toLowerCase()); });
-    });
-
-    workerSkills.rows.forEach(s => {
-      if (s.skill_name) s.skill_name.split(/\s+/).forEach(word => { if (word.length > 2) keywords.add(word.toLowerCase()); });
-    });
-
-    if (keywords.size === 0) {
-      return [];
-    }
-
-    // 4. Build search query
-    // We'll use a series of ILIKE conditions joined by OR
-    const keywordArray = Array.from(keywords);
-    let whereClause = `
-      WHERE jp.jobfilled = false 
-      AND jp.status = 'open'
-      AND (jp.applicant_id IS NULL OR jp.applicant_id != $1)
-      AND (
-    `;
-
-    const conditions = [];
-    const params = [userId];
-
-    keywordArray.forEach((word, idx) => {
-      const paramIdx = params.length + 1;
-      conditions.push(`jp.jobTitle ILIKE $${paramIdx} OR jp.jobDescription ILIKE $${paramIdx}`);
-      params.push(`%${word}%`);
-    });
-
-    whereClause += conditions.join(' OR ') + ')';
-
-    const query = `
-      SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode,
-             COALESCE(bs.business_name, 'Unknown Business') AS business_name
-      FROM jobPostings jp
-      JOIN locations loc ON jp.location_id = loc.location_id
-      LEFT JOIN businesses bs ON jp.user_id = bs.user_id
-      ${whereClause}
-      ORDER BY jp.jobStart DESC
-      LIMIT 10;
-    `;
-
-    const result = await db.query(query, params);
-    return result.rows;
-  } catch (err) {
-    console.error("Error fetching recommended jobs:", err);
-    throw err;
-  }
+  return result.rows[0];
 };
 
 module.exports = {
@@ -442,5 +458,6 @@ module.exports = {
   applyForJob,
   fetchAppliedJobs,
   removeApplication,
-  fetchRecommendedJobs,
+  getEmployerIdForJob,
+  insertGigApplication
 };

@@ -228,7 +228,7 @@ router.get('/verify/:token', async (req, res) => {
 
     await db.query(`DELETE FROM pending_users WHERE token = $1;`, [token]);
 
-    // ✅ Single-session: regenerate (optional) then set user_id + current_session_id
+    // Single-session: regenerate (optional) then set user_id + current_session_id
     req.session.regenerate(async (err) => {
       if (err) {
         console.error("Session regeneration error after verify:", err);
@@ -271,22 +271,32 @@ router.post('/resend-verification', async (req, res) => {
   const { email } = req.body;
 
   try {
+    // Check existing users first
     const user = await user_queries.getUserByEmail(email);
 
-    if (!user) {
-      res.status(400).json({ success: false, message: 'User not found.' });
-      return;
+    if (user) {
+      const token = crypto.randomBytes(64).toString('hex');
+      await user_queries.insertOrUpdateToken(user.id, token);
+      const sent = await sendVerificationEmail(email, token);
+      return res.status(sent ? 200 : 500).json({
+        success: sent,
+        message: sent ? 'Verification email sent successfully.' : 'Failed to send verification email.'
+      });
     }
 
-    const token = crypto.randomBytes(64).toString('hex');
-    await user_queries.insertOrUpdateToken(user.id, token);
+    // Check pending users
+    const pendingResult = await db.query('SELECT * FROM pending_users WHERE email = $1;', [email]);
+    if (pendingResult.rows.length > 0) {
+      const token = crypto.randomBytes(64).toString('hex');
+      await db.query('UPDATE pending_users SET token = $1 WHERE email = $2', [token, email]);
+      const sent = await sendVerificationEmail(email, token);
+      return res.status(sent ? 200 : 500).json({
+        success: sent,
+        message: sent ? 'Verification email sent successfully.' : 'Failed to send verification email.'
+      });
+    }
 
-    const sent = await sendVerificationEmail(email, token);
-
-    res.status(sent ? 200 : 500).json({
-      success: sent,
-      message: sent ? 'Verification email sent successfully.' : 'Failed to send verification email.'
-    });
+    res.status(400).json({ success: false, message: 'User not found.' });
   } catch (error) {
     console.error("Error resending verification email:", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
@@ -448,7 +458,7 @@ router.post("/login", (req, res) => {
 
         req.session.user_id = foundUser.id;
 
-        // ✅ Single-session: mark this as the ONLY valid session
+        // Single-session: mark this as the ONLY valid session
         await user_queries.setCurrentSession(foundUser.id, req.sessionID);
 
         res.status(200).json(foundUser);
@@ -563,7 +573,7 @@ router.post("/logout", (req, res) => {
       return res.status(500).json({ error: "Logout failed" });
     }
 
-    // ✅ Single-session: only clear if THIS session is the active one
+    // Single-session: only clear if THIS session is the active one
     if (userId && sessionId) {
       await user_queries.clearCurrentSessionIfMatch(userId, sessionId);
     }
@@ -596,14 +606,14 @@ router.get('/conversation-partners/:userId', async (req, res) => {
 });
 
 router.get('/message-history', async (req, res) => {
-  const { senderId, receiverId } = req.query;
+  const { senderId, receiverId, jobId } = req.query;
 
   if (!senderId || !receiverId) {
     return res.status(400).json({ success: false, message: 'Missing senderId or receiverId' });
   }
 
   try {
-    const messages = await user_queries.getMessageHistory(senderId, receiverId);
+    const messages = await user_queries.getMessageHistory(senderId, receiverId, jobId || null);
     res.status(200).json({ success: true, messages });
   } catch (error) {
     console.error('Error fetching message history:', error);
@@ -612,14 +622,14 @@ router.get('/message-history', async (req, res) => {
 });
 
 router.post('/send-message', async (req, res) => {
-  const { senderId, receiverId, content } = req.body;
+  const { senderId, receiverId, content, jobId, isSystem } = req.body;
 
   if (!senderId || !receiverId || !content) {
     return res.status(400).json({ success: false, message: 'Missing senderId, receiverId, or content' });
   }
 
   try {
-    const message = await user_queries.sendMessage(senderId, receiverId, content);
+    const message = await user_queries.sendMessage(senderId, receiverId, content, jobId || null, isSystem || false);
     res.status(200).json({ success: true, message });
   } catch (error) {
     console.error('Error sending message:', error);

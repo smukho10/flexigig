@@ -11,7 +11,7 @@ const JobDetails = ({ jobDetails, handleApply }) => {
     const handleEmployer = () => { };
 
     const handleMessage = () => {
-        navigate(`/messages`, { state: { partnerId: jobDetails.user_id } });
+        navigate(`/messages`, { state: { partnerId: jobDetails.user_id, jobId: jobDetails.job_id, jobTitle: jobDetails.jobtitle } });
     };
 
     const formatDateForDisplay = (dateTime) => {

@@ -9,17 +9,13 @@ const MessageWidget = () => {
   const { user } = useUser(); // Get the logged-in user
   const [messages, setMessages] = useState([]);
   const [senderDetails, setSenderDetails] = useState({});
-
-  // Fallback profile picture
-  const profilePic = user?.userImage
-    ? (user.userImage.startsWith("http") ? user.userImage : user.userImage)
-    : DefaultAvatar; // fallback avatar
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Fetch the latest messages
   useEffect(() => {
     if (user) {
       axios
-        .get(`/api/latest-messages/${user.id}`, { withCredentials: true }) // Use the user ID in the route
+        .get(`/api/latest-messages/${user.id}`, { withCredentials: true })
         .then((response) => {
           setMessages(response.data.messages);
           fetchSenderDetails(response.data.messages);
@@ -31,10 +27,19 @@ const MessageWidget = () => {
             console.error("Error fetching latest messages:", error);
           }
         });
+
+      axios
+        .get(`/api/unread-count/${user.id}`, { withCredentials: true })
+        .then((response) => {
+          setUnreadCount(response.data.unreadCount);
+        })
+        .catch((error) => {
+          console.error("Error fetching unread count:", error);
+        });
     }
   }, [user]);
 
-  // Fetch sender details for each message
+  // Fetch sender details (name + profile picture) for each message
   const fetchSenderDetails = (messages) => {
     const details = {};
     messages.forEach((message) => {
@@ -42,8 +47,11 @@ const MessageWidget = () => {
         axios
           .get(`/api/user-details/${message.sender_id}`, { withCredentials: true })
           .then((response) => {
-            const { type, firstName, lastName, businessName } = response.data.userDetails;
-            details[message.sender_id] = type === "worker" ? `${firstName} ${lastName}` : businessName;
+            const { type, firstName, lastName, businessName, userImage } = response.data.userDetails;
+            details[message.sender_id] = {
+              name: type === "worker" ? `${firstName} ${lastName}` : businessName,
+              userImage: userImage || null,
+            };
             setSenderDetails((prev) => ({ ...prev, ...details }));
           })
           .catch((error) => {
@@ -59,7 +67,9 @@ const MessageWidget = () => {
         <div id="message-header">
           <h1 id="message-title">Messages</h1>
           <img id="arrow-more" src={Arrow} alt="Go to Messages" />
-          <p id="message-count">Here are your latest messages</p>
+          <p id="message-count">
+            {unreadCount > 0 ? `${unreadCount} unread message${unreadCount > 1 ? "s" : ""}` : "Here are your latest messages"}
+          </p>
         </div>
         <div className="message-list">
           {messages.length === 0 ? (
@@ -67,10 +77,14 @@ const MessageWidget = () => {
           ) : (
             messages.map((message, index) => (
               <div className="message-entry" key={index}>
-                <img id="message-pfp" src={profilePic} alt="Message Sender Profile Picture"></img>
+                <img
+                  id="message-pfp"
+                  src={senderDetails[message.sender_id]?.userImage || DefaultAvatar}
+                  alt="Message Sender Profile Picture"
+                />
                 <div className="message-content">
                   <div className="message-header-row">
-                    <p className="message-name">{senderDetails[message.sender_id] || "Loading..."}</p>
+                    <p className="message-name">{senderDetails[message.sender_id]?.name || "Loading..."}</p>
                     <p className="message-time">{new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                   </div>
                   <p className="message-text">{message.content}</p>
