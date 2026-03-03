@@ -16,7 +16,7 @@ router.get('/worker/:id', async (req, res) => {
   const userId = parseInt(req.params.id, 10);
 
   if (isNaN(userId)) {
-    return res.status(400).json({ message: "Invalid user ID" }); // ✅ Early return if bad input
+    return res.status(400).json({ message: "Invalid user ID" }); // Early return if bad input
   }
 
   try {
