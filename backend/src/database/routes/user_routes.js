@@ -227,7 +227,7 @@ router.get('/verify/:token', async (req, res) => {
 
     await db.query(`DELETE FROM pending_users WHERE token = $1;`, [token]);
 
-    // ✅ Single-session: regenerate (optional) then set user_id + current_session_id
+    // Single-session: regenerate (optional) then set user_id + current_session_id
     req.session.regenerate(async (err) => {
       if (err) {
         console.error("Session regeneration error after verify:", err);
@@ -457,7 +457,7 @@ router.post("/login", (req, res) => {
 
         req.session.user_id = foundUser.id;
 
-        // ✅ Single-session: mark this as the ONLY valid session
+        // Single-session: mark this as the ONLY valid session
         await user_queries.setCurrentSession(foundUser.id, req.sessionID);
 
         res.status(200).json(foundUser);
@@ -572,7 +572,7 @@ router.post("/logout", (req, res) => {
       return res.status(500).json({ error: "Logout failed" });
     }
 
-    // ✅ Single-session: only clear if THIS session is the active one
+    // Single-session: only clear if THIS session is the active one
     if (userId && sessionId) {
       await user_queries.clearCurrentSessionIfMatch(userId, sessionId);
     }

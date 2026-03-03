@@ -2,14 +2,14 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  overflow: hidden; // ✅ prevents layout from causing an outer scrollbar
+  overflow: hidden; // prevents layout from causing an outer scrollbar
 }
 
 .main-content {
   display: flex;
   margin-top: 80px; // header offset
-  height: calc(100vh - 80px); // ✅ ensures content area fits viewport under header
-  overflow: hidden; // ✅ prevents second scrollbar on the wrapper
+  height: calc(100vh - 80px); // ensures content area fits viewport under header
+  overflow: hidden; // prevents second scrollbar on the wrapper
 }
 
 .toolbar {

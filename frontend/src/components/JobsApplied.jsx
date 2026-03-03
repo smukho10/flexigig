@@ -14,7 +14,15 @@ const JobsApplied = () => {
   const [appliedJobs, setAppliedJobs] = useState([]);
   const [refresh, setRefresh] = useState();
   const [removing, setRemoving] = useState();
+  const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
+
+  const ITEMS_PER_PAGE = 5;
+  const totalPages = Math.ceil(appliedJobs.length / ITEMS_PER_PAGE);
+  const visibleJobs = appliedJobs.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   useEffect(() => {
     const fetchAppliedJobs = async () => {
@@ -23,8 +31,9 @@ const JobsApplied = () => {
           const res = await axios.get(`/api/applied-jobs/${user.id}`, { withCredentials: true });
           const sorted = [...res.data.jobs].sort((a, b) => a.jobstart.localeCompare(b.jobstart));
           setAppliedJobs(sorted);
+          setCurrentPage(1);
         } catch (error) {
-          console.error("Error fetching filled jobs:", error);
+          console.error("Error fetching applied jobs:", error);
         }
       }
     };
@@ -95,7 +104,7 @@ const JobsApplied = () => {
         <button className="add-job-button" onClick={findJob}>+ Find a New Job</button>
       </div>
       <ul className="jobs-list">
-        {appliedJobs.map(job => (
+        {visibleJobs.map(job => (
           <li key={job.job_id} className="job-item">
             <div className="top">
               <div className="top-left">
@@ -145,6 +154,25 @@ const JobsApplied = () => {
           </li>
         ))}
       </ul>
+      {totalPages > 1 && (
+        <div className="pagination">
+          <button
+            className="page-btn"
+            onClick={() => setCurrentPage(p => p - 1)}
+            disabled={currentPage === 1}
+          >
+            &lt; Prev
+          </button>
+          <span className="page-indicator">{currentPage} / {totalPages}</span>
+          <button
+            className="page-btn"
+            onClick={() => setCurrentPage(p => p + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Next &gt;
+          </button>
+        </div>
+      )}
       {removing &&
         <div className="comfirm-removal-container">
           <div className="prompt">

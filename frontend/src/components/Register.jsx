@@ -99,7 +99,7 @@ const Register = () => {
     const formattedData = {
       ...registrationData,
       photo: uploadedPhotoPath, // this is a string at this point
-      phone_number: (registrationData.phone_number || "").replace(/\D/g, ""), // ✅ digits only
+      phone_number: (registrationData.phone_number || "").replace(/\D/g, ""), // digits only
     };
 
     try {

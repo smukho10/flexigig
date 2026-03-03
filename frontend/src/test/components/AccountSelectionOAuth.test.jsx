@@ -13,7 +13,7 @@ const mockNavigate = jest.fn();
 let mockSearchParamsGet = jest.fn();
 const mockSetUser = jest.fn();
 
-// ✅ Stable reference — created once, never recreated on re-render.
+// Stable reference — created once, never recreated on re-render.
 // The .get method closes over the *variable* mockSearchParamsGet, so
 // reassigning it in beforeEach is still picked up at call-time.
 const mockSearchParamsObj = {
