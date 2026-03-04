@@ -7,6 +7,7 @@ import FiltersIcon from "../assets/images/FiltersIcon.png";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import JobDetails from "./JobDetails";
+import ApplyModal from "./ApplyModal";
 import axios from "axios";
 import { useUser } from "./UserContext";
 
@@ -194,9 +195,8 @@ const JobBoard = () => {
 
   const [jobDetails, setJobDetails] = useState(null);
   const [jobs, setJobs] = useState([]);
-  const [applying, setApplying] = useState(false);
+  const [applyJobId, setApplyJobId] = useState(null); // ID of the job the user wants to apply to
   const [refresh, setRefresh] = useState(false);
-  const [selectedWorkerId, setSelectedWorkerId] = useState(null);
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -268,25 +268,7 @@ const JobBoard = () => {
     }
   }, [location.state, jobs, navigate]);
 
-  // ── Fetch worker profiles ─────────────────────────────────────────────────
-  useEffect(() => {
-    const fetchWorkerProfiles = async () => {
-      try {
-        const res = await axios.get(`/api/profile/worker-profiles/${user.id}`, {
-          withCredentials: true,
-        });
-        setSelectedWorkerId(
-          Array.isArray(res.data) && res.data.length > 0 ? res.data[0].id : null
-        );
-      } catch (err) {
-        console.error("Failed to fetch worker profiles:", err);
-        setSelectedWorkerId(null);
-      }
-    };
-
-    if (user?.id && !user?.isbusiness) fetchWorkerProfiles();
-    else setSelectedWorkerId(null);
-  }, [user]);
+  // No auto-fetch needed — ApplyModal fetches profiles on open
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   const formatDateForDisplay = (dateTime) => {
@@ -342,37 +324,27 @@ const JobBoard = () => {
 
   // ── Key groups ────────────────────────────────────────────────────────────
   const locationKeys = ["city", "province", "postalCode"];
-  const jobTypeKeys  = ["jobType"];
-  const payKeys      = ["hourlyRateMin", "hourlyRateMax"];
-  const startKeys    = ["startFrom", "startTo"];
-  const endKeys      = ["endFrom", "endTo"];
+  const jobTypeKeys = ["jobType"];
+  const payKeys = ["hourlyRateMin", "hourlyRateMax"];
+  const startKeys = ["startFrom", "startTo"];
+  const endKeys = ["endFrom", "endTo"];
 
   // ── Event handlers ────────────────────────────────────────────────────────
-  const handleApply = async (e) => {
+  // Opens the profile-selection modal for the given job
+  const handleApply = (e) => {
     const jobId = e.target.value;
-    if (!user?.id || user.isbusiness || !selectedWorkerId) return;
+    if (!user?.id || user.isbusiness) return;
+    setApplyJobId(jobId);
+  };
 
-    if (!applying) {
-      setApplying(jobs.find((job) => job.job_id.toString() === jobId));
-    } else {
-      try {
-        await axios.post(
-          `/api/apply-job/${jobId}`,
-          { worker_profile_id: selectedWorkerId },
-          { withCredentials: true }
-        );
-        if (jobDetails) setJobDetails(null);
-        setApplying(false);
-        setRefresh(!refresh);
-      } catch (error) {
-        console.error("Error applying for job:", error);
-      }
-    }
+  // Called when the modal successfully submits an application
+  const handleApplySuccess = () => {
+    setJobDetails(null);
+    setRefresh(!refresh);
   };
 
   const handleBack = () => {
-    if (applying) setApplying(false);
-    else if (jobDetails) setJobDetails(null);
+    if (jobDetails) setJobDetails(null);
   };
 
   const handleJobDetails = (e) =>
@@ -450,7 +422,7 @@ const JobBoard = () => {
         />
         <button
           id="apply-btn" value={job.job_id} onClick={handleApply}
-          disabled={!selectedWorkerId || !!user?.isbusiness}
+          disabled={!!user?.isbusiness}
         >
           Apply
         </button>
@@ -497,7 +469,7 @@ const JobBoard = () => {
               Date
             </button>
 
-            <button className="filter-btn" onClick={() => {}}>
+            <button className="filter-btn" onClick={() => { }}>
               Skill Match
             </button>
 
@@ -568,24 +540,13 @@ const JobBoard = () => {
         </div>
       )}
 
-      {applying && (
-        <div className="comfirm-application-container">
-          <div className="prompt">
-            <div className="prompt-text">
-              <p>Are you sure you want to apply to</p>
-              <p>{applying.jobtitle}?</p>
-            </div>
-            <div className="prompt-buttons">
-              <button onClick={handleBack}>Cancel</button>
-              <button
-                className="apply-btn" onClick={handleApply} value={applying.job_id}
-                disabled={!selectedWorkerId || !!user?.isbusiness}
-              >
-                Apply
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Profile-selection modal */}
+      {applyJobId && (
+        <ApplyModal
+          jobId={applyJobId}
+          onClose={() => setApplyJobId(null)}
+          onSuccess={handleApplySuccess}
+        />
       )}
     </div>
   );

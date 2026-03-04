@@ -64,7 +64,7 @@ const Dashboard = () => {
             // Worker-specific content
             <div className="dashboard-newgig">
               {/* quick apply should open the job description in the job board */}
-              <RecommendedGigsWidget onApply={(jobId) => navigate("/find-gigs", { state: { openJobId: jobId } })} />
+              <RecommendedGigsWidget />
             </div>
           )}
         </aside>

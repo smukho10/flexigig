@@ -1,0 +1,235 @@
+/* ── ApplyModal.css ─────────────────────────────────────────────────── */
+
+.apply-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.apply-modal-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 32px;
+    width: 100%;
+    max-width: 460px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    animation: slideUp 0.25s ease;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(24px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.apply-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.apply-modal-header h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1a202c;
+    margin: 0;
+}
+
+.apply-modal-close {
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    line-height: 1;
+    color: #718096;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.apply-modal-close:hover {
+    color: #1a202c;
+}
+
+.apply-modal-subtitle {
+    font-size: 0.9rem;
+    color: #718096;
+    margin-bottom: 20px;
+}
+
+/* ── Profile list ─────────────────────────────────────────── */
+.apply-profile-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 24px;
+}
+
+.apply-profile-option {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    background: #f7fafc;
+}
+
+.apply-profile-option:hover {
+    border-color: #4c9be8;
+    background: #ebf4ff;
+}
+
+.apply-profile-option.selected {
+    border-color: #2b7de9;
+    background: #ebf4ff;
+}
+
+.apply-profile-radio {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #c5d5e8;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: border-color 0.2s;
+}
+
+.apply-profile-option.selected .apply-profile-radio {
+    border-color: #2b7de9;
+}
+
+.apply-profile-radio-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #2b7de9;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.apply-profile-option.selected .apply-profile-radio-dot {
+    opacity: 1;
+}
+
+.apply-profile-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.apply-profile-name {
+    font-weight: 600;
+    color: #1a202c;
+    font-size: 0.95rem;
+}
+
+.apply-profile-fullname {
+    font-size: 0.82rem;
+    color: #718096;
+}
+
+/* ── Action buttons ───────────────────────────────────────── */
+.apply-modal-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.apply-modal-btn-secondary {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    border: 2px solid #e2e8f0;
+    background: #fff;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #4a5568;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.apply-modal-btn-secondary:hover {
+    background: #f7fafc;
+}
+
+.apply-modal-btn-primary {
+    flex: 2;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    background: linear-gradient(135deg, #2b7de9, #1a5cbf);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+}
+
+.apply-modal-btn-primary:hover:not(:disabled) {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.apply-modal-btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ── States ───────────────────────────────────────────────── */
+.apply-modal-loading,
+.apply-modal-error,
+.apply-modal-empty {
+    padding: 20px 0;
+    text-align: center;
+    font-size: 0.9rem;
+    color: #718096;
+}
+
+.apply-modal-error {
+    color: #e53e3e;
+}
+
+.apply-modal-success {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 0 8px;
+    text-align: center;
+}
+
+.apply-modal-success .check-icon {
+    font-size: 2.5rem;
+}
+
+.apply-modal-success p {
+    font-weight: 600;
+    color: #2f855a;
+    font-size: 1rem;
+}
