@@ -6,3 +6,5 @@ uploads/
 .idea/
 node_modules/
 .env
+frontend/src/setupProxy.js
+frontend/.env

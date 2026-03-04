@@ -41,12 +41,17 @@ jest.mock("../../src/database/queries/workers_queries.js", () => ({
   addWorkerTrait: jest.fn(),
 }));
 
+jest.mock("../../src/database/queries/job_queries.js", () => ({
+  fetchRecommendedJobs: jest.fn(),
+}));
+
 // ─── Imports ───────────────────────────────────────────────────────────────────
 const request = require("supertest");
 const app = require("../../src/app");
 const db = require("../../src/database/connection.js");
 const userQueries = require("../../src/database/queries/user_queries.js");
 const workersQueries = require("../../src/database/queries/workers_queries.js");
+const jobQueries = require("../../src/database/queries/job_queries.js");
 const sgMail = require("@sendgrid/mail");
 
 // Mount the router (guard against double-registration across test runs)
@@ -575,5 +580,52 @@ describe("Forgot Password API", () => {
       expect(res.statusCode).toBe(500);
       expect(res.body.success).toBe(false);
     });
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// GET /api/recommended-jobs
+// ══════════════════════════════════════════════════════════════════════════════
+describe("GET /api/recommended-jobs", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test("returns 401 when user is not logged in", async () => {
+    const res = await request(app).get("/api/recommended-jobs");
+    expect(res.statusCode).toBe(401);
+    expect(res.body.message).toMatch(/user not logged in/i);
+    expect(jobQueries.fetchRecommendedJobs).not.toHaveBeenCalled();
+  });
+
+  test("returns 200 + jobs list on success", async () => {
+    const fakeJobs = [{ job_id: 1, jobtitle: "Waiter" }];
+    jobQueries.fetchRecommendedJobs.mockResolvedValueOnce(fakeJobs);
+
+    const agent = request.agent(app);
+
+    // Simulate login for session
+    userQueries.checkLoginCredentials.mockResolvedValueOnce({ id: 1, email: "test@test.com", active: true });
+    userQueries.setCurrentSession.mockResolvedValueOnce();
+    await agent.post("/api/login").send({ email: "test@test.com", password: "password" });
+
+    const res = await agent.get("/api/recommended-jobs");
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.jobs).toEqual(fakeJobs);
+    expect(jobQueries.fetchRecommendedJobs).toHaveBeenCalledWith(1);
+  });
+
+  test("returns 500 on database error", async () => {
+    const agent = request.agent(app);
+    userQueries.checkLoginCredentials.mockResolvedValueOnce({ id: 1, email: "test@test.com", active: true });
+    userQueries.setCurrentSession.mockResolvedValueOnce();
+    await agent.post("/api/login").send({ email: "test@test.com", password: "password" });
+
+    jobQueries.fetchRecommendedJobs.mockRejectedValueOnce(new Error("DB Error"));
+
+    const res = await agent.get("/api/recommended-jobs");
+    expect(res.statusCode).toBe(500);
+    expect(res.body.message).toMatch(/failed to fetch recommended jobs/i);
   });
 });
