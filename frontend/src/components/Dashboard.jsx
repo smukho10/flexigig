@@ -1,34 +1,15 @@
 import React from "react";
 import Messages from "./MessageWidget";
 import CalendarWidget from "./CalendarWidget";
-import NewGigWidget from "./NewGigWidget";
 import ApplicationsWidget from "./ApplicationsWidget";
-import { Link } from "react-router-dom";
+import RecommendedGigsWidget from "./RecommendedGigsWidget";
+import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "./UserContext";
 import "../styles/Dashboard.css";
 
 const Dashboard = () => {
   const { user } = useUser();
-  const [jobs, setJobs] = React.useState([]);
-
-  React.useEffect(() => {
-    if (user && !user.isbusiness) {
-      const fetchJobs = async () => {
-        try {
-          const res = await fetch("/api/all-jobs");
-          const data = await res.json();
-          // Sort by newest first (highest job_id)
-          const latestJobs = data
-            .filter((job) => !job.jobfilled && !['draft', 'filled', 'complete', 'completed'].includes(job.status))
-            .sort((a, b) => b.job_id - a.job_id);
-          setJobs(latestJobs);
-        } catch (error) {
-          console.error("Error fetching jobs in dashboard:", error);
-        }
-      };
-      fetchJobs();
-    }
-  }, [user]);
+  const navigate = useNavigate();
 
   return (
     <div className="dashboard">
@@ -82,12 +63,8 @@ const Dashboard = () => {
           ) : (
             // Worker-specific content
             <div className="dashboard-newgig">
-              <Link
-                id="dashboard-newgig-link"
-                className="custom-link"
-                to="/find-gigs">
-                <NewGigWidget jobs={jobs} />
-              </Link>
+              {/* quick apply should open the job description in the job board */}
+              <RecommendedGigsWidget onApply={(jobId) => navigate("/find-gigs", { state: { openJobId: jobId } })} />
             </div>
           )}
         </aside>
