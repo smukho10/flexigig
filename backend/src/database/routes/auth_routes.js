@@ -1,5 +1,6 @@
 const express = require('express');
 const passport = require('passport');
+const crypto = require('crypto');
 const router = express.Router();
 const user_queries = require('../queries/user_queries.js');
 
@@ -8,9 +9,42 @@ function getFrontendUrl() {
   return url.replace(/\/$/, '');
 }
 
+/**
+ * Short-lived in-memory token store for OAuth session handoff.
+ *
+ * Problem: Google OAuth redirects the browser directly to the Render backend
+ * (not through the Vercel proxy). Any session cookie set at that point is
+ * stored for the Render domain, not the Vercel domain. When the frontend then
+ * calls /api/... through the Vercel rewrite proxy, the Render-domain cookie is
+ * not included, so the session is lost.
+ *
+ * Fix: Instead of creating a session in the OAuth callback, we create a
+ * short-lived token and redirect the frontend to exchange it via the Vercel
+ * proxy (/api/auth/google/exchange). The exchange sets the session cookie
+ * through the proxy, so it is stored on the Vercel domain and works correctly.
+ */
+const authTokens = new Map();
+
+function createAuthToken(data) {
+  const token = crypto.randomBytes(32).toString('hex');
+  authTokens.set(token, { data, createdAt: Date.now() });
+  // Auto-expire after 5 minutes
+  setTimeout(() => authTokens.delete(token), 5 * 60 * 1000);
+  return token;
+}
+
+function consumeAuthToken(token) {
+  const entry = authTokens.get(token);
+  if (!entry) return null;
+  if (Date.now() - entry.createdAt > 5 * 60 * 1000) {
+    authTokens.delete(token);
+    return null;
+  }
+  authTokens.delete(token);
+  return entry.data;
+}
+
 // Initiate Google OAuth
-// Frontend redirects user here to start the OAuth flow
-// Optional: ?accountType=Worker|Employer - when coming from Register, avoids asking account type again
 router.get('/auth/google', (req, res, next) => {
   const accountType = req.query.accountType;
   if (accountType === 'Worker' || accountType === 'Employer') {
@@ -20,7 +54,6 @@ router.get('/auth/google', (req, res, next) => {
 });
 
 // Google OAuth callback
-// Google redirects here after user grants permission
 router.get(
   '/auth/google/callback',
   passport.authenticate('google', {
@@ -31,41 +64,37 @@ router.get(
     try {
       const userData = req.user;
 
-      // Check if this is a new user who needs to select account type
+      if (userData.emailPendingVerification) {
+        // User registered with email but hasn't verified yet — block to prevent duplicate accounts
+        return res.redirect(`${getFrontendUrl()}/signin?error=verify_email_first`);
+      }
+
       if (userData.needsAccountType) {
-        // Store OAuth data in session for later use
-        req.session.pendingOAuth = {
+        // New user — store pending data in a token and redirect to frontend
+        const accountType = req.session.pendingAccountType;
+        if (accountType) delete req.session.pendingAccountType;
+
+        const token = createAuthToken({
+          type: 'pending',
           googleId: userData.googleId,
           email: userData.email,
           picture: userData.picture,
           firstName: userData.firstName,
-          lastName: userData.lastName
-        };
+          lastName: userData.lastName,
+          preSelectedAccountType: accountType || null
+        });
 
-        // If account type was pre-selected (from Register), pass it to bypass second selection
-        const accountType = req.session.pendingAccountType;
-        if (accountType) {
-          delete req.session.pendingAccountType;
-          return res.redirect(`${getFrontendUrl()}/account-selection?oauth=google&accountType=${accountType}`);
-        }
-
-        return res.redirect(`${getFrontendUrl()}/account-selection?oauth=google`);
+        const accountTypeParam = accountType ? `&accountType=${accountType}` : '';
+        return res.redirect(`${getFrontendUrl()}/auth/callback?token=${token}${accountTypeParam}`);
       }
 
-      // Existing user - create session and redirect to dashboard
-      req.session.regenerate(async (err) => {
-        if (err) {
-          console.error('Session regeneration error:', err);
-          return res.redirect(`${getFrontendUrl()}/signin?error=session_error`);
-        }
-
-        req.session.user_id = userData.id;
-
-        // mark this as the ONLY valid session
-        await user_queries.setCurrentSession(userData.id, req.sessionID);
-
-        res.redirect(`${getFrontendUrl()}/dashboard`);
+      // Existing user — store userId in a token and redirect to frontend
+      const token = createAuthToken({
+        type: 'login',
+        userId: userData.id
       });
+
+      return res.redirect(`${getFrontendUrl()}/auth/callback?token=${token}`);
 
     } catch (error) {
       console.error('OAuth callback error:', error);
@@ -73,6 +102,74 @@ router.get(
     }
   }
 );
+
+/**
+ * Exchange a short-lived OAuth token for a real session.
+ * This is called by the frontend through the Vercel proxy, so the session
+ * cookie will be stored for the Vercel domain and work correctly.
+ */
+router.get('/auth/google/exchange', async (req, res) => {
+  const { token } = req.query;
+
+  if (!token) {
+    return res.status(400).json({ success: false, message: 'Token is required.' });
+  }
+
+  const data = consumeAuthToken(token);
+  if (!data) {
+    return res.status(400).json({ success: false, message: 'Invalid or expired token. Please sign in again.' });
+  }
+
+  try {
+    if (data.type === 'login') {
+      // Existing user — create session
+      req.session.regenerate(async (err) => {
+        if (err) {
+          console.error('Session regeneration error:', err);
+          return res.status(500).json({ success: false, message: 'Session error' });
+        }
+
+        req.session.user_id = data.userId;
+        await user_queries.setCurrentSession(data.userId, req.sessionID);
+
+        const user = await user_queries.getUserById(data.userId);
+        return res.json({
+          success: true,
+          type: 'login',
+          user: {
+            id: user.id,
+            email: user.email,
+            isbusiness: user.isbusiness,
+            userImage: user.userimage
+          }
+        });
+      });
+
+    } else if (data.type === 'pending') {
+      // New user — store pending OAuth data in session (now through proxy, cookie on Vercel domain)
+      req.session.pendingOAuth = {
+        googleId: data.googleId,
+        email: data.email,
+        picture: data.picture,
+        firstName: data.firstName,
+        lastName: data.lastName
+      };
+
+      return res.json({
+        success: true,
+        type: 'pending',
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        preSelectedAccountType: data.preSelectedAccountType || null
+      });
+    }
+
+  } catch (error) {
+    console.error('Token exchange error:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
 
 // Complete OAuth registration (called after account type selection)
 router.post('/auth/google/complete', async (req, res) => {
@@ -96,7 +193,6 @@ router.post('/auth/google/complete', async (req, res) => {
 
     const isBusiness = accountType === 'Employer';
 
-    // Create the user
     const user = await user_queries.createOAuthUser(
       pendingOAuth.email,
       pendingOAuth.googleId,
@@ -106,7 +202,6 @@ router.post('/auth/google/complete', async (req, res) => {
 
     let workerId = null;
 
-    // Create worker or business profile
     if (accountType === 'Worker') {
       const workerFirstName = firstName || pendingOAuth.firstName || 'User';
       const workerLastName = lastName || pendingOAuth.lastName || '';
@@ -116,10 +211,8 @@ router.post('/auth/google/complete', async (req, res) => {
       await user_queries.addBusiness(user.id, businessName || '', businessDescription || '');
     }
 
-    // Clear pending OAuth data
     delete req.session.pendingOAuth;
 
-    // Create session
     req.session.regenerate(async (err) => {
       if (err) {
         console.error('Session regeneration error:', err);
@@ -127,11 +220,8 @@ router.post('/auth/google/complete', async (req, res) => {
       }
 
       req.session.user_id = user.id;
-
-      // Single-session: mark this as the ONLY valid session
       await user_queries.setCurrentSession(user.id, req.sessionID);
 
-      // Return user data (include workerId for Workers so frontend can complete profile)
       const userResponse = {
         id: user.id,
         email: user.email,
