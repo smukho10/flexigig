@@ -404,15 +404,18 @@ const fetchAppliedJobs = async (userId) => {
   }
 };
 
-const removeApplication = async (applicantId, jobId) => {
+const removeApplication = async (userId, jobId) => {
   try {
     const result = await db.query(
       `
-      UPDATE jobpostings
-      SET jobfilled = false, applicant_id = NULL
-      WHERE applicant_id = $1 AND job_id = $2
+      DELETE FROM gig_applications
+      WHERE job_id = $2
+        AND worker_profile_id IN (
+          SELECT id FROM workers WHERE user_id = $1
+        )
+        AND status IN ('APPLIED', 'IN_REVIEW', 'ACCEPTED')
       RETURNING *;`,
-      [applicantId, jobId]
+      [userId, jobId]
     );
     return result.rows[0];
   } catch (error) {
