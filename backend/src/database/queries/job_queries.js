@@ -449,49 +449,62 @@ const fetchRecommendedJobs = async (userId) => {
     // This query finds jobs that match keywords in any of the worker's profiles
     // and returns which profiles matched each job.
     const query = `
-      WITH worker_data AS (
-        -- Get all keywords for each profile (name, bio, skills)
+      WITH worker_data AS(
+    --Get all keywords for each profile(name, bio, skills)
         SELECT 
           w.id AS profile_id,
-          w.profile_name,
-          lower(concat_ws(' ', w.profile_name, w.biography, string_agg(s.skill_name, ' '))) AS all_text
+      w.profile_name,
+      lower(w.profile_name) as lower_profile_name,
+      lower(w.biography) as lower_bio,
+      string_agg(lower(s.skill_name), ' ') AS lower_skills,
+        lower(concat_ws(' ', w.profile_name, w.biography, string_agg(s.skill_name, ' '))) AS all_text
         FROM workers w
         LEFT JOIN workers_skills ws ON w.id = ws.workers_id
         LEFT JOIN skills s ON ws.skill_id = s.skill_id
         WHERE w.user_id = $1
         GROUP BY w.id, w.profile_name, w.biography
       ),
-      matches AS (
-        -- Match jobs against profile text
-        -- We'll use a simple keyword overlap for now, or ILIKE for each profile's name/skills
+      scored_matches AS(
+          --Match jobs against profile text and assign a score
         SELECT 
           jp.job_id,
           wd.profile_name,
-          wd.profile_id
+          wd.profile_id,
+          (
+            --High weight: Job title matches profile name(e.g.Profile: "Waiter", Job: "Need a Waiter")
+            CASE WHEN lower(jp.jobtitle) LIKE '%' || wd.lower_profile_name || '%' THEN 10 ELSE 0 END +
+        --Medium weight: Job title matches any skills 
+            CASE WHEN wd.lower_skills != '' AND lower(jp.jobtitle) SIMILAR TO '%(' || replace(wd.lower_skills, ' ', '|') || ')%' THEN 5 ELSE 0 END +
+        --Lower weight: Job description mentions profile name or skills
+            CASE WHEN lower(jp.jobdescription) LIKE '%' || wd.lower_profile_name || '%' THEN 3 ELSE 0 END +
+        CASE WHEN wd.lower_skills != '' AND lower(jp.jobdescription) SIMILAR TO '%(' || replace(wd.lower_skills, ' ', '|') || ')%' THEN 2 ELSE 0 END +
+        --Lowest weight: General keyword overlap
+            CASE WHEN wd.all_text LIKE '%' || lower(jp.jobtitle) || '%' THEN 1 ELSE 0 END
+        ) AS match_score
         FROM jobPostings jp
         CROSS JOIN worker_data wd
         WHERE jp.jobfilled = false 
           AND jp.status ILIKE 'open'
-          AND (jp.applicant_id IS NULL OR jp.applicant_id != $1)
-          AND (
-            lower(jp.jobtitle) LIKE '%' || lower(wd.profile_name) || '%'
-            OR lower(jp.jobdescription) LIKE '%' || lower(wd.profile_name) || '%'
-            OR wd.all_text LIKE '%' || lower(jp.jobtitle) || '%'
-          )
-      )
-      SELECT 
-        jp.*, 
-        loc.StreetAddress, loc.city, loc.province, loc.postalCode,
-        COALESCE(bs.business_name, 'Unknown Business') AS business_name,
-        string_agg(DISTINCT m.profile_name, ', ') AS recommended_for_profiles
+AND(jp.applicant_id IS NULL OR jp.applicant_id != $1)
+      ),
+      filtered_matches AS(
+  --Only keep matches that actually scored something
+        SELECT * FROM scored_matches WHERE match_score > 0
+)
+SELECT
+jp.*,
+  loc.StreetAddress, loc.city, loc.province, loc.postalCode,
+  COALESCE(bs.business_name, 'Unknown Business') AS business_name,
+    string_agg(DISTINCT m.profile_name, ', ') AS recommended_for_profiles,
+      MAX(m.match_score) as max_score
       FROM jobPostings jp
-      JOIN matches m ON jp.job_id = m.job_id
+      JOIN filtered_matches m ON jp.job_id = m.job_id
       JOIN locations loc ON jp.location_id = loc.location_id
       LEFT JOIN businesses bs ON jp.user_id = bs.user_id
       GROUP BY jp.job_id, loc.location_id, bs.business_name
-      ORDER BY jp.jobStart DESC
-      LIMIT 15;
-    `;
+      ORDER BY max_score DESC, jp.jobStart DESC
+      LIMIT 3;
+`;
 
     const result = await db.query(query, [userId]);
     console.log(`Recommendation query found ${result.rows.length} matches for user ${userId}`);

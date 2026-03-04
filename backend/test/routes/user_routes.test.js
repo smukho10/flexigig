@@ -344,6 +344,7 @@ describe("POST /api/resend-verification", () => {
 
   test("400 when email does not belong to any user", async () => {
     userQueries.getUserByEmail.mockResolvedValueOnce(null);
+    db.query.mockResolvedValueOnce({ rows: [] });
 
     const res = await request(app)
       .post("/api/resend-verification")
