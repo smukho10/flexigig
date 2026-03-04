@@ -16,6 +16,8 @@ const SignIn = () => {
       setErrorMessage('Google sign-in failed. Please try again.');
     } else if (error === 'session_error') {
       setErrorMessage('Session error. Please try again.');
+    } else if (error === 'verify_email_first') {
+      setErrorMessage('Please verify your email before signing in with Google. Check your inbox for the verification link.');
     }
   }, [searchParams]);
   const [signInData, setSignInData] = useState({

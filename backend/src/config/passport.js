@@ -66,6 +66,16 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           return done(null, user);
         }
 
+        // Check if email exists in pending_users (registered but not yet verified)
+        const pendingCheck = await db.query(
+          `SELECT id FROM pending_users WHERE LOWER(email) = LOWER($1) LIMIT 1;`,
+          [email]
+        );
+        if (pendingCheck.rows.length > 0) {
+          // Block Google OAuth for unverified traditional accounts to prevent duplicate accounts
+          return done(null, { emailPendingVerification: true, email });
+        }
+
         // New user - create account
         // Store OAuth data in session for account type selection
         const oauthData = {

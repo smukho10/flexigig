@@ -64,6 +64,11 @@ router.get(
     try {
       const userData = req.user;
 
+      if (userData.emailPendingVerification) {
+        // User registered with email but hasn't verified yet — block to prevent duplicate accounts
+        return res.redirect(`${getFrontendUrl()}/signin?error=verify_email_first`);
+      }
+
       if (userData.needsAccountType) {
         // New user — store pending data in a token and redirect to frontend
         const accountType = req.session.pendingAccountType;
