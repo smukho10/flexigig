@@ -1,12 +1,10 @@
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
-import { useUser } from "./UserContext";
 
 const AuthCallback = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { setUser } = useUser();
 
   useEffect(() => {
     const token = searchParams.get("token");
@@ -22,10 +20,8 @@ const AuthCallback = () => {
         const data = res.data;
 
         if (data.type === "login") {
-          // Existing user — session is established, update context and go to dashboard
-          setUser(data.user);
-          localStorage.setItem("user", JSON.stringify(data.user));
-          navigate("/dashboard");
+          // Hard redirect so UserContext re-fetches /api/me fresh with the new session
+          window.location.href = "/dashboard";
         } else if (data.type === "pending") {
           // New user — session has pendingOAuth set, go to account selection
           const accountTypeParam = data.preSelectedAccountType
