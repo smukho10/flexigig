@@ -446,71 +446,55 @@ const insertGigApplication = async ({ job_id, employer_id, worker_profile_id }) 
 
 const fetchRecommendedJobs = async (userId) => {
   try {
-    // 1. Get worker profiles (names and biographies)
-    const workerProfiles = await db.query(
-      `SELECT profile_name, biography FROM workers WHERE user_id = $1`,
-      [userId]
-    );
-
-    // 2. Get worker skills
-    const workerSkills = await db.query(
-      `SELECT s.skill_name 
-       FROM workers w
-       JOIN workers_skills ws ON w.id = ws.workers_id
-       JOIN skills s ON ws.skill_id = s.skill_id
-       WHERE w.user_id = $1`,
-      [userId]
-    );
-
-    // 3. Extract keywords
-    const keywords = new Set();
-
-    workerProfiles.rows.forEach(p => {
-      if (p.profile_name) p.profile_name.split(/\s+/).forEach(word => { if (word.length > 2) keywords.add(word.toLowerCase()); });
-      if (p.biography) p.biography.split(/\s+/).forEach(word => { if (word.length > 2) keywords.add(word.toLowerCase()); });
-    });
-
-    workerSkills.rows.forEach(s => {
-      if (s.skill_name) s.skill_name.split(/\s+/).forEach(word => { if (word.length > 2) keywords.add(word.toLowerCase()); });
-    });
-
-    if (keywords.size === 0) {
-      return [];
-    }
-
-    // 4. Build search query
-    // We'll use a series of ILIKE conditions joined by OR
-    const keywordArray = Array.from(keywords);
-    let whereClause = `
-      WHERE jp.jobfilled = false 
-      AND jp.status = 'open'
-      AND (jp.applicant_id IS NULL OR jp.applicant_id != $1)
-      AND (
-    `;
-
-    const conditions = [];
-    const params = [userId];
-
-    keywordArray.forEach((word, idx) => {
-      const paramIdx = params.length + 1;
-      conditions.push(`jp.jobTitle ILIKE $${paramIdx} OR jp.jobDescription ILIKE $${paramIdx}`);
-      params.push(`%${word}%`);
-    });
-
-    whereClause += conditions.join(' OR ') + ')';
-
+    // This query finds jobs that match keywords in any of the worker's profiles
+    // and returns which profiles matched each job.
     const query = `
-      SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode,
-             COALESCE(bs.business_name, 'Unknown Business') AS business_name
+      WITH worker_data AS (
+        -- Get all keywords for each profile (name, bio, skills)
+        SELECT 
+          w.id AS profile_id,
+          w.profile_name,
+          lower(concat_ws(' ', w.profile_name, w.biography, string_agg(s.skill_name, ' '))) AS all_text
+        FROM workers w
+        LEFT JOIN workers_skills ws ON w.id = ws.workers_id
+        LEFT JOIN skills s ON ws.skill_id = s.skill_id
+        WHERE w.user_id = $1
+        GROUP BY w.id, w.profile_name, w.biography
+      ),
+      matches AS (
+        -- Match jobs against profile text
+        -- We'll use a simple keyword overlap for now, or ILIKE for each profile's name/skills
+        SELECT 
+          jp.job_id,
+          wd.profile_name,
+          wd.profile_id
+        FROM jobPostings jp
+        CROSS JOIN worker_data wd
+        WHERE jp.jobfilled = false 
+          AND jp.status ILIKE 'open'
+          AND (jp.applicant_id IS NULL OR jp.applicant_id != $1)
+          AND (
+            lower(jp.jobtitle) LIKE '%' || lower(wd.profile_name) || '%'
+            OR lower(jp.jobdescription) LIKE '%' || lower(wd.profile_name) || '%'
+            OR wd.all_text LIKE '%' || lower(jp.jobtitle) || '%'
+          )
+      )
+      SELECT 
+        jp.*, 
+        loc.StreetAddress, loc.city, loc.province, loc.postalCode,
+        COALESCE(bs.business_name, 'Unknown Business') AS business_name,
+        string_agg(DISTINCT m.profile_name, ', ') AS recommended_for_profiles
       FROM jobPostings jp
+      JOIN matches m ON jp.job_id = m.job_id
       JOIN locations loc ON jp.location_id = loc.location_id
       LEFT JOIN businesses bs ON jp.user_id = bs.user_id
-      ${whereClause}
+      GROUP BY jp.job_id, loc.location_id, bs.business_name
       ORDER BY jp.jobStart DESC
-      LIMIT 10;
+      LIMIT 15;
     `;
 
-    const result = await db.query(query, params);
+    const result = await db.query(query, [userId]);
+    console.log(`Recommendation query found ${result.rows.length} matches for user ${userId}`);
     return result.rows;
   } catch (err) {
     console.error("Error fetching recommended jobs:", err);

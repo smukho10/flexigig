@@ -5,6 +5,7 @@ import ChevronRight from "../assets/images/ChevronRight.png";
 import DollarSign from "../assets/images/DollarSign.png";
 import FiltersIcon from "../assets/images/FiltersIcon.png";
 import { useEffect, useState, useRef, useCallback } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import JobDetails from "./JobDetails";
 import axios from "axios";
 import { useUser } from "./UserContext";
@@ -188,6 +189,8 @@ const PayDropdown = ({ initialMin, initialMax, absMax, onClear, onApply }) => {
 // ── JobBoard ──────────────────────────────────────────────────────────────────
 const JobBoard = () => {
   const { user } = useUser();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const [jobDetails, setJobDetails] = useState(null);
   const [jobs, setJobs] = useState([]);
@@ -249,6 +252,18 @@ const JobBoard = () => {
     };
     fetchJobs();
   }, [refresh, page, perPage, appliedFilters]);
+
+  // ── Open details when navigated here with state (e.g. quick apply)
+  useEffect(() => {
+    if (location.state?.openJobId && jobs.length) {
+      const match = jobs.find((j) => j.job_id.toString() === location.state.openJobId.toString());
+      if (match) {
+        setJobDetails(match);
+        // remove state so re-visiting /find-gigs doesn't reopen automatically
+        navigate(location.pathname, { replace: true });
+      }
+    }
+  }, [location.state, jobs, navigate]);
 
   // ── Fetch worker profiles ─────────────────────────────────────────────────
   useEffect(() => {

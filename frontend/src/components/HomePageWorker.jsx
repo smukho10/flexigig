@@ -40,7 +40,8 @@ const HomePage = () => {
   const fetchAllJobs = async () => {
     try {
       const response = await axios.get(`/api/all-jobs`, { withCredentials: true });
-      const filteredJobs = response.data.filter((job) =>
+      const jobList = Array.isArray(response.data.jobs) ? response.data.jobs : (Array.isArray(response.data) ? response.data : []);
+      const filteredJobs = jobList.filter((job) =>
         job.jobfilled === false &&
         !['draft', 'filled', 'complete', 'completed'].includes(job.status)
       );
@@ -62,7 +63,8 @@ const HomePage = () => {
       if (filterDate.endDate) params.append("endDate", filterDate.endDate);
 
       const response = await axios.get(`/api/all-jobs?${params.toString()}`, { withCredentials: true });
-      const filteredJobs = response.data.filter((job) =>
+      const jobList = Array.isArray(response.data.jobs) ? response.data.jobs : (Array.isArray(response.data) ? response.data : []);
+      const filteredJobs = jobList.filter((job) =>
         job.jobfilled === false &&
         !['draft', 'filled', 'complete', 'completed'].includes(job.status)
       );
@@ -76,26 +78,26 @@ const HomePage = () => {
     fetchFilteredJobs();
   };
 
-const handleApply = async (jobId) => {
-  if (!selectedWorkerId) {
-    console.error("No worker profile selected yet.");
-    return;
-  }
+  const handleApply = async (jobId) => {
+    if (!selectedWorkerId) {
+      console.error("No worker profile selected yet.");
+      return;
+    }
 
-  try {
-    await axios.post(
-      `/api/apply-job/${jobId}`,
-      { worker_profile_id: selectedWorkerId },
-      { withCredentials: true }
-    );
+    try {
+      await axios.post(
+        `/api/apply-job/${jobId}`,
+        { worker_profile_id: selectedWorkerId },
+        { withCredentials: true }
+      );
 
-    setJobs((currentJobs) =>
-      currentJobs.filter((job) => job.job_id !== jobId)
-    );
-  } catch (error) {
-    console.error("Error applying for job:", error);
-  }
-};
+      setJobs((currentJobs) =>
+        currentJobs.filter((job) => job.job_id !== jobId)
+      );
+    } catch (error) {
+      console.error("Error applying for job:", error);
+    }
+  };
 
   const formatDateForDisplay = (dateTime) => {
     if (!dateTime) return "";
