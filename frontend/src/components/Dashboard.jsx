@@ -1,7 +1,6 @@
 import React from "react";
 import Messages from "./MessageWidget";
 import CalendarWidget from "./CalendarWidget";
-import NewGigWidget from "./NewGigWidget";
 import ApplicationsWidget from "./ApplicationsWidget";
 import RecommendedGigsWidget from "./RecommendedGigsWidget";
 import { Link, useNavigate } from "react-router-dom";
@@ -11,28 +10,6 @@ import "../styles/Dashboard.css";
 const Dashboard = () => {
   const { user } = useUser();
   const navigate = useNavigate();
-  const [jobs, setJobs] = React.useState([]);
-
-  React.useEffect(() => {
-    if (user && !user.isbusiness) {
-      const fetchJobs = async () => {
-        try {
-          const res = await fetch("/api/all-jobs");
-          const data = await res.json();
-          // Extract jobs from the nested response { jobs: [], pagination: {} }
-          const jobList = Array.isArray(data.jobs) ? data.jobs : (Array.isArray(data) ? data : []);
-
-          const latestJobs = jobList
-            .filter((job) => !job.jobfilled && !['draft', 'filled', 'complete', 'completed'].includes(job.status))
-            .sort((a, b) => b.job_id - a.job_id);
-          setJobs(latestJobs);
-        } catch (error) {
-          console.error("Error fetching jobs in dashboard:", error);
-        }
-      };
-      fetchJobs();
-    }
-  }, [user]);
 
   return (
     <div className="dashboard">
@@ -88,13 +65,6 @@ const Dashboard = () => {
             <div className="dashboard-newgig">
               {/* quick apply should open the job description in the job board */}
               <RecommendedGigsWidget onApply={(jobId) => navigate("/find-gigs", { state: { openJobId: jobId } })} />
-              {/* Standard dashboard apply handled by NewGigWidget or redirects to find-gigs */}
-              <Link
-                id="dashboard-newgig-link"
-                className="custom-link"
-                to="/find-gigs">
-                <NewGigWidget jobs={jobs} />
-              </Link>
             </div>
           )}
         </aside>
