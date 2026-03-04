@@ -240,6 +240,9 @@ const JobBoard = () => {
     const fetchJobs = async () => {
       try {
         const params = { page, perPage, ...appliedFilters };
+        if (user?.id && !user?.isbusiness) {
+          params.currentUserId = user.id;
+        }
         const res = await axios.get(`/api/all-jobs`, { params, withCredentials: true });
         const jobsFromApi = Array.isArray(res.data?.jobs) ? res.data.jobs : [];
         setJobs(jobsFromApi);

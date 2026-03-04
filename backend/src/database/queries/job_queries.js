@@ -335,6 +335,19 @@ const fetchAllJobs = async (input = {}) => {
     params.push(`%${filters.q}%`);
   }
 
+  if (filters.currentUserId) {
+    baseQuery += `
+      AND jp.job_id NOT IN (
+        SELECT ga.job_id
+        FROM gig_applications ga
+        JOIN workers w ON ga.worker_profile_id = w.id
+        WHERE w.user_id = $${params.length + 1}
+          AND ga.status IN ('APPLIED', 'IN_REVIEW', 'ACCEPTED')
+      )
+    `;
+    params.push(filters.currentUserId);
+  }
+
   const countQuery = `
     SELECT COUNT(*)::int AS total
     ${baseQuery};
