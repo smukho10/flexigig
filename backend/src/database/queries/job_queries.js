@@ -466,62 +466,68 @@ const fetchRecommendedJobs = async (userId) => {
     // and returns which profiles matched each job.
     const query = `
       WITH worker_data AS (
-        SELECT 
+        -- collect profiles for the user (profile name, bio, desired pay)
+        SELECT
           w.id AS profile_id,
           w.profile_name,
           w.desired_pay,
           w.biography,
-          -- Postgres regex pattern: "hard worker" -> "hard|worker"
-          NULLIF(trim(both '|' from regexp_replace(lower(w.biography), '[^a-z0-9]+', '|', 'g')), '') as bio_regex
+          NULLIF(trim(both '|' from regexp_replace(lower(regexp_replace(lower(w.biography), '\\y[a-z0-9]{1,2}\\y', '', 'g')), '[^a-z0-9]+', '|', 'g')), '') as bio_regex
         FROM workers w
         WHERE w.user_id = $1
       ),
       scored_matches AS (
-        SELECT 
+        -- score each job against each profile
+        SELECT
           jp.job_id,
           wd.profile_name,
+          wd.profile_id,
           (
-            -- High weight: Job title matches profile name (case-insensitive ILIKE)
-            (CASE WHEN jp.jobtitle ILIKE '%' || wd.profile_name || '%' THEN 10 ELSE 0 END) +
-            -- Medium weight: Job description mentions profile name
-            (CASE WHEN jp.jobdescription ILIKE '%' || wd.profile_name || '%' THEN 5 ELSE 0 END) +
-            -- Pay matches desired pay (or is close)
-            (CASE 
-              WHEN wd.desired_pay IS NOT NULL AND jp.hourlyRate >= wd.desired_pay THEN 5
-              WHEN wd.desired_pay IS NOT NULL AND jp.hourlyRate >= (wd.desired_pay * 0.8) THEN 2
-              ELSE 0 
-            END) +
-            -- Bio keyword matches (using Postgres case-insensitive regex operator ~*)
-            (CASE WHEN wd.bio_regex IS NOT NULL AND jp.jobtitle ~* wd.bio_regex THEN 3 ELSE 0 END) +
-            (CASE WHEN wd.bio_regex IS NOT NULL AND jp.jobdescription ~* wd.bio_regex THEN 1 ELSE 0 END) +
-            (CASE WHEN wd.biography IS NOT NULL AND wd.biography != '' AND jp.jobtitle ILIKE '%' || wd.biography || '%' THEN 5 ELSE 0 END)
+            -- strong signals
+            (CASE WHEN jp.jobtitle ILIKE '%' || wd.profile_name || '%' THEN 20 ELSE 0 END) +
+            (CASE WHEN jp.jobdescription ILIKE '%' || wd.profile_name || '%' THEN 10 ELSE 0 END) +
+            -- pay preference (small boost)
+            (CASE WHEN wd.desired_pay IS NOT NULL AND jp.hourlyRate >= wd.desired_pay THEN 2
+                  WHEN wd.desired_pay IS NOT NULL AND jp.hourlyRate >= (wd.desired_pay * 0.8) THEN 1 ELSE 0 END) +
+            -- biography keyword matches (lower weight). Require strong bio match (title AND description) to count as enabling match
+            (CASE WHEN wd.bio_regex IS NOT NULL AND jp.jobtitle ~* ('\\\m(' || wd.bio_regex || ')') AND jp.jobdescription ~* ('\\\m(' || wd.bio_regex || ')') THEN 6
+                  WHEN wd.bio_regex IS NOT NULL AND (jp.jobtitle ~* ('\\\m(' || wd.bio_regex || ')') OR jp.jobdescription ~* ('\\\m(' || wd.bio_regex || ')')) THEN 2 ELSE 0 END)
           ) AS match_score
         FROM jobPostings jp
         CROSS JOIN worker_data wd
-        WHERE jp.jobfilled = false 
+        WHERE jp.jobfilled = false
           AND jp.status ILIKE 'open'
-          -- Exclude jobs you already applied for using efficient NOT EXISTS subquery
+          -- don't recommend jobs the user has already applied to
           AND NOT EXISTS (
             SELECT 1 FROM gig_applications ga
             JOIN workers w ON ga.worker_profile_id = w.id
-            WHERE ga.job_id = jp.job_id 
+            WHERE ga.job_id = jp.job_id
               AND w.user_id = $1
               AND ga.status IN ('APPLIED', 'IN_REVIEW', 'ACCEPTED')
           )
+          -- require profile relevance: either profile name appears OR a strong bio match (keywords in both title and description)
+          AND (
+            jp.jobtitle ILIKE '%' || wd.profile_name || '%'
+            OR jp.jobdescription ILIKE '%' || wd.profile_name || '%'
+            OR (wd.bio_regex IS NOT NULL AND jp.jobtitle ~* ('\\\m(' || wd.bio_regex || ')') AND jp.jobdescription ~* ('\\\m(' || wd.bio_regex || ')'))
+          )
+      ),
+      filtered_matches AS (
+        SELECT * FROM scored_matches WHERE match_score > 0
       )
-      SELECT 
-        jp.*, 
+      -- Aggregate matches per job so we return unique job postings with the profiles that matched
+      SELECT
+        jp.*,
         loc.StreetAddress, loc.city, loc.province, loc.postalCode,
         COALESCE(bs.business_name, 'Unknown Business') AS business_name,
         string_agg(DISTINCT m.profile_name, ', ') AS recommended_for_profiles,
         MAX(m.match_score) as max_score
       FROM jobPostings jp
-      -- Only keep matches that actually scored something directly in the JOIN
-      JOIN scored_matches m ON jp.job_id = m.job_id AND m.match_score > 0
+      JOIN filtered_matches m ON jp.job_id = m.job_id
       JOIN locations loc ON jp.location_id = loc.location_id
       LEFT JOIN businesses bs ON jp.user_id = bs.user_id
       GROUP BY jp.job_id, loc.location_id, bs.business_name
-      ORDER BY max_score DESC, jp.jobStart DESC
+      ORDER BY max_score DESC
       LIMIT 3;
     `;
 
