@@ -400,7 +400,7 @@ const JobPosting = () => {
                                               applicantsModal.job.job_id
                                             )
                                           }
-                                          disabled={a.application_status === "ACCEPTED"}
+                                          disabled={a.application_status === "ACCEPTED" || a.application_status === "WITHDRAWN"}
                                         >
                                           Accept
                                         </button>
@@ -413,7 +413,7 @@ const JobPosting = () => {
                                               applicantsModal.job.job_id
                                             )
                                           }
-                                          disabled={a.application_status === "REJECTED" || a.application_status === "ACCEPTED"}
+                                          disabled={a.application_status === "REJECTED" || a.application_status === "ACCEPTED" || a.application_status === "WITHDRAWN"}
                                         >
                                           Reject
                                         </button>
@@ -425,6 +425,7 @@ const JobPosting = () => {
                                           applicantsModal.job.job_id
                                         )
                                       }
+                                      disabled={a.application_status === "REJECTED" || a.application_status === "ACCEPTED" || a.application_status === "IN_REVIEW" || a.application_status === "WITHDRAWN"}
                                     >
                                       In Review
                                     </button>

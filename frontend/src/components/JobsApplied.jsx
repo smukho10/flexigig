@@ -13,7 +13,7 @@ const JobsApplied = () => {
   const { user } = useUser();
   const [appliedJobs, setAppliedJobs] = useState([]);
   const [refresh, setRefresh] = useState();
-  const [removing, setRemoving] = useState();
+  const [withdrawing, setWithdrawing] = useState();
   const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
 
@@ -40,17 +40,21 @@ const JobsApplied = () => {
     fetchAppliedJobs();
   }, [user, refresh]);
 
-  const handleRemove = async (e) => {
+  const handleWithdraw = async (e) => {
     const jobId = e.target.value;
-    if (!removing) {
-      setRemoving(appliedJobs.find(job => job.job_id.toString() === jobId))
+    if (!withdrawing) {
+      setWithdrawing(appliedJobs.find(job => job.job_id.toString() === jobId));
     } else {
       try {
-        await axios.patch(`/api/remove-application/${user.id}/job/${jobId}`);
-        setRemoving(false)
-        setRefresh(!refresh)
+        await axios.patch(
+          `/api/applications/${withdrawing.application_id}/status`,
+          { status: 'WITHDRAWN' },
+          { withCredentials: true }
+        );
+        setWithdrawing(false);
+        setRefresh(!refresh);
       } catch (error) {
-        console.error("Failed to delete job:", error);
+        console.error("Failed to withdraw application:", error);
       }
     }
   };
@@ -78,7 +82,7 @@ const JobsApplied = () => {
   };
 
   const handleCancel = () => {
-    if (removing) setRemoving(false);
+    if (withdrawing) setWithdrawing(false);
   }
 
   const STATUS_LABELS = {
@@ -114,7 +118,13 @@ const JobsApplied = () => {
                 </div>
                 <p className="applied-by">Applied by: <span>{job.profile_name}</span></p>
                 <div className="action-buttons">
-                  <button onClick={handleRemove} value={job.job_id}>Remove</button>
+                  <button
+                    onClick={handleWithdraw}
+                    value={job.job_id}
+                    disabled={job.application_status === 'WITHDRAWN'}
+                  >
+                    Withdraw
+                  </button>
                 </div>
               </div>
               <div className="top-right">
@@ -174,16 +184,16 @@ const JobsApplied = () => {
           </button>
         </div>
       )}
-      {removing &&
+      {withdrawing &&
         <div className="comfirm-removal-container">
           <div className="prompt">
             <div className="prompt-text">
-              <p>Are you sure you want to remove</p>
-              <p>{removing.jobtitle}?</p>
+              <p>Are you sure you want to withdraw from</p>
+              <p>{withdrawing.jobtitle}?</p>
             </div>
             <div className="prompt-buttons">
               <button onClick={handleCancel}>Cancel</button>
-              <button className="remove-btn" onClick={handleRemove} value={removing.job_id}>Remove</button>
+              <button className="remove-btn" onClick={handleWithdraw} value={withdrawing.job_id}>Withdraw</button>
             </div>
           </div>
         </div>}

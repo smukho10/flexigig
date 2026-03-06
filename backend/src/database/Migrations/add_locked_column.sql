@@ -1,0 +1,2 @@
+ALTER TABLE jobPostings
+ADD COLUMN locked BOOLEAN NOT NULL DEFAULT false;
