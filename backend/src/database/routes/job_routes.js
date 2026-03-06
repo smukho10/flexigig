@@ -13,9 +13,16 @@ const handleApplyRequest = async (req, res) => {
     req.body.worker_profile_id ?? req.body.applicantId ?? req.body.applicant_id;
 
   if (isNaN(jobIdInt) || !worker_profile_id) {
-    return res
-      .status(400)
-      .json({ message: "jobId and worker_profile_id are required" });
+      return res
+        .status(400)
+        .json({ message: "jobId and worker_profile_id are required" });
+    }
+
+  const jobState = await job_queries.fetchJobLockState(jobIdInt);
+  if (!jobState) return res.status(404).json({ message: "Job not found" });
+
+  if (jobState.locked) {
+    return res.status(409).json({ message: "This job is no longer accepting applications." });
   }
 
   try {
@@ -224,6 +231,29 @@ router.delete("/delete-job/:jobId", async (req, res) => {
       message: "Failed to delete job",
       error: error.message,
     });
+  }
+});
+
+// PATCH /api/jobs/:jobId/lock  (toggle lock/unlock)
+router.patch("/jobs/:jobId/lock", async (req, res) => {
+  const jobId = parseInt(req.params.jobId, 10);
+  const { locked } = req.body; // true or false
+
+  if (!Number.isInteger(jobId)) {
+    return res.status(400).json({ message: "Invalid jobId" });
+  }
+  if (typeof locked !== "boolean") {
+    return res.status(400).json({ message: "locked must be boolean" });
+  }
+
+  try {
+    const updated = await job_queries.setJobLocked(jobId, locked);
+    if (!updated) return res.status(404).json({ message: "Job not found" });
+
+    return res.json({ message: locked ? "Job locked" : "Job unlocked", job: updated });
+  } catch (err) {
+    console.error("Error toggling lock:", err);
+    return res.status(500).json({ message: "Error toggling lock", error: err.message });
   }
 });
 

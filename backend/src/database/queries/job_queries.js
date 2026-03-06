@@ -270,6 +270,7 @@ const fetchAllJobs = async (input = {}) => {
   if (!statusList) {
     baseQuery += `
       AND jp.jobfilled = false
+      AND jp.locked = false
       AND jp.status NOT IN ('draft', 'filled', 'complete', 'completed')
     `;
   } else {
@@ -392,6 +393,28 @@ const applyForJob = async (jobId, applicantId) => {
     throw err;
   }
 };
+
+const fetchJobLockState = async (jobId) => {
+  const result = await db.query(
+    `SELECT job_id, locked, jobfilled, status FROM jobPostings WHERE job_id = $1`,
+    [jobId]
+  );
+  return result.rows[0] || null;
+};
+
+const setJobLocked = async (jobId, locked) => {
+  const result = await db.query(
+    `
+    UPDATE jobPostings
+    SET locked = $2
+    WHERE job_id = $1
+    RETURNING job_id, locked, status, jobfilled
+    `,
+    [jobId, locked]
+  );
+  return result.rows[0] || null;
+};
+
 
 const fetchAppliedJobs = async (userId) => {
   try {
@@ -542,6 +565,7 @@ const fetchRecommendedJobs = async (userId) => {
         CROSS JOIN worker_data wd
         WHERE jp.jobfilled = false
           AND jp.status ILIKE 'open'
+          AND jp.locked = false
           -- don't recommend jobs the user has already applied to
           AND NOT EXISTS (
             SELECT 1 FROM gig_applications ga
@@ -631,5 +655,7 @@ module.exports = {
   updateGigApplicationStatus,
   rejectOtherApplicationsForJob,
   markJobAsFilled,
+  fetchJobLockState,
+  setJobLocked,
 
 };
