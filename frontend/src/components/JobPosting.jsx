@@ -50,6 +50,9 @@ const JobPosting = () => {
     const [statusLoading, setStatusLoading] = useState(null);
     const backClickRef = useRef(null); // ref to form's back-intercept function
     const [publishMissingPrompt, setPublishMissingPrompt] = useState(null); // { job, missingFields }
+    const [applicantsModal, setApplicantsModal] = useState(null); // { job, applicants }
+    const [applicantsPage, setApplicantsPage] = useState(1);
+    const APPLICANTS_PER_PAGE = 10;
 
     // Local overrides for status — keyed by job_id.
     // This lets status changes feel instant even before the backend endpoint exists.
@@ -92,6 +95,16 @@ const JobPosting = () => {
     };
 
     const handleCancelRemove = () => setRemoveJob(false);
+
+    const handleViewApplicants = async (job) => {
+        try {
+            const res = await axios.get(`/api/job-applicants/${job.job_id}`, { withCredentials: true });
+            setApplicantsPage(1);
+            setApplicantsModal({ job, applicants: res.data.applicants });
+        } catch (error) {
+            console.error("Error fetching applicants:", error);
+        }
+    };
 
     const handleEdit = (e) => {
         setEditJob(jobs.find(job => job.job_id.toString() === e.target.value));
@@ -202,12 +215,17 @@ const JobPosting = () => {
                 </div>
 
                 <div className="right">
-                    {/* Status badge */}
-                    <span className="status-badge" style={{ backgroundColor: statusCfg?.color }}>
-                        {statusCfg?.label}
-                    </span>
-
                     <div className="card-actions">
+                        {/* View Applicants — shown for open jobs */}
+                        {status === JOB_STATUS.OPEN && (
+                            <button
+                                className="view-applicants-btn"
+                                onClick={() => handleViewApplicants(job)}
+                            >
+                                View Applicants
+                            </button>
+                        )}
+
                         {/* Advance status button (not shown for completed) */}
                         {nextStatus && (
                             <button
@@ -314,6 +332,57 @@ const JobPosting = () => {
                         <div className="prompt-buttons">
                             <button onClick={handleCancelRemove}>Cancel</button>
                             <button className="remove-btn" onClick={handleRemove}>Remove</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Applicants modal ── */}
+            {applicantsModal && (
+                <div className="draft-prompt-overlay" onClick={() => setApplicantsModal(null)}>
+                    <div className="applicants-modal" onClick={e => e.stopPropagation()}>
+                        <h3>Applicants — {applicantsModal.job.jobtitle}</h3>
+                        <div className="applicants-list">
+                            {applicantsModal.applicants.length === 0 ? (
+                                <p className="no-applicants">No applicants yet.</p>
+                            ) : (
+                                applicantsModal.applicants
+                                    .slice((applicantsPage - 1) * APPLICANTS_PER_PAGE, applicantsPage * APPLICANTS_PER_PAGE)
+                                    .map(a => (
+                                        <div key={a.application_id} className="applicant-row">
+                                            <span className="applicant-name">
+                                                {a.first_name} {a.last_name}
+                                            </span>
+                                            <span className="applicant-status">{a.application_status}</span>
+                                        </div>
+                                    ))
+                            )}
+                        </div>
+                        {applicantsModal.applicants.length > APPLICANTS_PER_PAGE && (
+                            <div className="applicants-pagination">
+                                <button
+                                    className="appl-page-btn"
+                                    onClick={() => setApplicantsPage(p => p - 1)}
+                                    disabled={applicantsPage === 1}
+                                >
+                                    &lt; Prev
+                                </button>
+                                <span className="appl-page-indicator">
+                                    {applicantsPage} / {Math.ceil(applicantsModal.applicants.length / APPLICANTS_PER_PAGE)}
+                                </span>
+                                <button
+                                    className="appl-page-btn"
+                                    onClick={() => setApplicantsPage(p => p + 1)}
+                                    disabled={applicantsPage === Math.ceil(applicantsModal.applicants.length / APPLICANTS_PER_PAGE)}
+                                >
+                                    Next &gt;
+                                </button>
+                            </div>
+                        )}
+                        <div className="draft-prompt-buttons">
+                            <button className="draft-prompt-cancel" onClick={() => setApplicantsModal(null)}>
+                                Close
+                            </button>
                         </div>
                     </div>
                 </div>
