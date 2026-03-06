@@ -307,7 +307,7 @@ router.patch("/applications/:applicationId/status", async (req, res) => {
   const applicationId = parseInt(req.params.applicationId, 10);
   const { status } = req.body;
 
-  const ALLOWED = ["IN_REVIEW", "REJECTED", "ACCEPTED"];
+  const ALLOWED = ["IN_REVIEW", "REJECTED", "ACCEPTED", "WITHDRAWN"];
   if (!Number.isInteger(applicationId)) {
     return res.status(400).json({ message: "Invalid applicationId" });
   }
@@ -320,14 +320,6 @@ router.patch("/applications/:applicationId/status", async (req, res) => {
     const updated = await job_queries.updateGigApplicationStatus(applicationId, status);
     if (!updated) {
       return res.status(404).json({ message: "Application not found" });
-    }
-
-    // 2) If accepted: reject other active apps + mark job filled
-    if (status === "ACCEPTED") {
-      await job_queries.rejectOtherApplicationsForJob(updated.job_id, applicationId);
-
-      // OPTIONAL but recommended so it disappears from Find Gigs:
-      await job_queries.markJobAsFilled(updated.job_id);
     }
 
     return res.json({ message: "Application status updated", application: updated });

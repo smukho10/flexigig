@@ -115,6 +115,11 @@
     color: #2D3748;
 }
 
+.job-item .top-left button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
 .job-item .top-left button {
     padding: 0;
     margin: 0;
