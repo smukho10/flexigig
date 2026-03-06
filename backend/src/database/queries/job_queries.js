@@ -531,6 +531,31 @@ jp.*,
   }
 };
 
+const fetchApplicantsForJob = async (jobId) => {
+  const result = await db.query(
+    `
+    SELECT
+      ga.application_id,
+      ga.status         AS application_status,
+      ga.applied_at,
+      ga.worker_profile_id,
+      w.profile_name,
+      w.first_name,
+      w.last_name,
+      u.id              AS user_id,
+      u.email,
+      u.userimage       AS user_image
+    FROM gig_applications ga
+    JOIN workers w ON ga.worker_profile_id = w.id
+    JOIN users   u ON w.user_id = u.id
+    WHERE ga.job_id = $1
+    ORDER BY ga.applied_at ASC
+    `,
+    [jobId]
+  );
+  return result.rows;
+};
+
 module.exports = {
   postJob,
   insertLocation,
@@ -547,5 +572,6 @@ module.exports = {
   removeApplication,
   getEmployerIdForJob,
   insertGigApplication,
-  fetchRecommendedJobs
+  fetchRecommendedJobs,
+  fetchApplicantsForJob
 };

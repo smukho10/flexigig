@@ -272,6 +272,20 @@ router.get("/applied-jobs/:applicantId", async (req, res) => {
   }
 });
 
+router.get("/job-applicants/:jobId", async (req, res) => {
+  const jobId = parseInt(req.params.jobId, 10);
+  if (isNaN(jobId)) {
+    return res.status(400).json({ message: "Invalid jobId" });
+  }
+  try {
+    const applicants = await job_queries.fetchApplicantsForJob(jobId);
+    res.json({ applicants });
+  } catch (error) {
+    console.error("Error fetching applicants:", error);
+    res.status(500).json({ message: "Error fetching applicants", error: error.message });
+  }
+});
+
 router.patch("/remove-application/:applicantId/job/:jobId", async (req, res) => {
   const { applicantId, jobId } = req.params;
   try {
