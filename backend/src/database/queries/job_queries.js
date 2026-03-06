@@ -460,6 +460,51 @@ const insertGigApplication = async ({ job_id, employer_id, worker_profile_id }) 
   return result.rows[0];
 };
 
+// Update gig application status
+const updateGigApplicationStatus = async (applicationId, status) => {
+  const result = await db.query(
+    `
+    UPDATE gig_applications
+    SET status = $2,
+        updated_at = now()
+    WHERE application_id = $1
+    RETURNING application_id, job_id, employer_id, worker_profile_id, status, applied_at, updated_at
+    `,
+    [applicationId, status]
+  );
+  return result.rows[0] || null;
+};
+
+// Reject other active applications when one is accepted
+const rejectOtherApplicationsForJob = async (jobId, acceptedApplicationId) => {
+  await db.query(
+    `
+    UPDATE gig_applications
+    SET status = 'REJECTED',
+        updated_at = now()
+    WHERE job_id = $1
+      AND application_id <> $2
+      AND status IN ('APPLIED', 'IN_REVIEW')
+    `,
+    [jobId, acceptedApplicationId]
+  );
+};
+
+// Mark job as filled (so it disappears from Find Gigs if you filter on jobfilled/status)
+const markJobAsFilled = async (jobId) => {
+  await db.query(
+    `
+    UPDATE jobPostings
+    SET jobfilled = true,
+        status = 'filled'
+    WHERE job_id = $1
+    `,
+    [jobId]
+  );
+};
+
+
+
 const fetchRecommendedJobs = async (userId) => {
   try {
     // This query finds jobs that match keywords in any of the worker's profiles
@@ -582,5 +627,9 @@ module.exports = {
   getEmployerIdForJob,
   insertGigApplication,
   fetchRecommendedJobs,
-  fetchApplicantsForJob
+  fetchApplicantsForJob,
+  updateGigApplicationStatus,
+  rejectOtherApplicationsForJob,
+  markJobAsFilled,
+
 };
