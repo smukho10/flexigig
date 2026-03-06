@@ -272,6 +272,41 @@ router.get("/applied-jobs/:applicantId", async (req, res) => {
   }
 });
 
+// PATCH /api/applications/:applicationId/status
+router.patch("/applications/:applicationId/status", async (req, res) => {
+  const applicationId = parseInt(req.params.applicationId, 10);
+  const { status } = req.body;
+
+  const ALLOWED = ["IN_REVIEW", "REJECTED", "ACCEPTED"];
+  if (!Number.isInteger(applicationId)) {
+    return res.status(400).json({ message: "Invalid applicationId" });
+  }
+  if (!status || !ALLOWED.includes(status)) {
+    return res.status(400).json({ message: `Invalid status. Must be one of: ${ALLOWED.join(", ")}` });
+  }
+
+  try {
+    // 1) Update the status for this application
+    const updated = await job_queries.updateGigApplicationStatus(applicationId, status);
+    if (!updated) {
+      return res.status(404).json({ message: "Application not found" });
+    }
+
+    // 2) If accepted: reject other active apps + mark job filled
+    if (status === "ACCEPTED") {
+      await job_queries.rejectOtherApplicationsForJob(updated.job_id, applicationId);
+
+      // OPTIONAL but recommended so it disappears from Find Gigs:
+      await job_queries.markJobAsFilled(updated.job_id);
+    }
+
+    return res.json({ message: "Application status updated", application: updated });
+  } catch (err) {
+    console.error("Error updating application status:", err);
+    return res.status(500).json({ message: "Error updating application status", error: err.message });
+  }
+});
+
 router.get("/job-applicants/:jobId", async (req, res) => {
   const jobId = parseInt(req.params.jobId, 10);
   if (isNaN(jobId)) {
