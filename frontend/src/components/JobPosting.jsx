@@ -403,6 +403,18 @@ const JobPosting = () => {
                                         >
                                           Reject
                                         </button>
+                                        <button
+                                      onClick={() =>
+                                        updateApplicationStatus(
+                                          a.application_id,
+                                          "IN_REVIEW",
+                                          applicantsModal.job.job_id
+                                        )
+                                      }
+                                    >
+                                      In Review
+                                    </button>
+
                                       </div>
                                     </div>
                                   ))
