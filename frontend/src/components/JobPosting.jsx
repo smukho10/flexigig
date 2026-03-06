@@ -270,6 +270,20 @@ const JobPosting = () => {
                         <button id="remove-btn" value={job.job_id} onClick={handleRemove}>
                             Remove
                         </button>
+                        <button
+                          className="lock-btn"
+                          onClick={async () => {
+                            const newLocked = !job.locked;
+                            await axios.patch(
+                              `/api/jobs/${job.job_id}/lock`,
+                              { locked: newLocked },
+                              { withCredentials: true }
+                            );
+                            fetchJobs(); // refresh list
+                          }}
+                        >
+                          {job.locked ? "Unlock" : "Lock"}
+                        </button>
                     </div>
                 </div>
             </li>
