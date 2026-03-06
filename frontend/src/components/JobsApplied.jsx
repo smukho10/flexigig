@@ -82,12 +82,12 @@ const JobsApplied = () => {
   }
 
   const STATUS_LABELS = {
-    'APPLIED':   'Applied',
+    'APPLIED': 'Applied',
     'IN_REVIEW': 'In Review',
-    'ACCEPTED':  'Accepted',
+    'ACCEPTED': 'Accepted',
     'CANCELLED': 'Cancelled',
     'WITHDRAWN': 'Withdrawn',
-    'REJECTED':  'Rejected',
+    'REJECTED': 'Rejected',
   };
 
   const getStatusDisplay = (status) => {
@@ -112,6 +112,7 @@ const JobsApplied = () => {
                   <h1>{job.jobtitle}</h1>
                   {getStatusDisplay(job.application_status)}
                 </div>
+                <p className="applied-by">Applied by: <span>{job.profile_name}</span></p>
                 <div className="action-buttons">
                   <button onClick={handleRemove} value={job.job_id}>Remove</button>
                 </div>

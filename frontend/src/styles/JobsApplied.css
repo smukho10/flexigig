@@ -100,7 +100,19 @@
 .job-item .action-buttons {
     display: flex;
     gap: 10px;
-    margin-top: 30px;
+    margin-top: 20px;
+}
+
+.job-item .applied-by {
+    font-size: 13px;
+    color: #718096;
+    margin: 8px 0 0 0;
+    font-weight: 400;
+}
+
+.job-item .applied-by span {
+    font-weight: 600;
+    color: #2D3748;
 }
 
 .job-item .top-left button {
