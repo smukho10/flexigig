@@ -106,26 +106,26 @@ const JobPosting = () => {
         }
     };
 
-    const updateApplicationStatus = async (applicationId, status, jobId) => {
-        try {
-            await axios.patch(
-                `/api/applications/${applicationId}/status`,
-                { status },
-                { withCredentials: true }
-            );
+  const updateApplicationStatus = async (applicationId, status, jobId) => {
+    try {
+      await axios.patch(
+        `/api/applications/${applicationId}/status`,
+        { status },
+        { withCredentials: true }
+      );
 
-            // refresh applicants list after change
-            const res = await axios.get(`/api/job-applicants/${jobId}`, {
-                withCredentials: true,
-            });
+      // refresh applicants list after change
+      const res = await axios.get(`/api/job-applicants/${jobId}`, {
+        withCredentials: true,
+      });
 
-            setApplicantsModal((prev) =>
-                prev ? { ...prev, applicants: res.data.applicants } : prev
-            );
-        } catch (error) {
-            console.error("Error updating application status:", error);
-        }
-    };
+      setApplicantsModal((prev) =>
+        prev ? { ...prev, applicants: res.data.applicants } : prev
+      );
+    } catch (error) {
+      console.error("Error updating application status:", error);
+    }
+  };
 
     const handleEdit = (e) => {
         setEditJob(jobs.find(job => job.job_id.toString() === e.target.value));
@@ -221,6 +221,9 @@ const JobPosting = () => {
                 <div className="left">
                     <h2 className="posting-header">
                         {job.jobtitle}
+                        {job.jobfilled && (
+                            <span style={{ color: "#C2554E", marginLeft: 10 }}>JOB FILLED</span>
+                        )}
                     </h2>
                     <div>
                         <img src={DollarSign} alt="dollar-sign" width="22px" height="auto" />
@@ -268,18 +271,18 @@ const JobPosting = () => {
                             Remove
                         </button>
                         <button
-                            className="lock-btn"
-                            onClick={async () => {
-                                const newLocked = !job.locked;
-                                await axios.patch(
-                                    `/api/jobs/${job.job_id}/lock`,
-                                    { locked: newLocked },
-                                    { withCredentials: true }
-                                );
-                                fetchJobs(); // refresh list
-                            }}
+                          className="lock-btn"
+                          onClick={async () => {
+                            const newLocked = !job.locked;
+                            await axios.patch(
+                              `/api/jobs/${job.job_id}/lock`,
+                              { locked: newLocked },
+                              { withCredentials: true }
+                            );
+                            fetchJobs(); // refresh list
+                          }}
                         >
-                            {job.locked ? "Unlock" : "Lock"}
+                          {job.locked ? "Unlock" : "Lock"}
                         </button>
                     </div>
                 </div>
@@ -380,56 +383,56 @@ const JobPosting = () => {
                             ) : (
                                 applicantsModal.applicants
                                     .slice((applicantsPage - 1) * APPLICANTS_PER_PAGE, applicantsPage * APPLICANTS_PER_PAGE)
-                                    .map(a => (
-                                        <div key={a.application_id} className="applicant-row">
-                                            <span className="applicant-name">
-                                                {a.first_name} {a.last_name}
-                                            </span>
+                                  .map(a => (
+                                    <div key={a.application_id} className="applicant-row">
+                                      <span className="applicant-name">
+                                        {a.first_name} {a.last_name}
+                                      </span>
 
-                                            <span className="applicant-status">{a.application_status}</span>
+                                      <span className="applicant-status">{a.application_status}</span>
 
-                                            <div className="applicant-actions">
-                                                <button
-                                                    onClick={() =>
-                                                        updateApplicationStatus(
-                                                            a.application_id,
-                                                            "ACCEPTED",
-                                                            applicantsModal.job.job_id
-                                                        )
-                                                    }
-                                                    disabled={a.application_status === "ACCEPTED" || a.application_status === "WITHDRAWN"}
-                                                >
-                                                    Accept
-                                                </button>
+                                      <div className="applicant-actions">
+                                        <button
+                                          onClick={() =>
+                                            updateApplicationStatus(
+                                              a.application_id,
+                                              "ACCEPTED",
+                                              applicantsModal.job.job_id
+                                            )
+                                          }
+                                          disabled={a.application_status === "ACCEPTED" || a.application_status === "WITHDRAWN"}
+                                        >
+                                          Accept
+                                        </button>
 
-                                                <button
-                                                    onClick={() =>
-                                                        updateApplicationStatus(
-                                                            a.application_id,
-                                                            "REJECTED",
-                                                            applicantsModal.job.job_id
-                                                        )
-                                                    }
-                                                    disabled={a.application_status === "REJECTED" || a.application_status === "ACCEPTED" || a.application_status === "WITHDRAWN"}
-                                                >
-                                                    Reject
-                                                </button>
-                                                <button
-                                                    onClick={() =>
-                                                        updateApplicationStatus(
-                                                            a.application_id,
-                                                            "IN_REVIEW",
-                                                            applicantsModal.job.job_id
-                                                        )
-                                                    }
-                                                    disabled={a.application_status === "REJECTED" || a.application_status === "ACCEPTED" || a.application_status === "IN_REVIEW" || a.application_status === "WITHDRAWN"}
-                                                >
-                                                    In Review
-                                                </button>
+                                        <button
+                                          onClick={() =>
+                                            updateApplicationStatus(
+                                              a.application_id,
+                                              "REJECTED",
+                                              applicantsModal.job.job_id
+                                            )
+                                          }
+                                          disabled={a.application_status === "REJECTED" || a.application_status === "ACCEPTED" || a.application_status === "WITHDRAWN"}
+                                        >
+                                          Reject
+                                        </button>
+                                        <button
+                                      onClick={() =>
+                                        updateApplicationStatus(
+                                          a.application_id,
+                                          "IN_REVIEW",
+                                          applicantsModal.job.job_id
+                                        )
+                                      }
+                                      disabled={a.application_status === "REJECTED" || a.application_status === "ACCEPTED" || a.application_status === "IN_REVIEW" || a.application_status === "WITHDRAWN"}
+                                    >
+                                      In Review
+                                    </button>
 
-                                            </div>
-                                        </div>
-                                    ))
+                                      </div>
+                                    </div>
+                                  ))
                             )}
                         </div>
                         {applicantsModal.applicants.length > APPLICANTS_PER_PAGE && (
