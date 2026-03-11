@@ -128,6 +128,15 @@ const JobPostingForm = ({ job, setDone, onBackClick }) => {
         if (onBackClick) onBackClick.current = triggerBackPrompt;
     }, [isDirty, jobPost.jobTitle]);
 
+    const getDateError = () => {
+        if (jobPost.jobStart && jobPost.jobEnd) {
+            if (new Date(jobPost.jobEnd) <= new Date(jobPost.jobStart)) {
+                return "Job End Date & Time must be after Job Start Date & Time.";
+            }
+        }
+        return null;
+    };
+
     // ── Core submit ───────────────────────────────────────────────────────────
     const handleSubmit = async (status) => {
         setSubmitting(status);
@@ -168,6 +177,8 @@ const JobPostingForm = ({ job, setDone, onBackClick }) => {
 
     // ── Save as Draft button ──────────────────────────────────────────────────
     const handleSaveAsDraft = () => {
+        const dateError = getDateError();
+        if (dateError) { setErrorMessage(dateError); return; }
         if (!jobPost.jobTitle.trim() && !jobPost.jobType.trim()) {
             setErrorMessage("Please enter a Job Title and Job Type to save as a draft.");
             return;
@@ -186,6 +197,8 @@ const JobPostingForm = ({ job, setDone, onBackClick }) => {
 
     // ── Post Job button ───────────────────────────────────────────────────────
     const handlePost = () => {
+        const dateError = getDateError();
+        if (dateError) { setErrorMessage(dateError); return; }
         const missing = getMissingFields(jobPost);
         if (missing.length > 0) {
             setErrorMessage(`Please fill in the following fields before posting: ${missing.join(", ")}.`);
