@@ -8,9 +8,18 @@ const NOMINATIM_USER_AGENT =
   process.env.NOMINATIM_USER_AGENT ||
   "FlexyGig/1.0 (contact: admin@flexygig.local)";
 const GEOCODE_COUNTRY = process.env.GEOCODE_COUNTRY || "";
-const GEOCODE_THROTTLE_MS = Number(process.env.GEOCODE_THROTTLE_MS || 1100);
+const GEOCODE_THROTTLE_MS = Number(process.env.GEOCODE_THROTTLE_MS || 1500);
+const GEOCODE_RETRY_MS = Number(process.env.GEOCODE_RETRY_MS || 5000);
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+let geocodeQueue = Promise.resolve();
+
+const enqueueGeocode = async (task) => {
+  const run = geocodeQueue.then(task, task);
+  geocodeQueue = run.catch(() => null);
+  return run;
+};
 
 const toNumberOrNull = (value) => {
   if (value === null || value === undefined || value === "") return null;
@@ -84,34 +93,48 @@ const httpsGetJson = (url, headers = {}) =>
     req.end();
   });
 
-const geocodeAddress = async (address) => {
+const geocodeAddress = async (address, hasRetried = false) => {
   if (!address) return null;
 
-  await sleep(GEOCODE_THROTTLE_MS);
+  return enqueueGeocode(async () => {
+    await sleep(GEOCODE_THROTTLE_MS);
 
-  const url =
-    `${NOMINATIM_BASE_URL}/search?format=jsonv2&limit=1&addressdetails=1&q=` +
-    encodeURIComponent(address);
+    const url =
+      `${NOMINATIM_BASE_URL}/search?format=jsonv2&limit=1&addressdetails=1&q=` +
+      encodeURIComponent(address);
 
-  const data = await httpsGetJson(url);
+    try {
+      const data = await httpsGetJson(url);
 
-  if (!Array.isArray(data) || data.length === 0) {
-    return null;
-  }
+      if (!Array.isArray(data) || data.length === 0) {
+        return null;
+      }
 
-  const first = data[0];
-  const latitude = toNumberOrNull(first.lat);
-  const longitude = toNumberOrNull(first.lon);
+      const first = data[0];
+      const latitude = toNumberOrNull(first.lat);
+      const longitude = toNumberOrNull(first.lon);
 
-  if (latitude === null || longitude === null) {
-    return null;
-  }
+      if (latitude === null || longitude === null) {
+        return null;
+      }
 
-  return {
-    latitude,
-    longitude,
-    displayName: first.display_name || null,
-  };
+      return {
+        latitude,
+        longitude,
+        displayName: first.display_name || null,
+      };
+    } catch (err) {
+      const message = String(err.message || "");
+
+      if (!hasRetried && message.includes("status 429")) {
+        console.warn("Nominatim rate limit hit. Retrying once after backoff...");
+        await sleep(GEOCODE_RETRY_MS);
+        return geocodeAddress(address, true);
+      }
+
+      throw err;
+    }
+  });
 };
 
 const haversineDistanceMiles = (lat1, lon1, lat2, lon2) => {
@@ -156,6 +179,26 @@ const updateLocationCoordinates = async (locationId, latitude, longitude) => {
     [locationId, latitude, longitude]
   );
   return result.rows[0] || null;
+};
+
+const getStoredLocationCoordinates = async (locationId) => {
+  if (!locationId) return null;
+
+  const location = await getLocationById(locationId);
+  if (!location) return null;
+
+  const existingLat = toNumberOrNull(location.latitude);
+  const existingLon = toNumberOrNull(location.longitude);
+
+  if (existingLat === null || existingLon === null) {
+    return null;
+  }
+
+  return {
+    latitude: existingLat,
+    longitude: existingLon,
+    source: "db",
+  };
 };
 
 const ensureLocationCoordinates = async (locationId) => {
@@ -473,7 +516,11 @@ const deleteJobById = async (jobId) => {
   }
 };
 
-const attachDistanceAndFilterJobs = async (jobs, currentUserId, distanceMiles) => {
+const attachDistanceAndFilterJobs = async (
+  jobs,
+  currentUserId,
+  distanceMiles
+) => {
   const numericDistanceMiles = Number(distanceMiles);
 
   if (
@@ -507,9 +554,10 @@ const attachDistanceAndFilterJobs = async (jobs, currentUserId, distanceMiles) =
         jobCoords = {
           latitude: existingLat,
           longitude: existingLon,
+          source: "query",
         };
       } else if (job.location_id) {
-        jobCoords = await ensureLocationCoordinates(job.location_id);
+        jobCoords = await getStoredLocationCoordinates(job.location_id);
       }
 
       if (!jobCoords) {
@@ -532,9 +580,22 @@ const attachDistanceAndFilterJobs = async (jobs, currentUserId, distanceMiles) =
         });
       }
     } catch (err) {
-      console.error(`Skipping distance calculation for job ${job.job_id}:`, err.message);
+      console.error(
+        `Skipping distance calculation for job ${job.job_id}:`,
+        err.message
+      );
     }
   }
+
+  filteredJobs.sort((a, b) => {
+    const da = Number.isFinite(a.distanceMiles)
+      ? a.distanceMiles
+      : Number.POSITIVE_INFINITY;
+    const dbv = Number.isFinite(b.distanceMiles)
+      ? b.distanceMiles
+      : Number.POSITIVE_INFINITY;
+    return da - dbv;
+  });
 
   return filteredJobs;
 };
@@ -563,7 +624,9 @@ const fetchAllJobs = async (input = {}) => {
   const sortBy =
     SORT_COLUMNS[filters.sortBy] ? filters.sortBy : "jobPostedDate";
   const sortOrder =
-    String(filters.sortOrder || "desc").toLowerCase() === "asc" ? "ASC" : "DESC";
+    String(filters.sortOrder || "desc").toLowerCase() === "asc"
+      ? "ASC"
+      : "DESC";
   const orderClause = `ORDER BY ${SORT_COLUMNS[sortBy]} ${sortOrder}, jp.job_id DESC`;
 
   let baseQuery = `
@@ -829,7 +892,11 @@ const getEmployerIdForJob = async (jobId) => {
   return result.rows[0] || null;
 };
 
-const insertGigApplication = async ({ job_id, employer_id, worker_profile_id }) => {
+const insertGigApplication = async ({
+  job_id,
+  employer_id,
+  worker_profile_id,
+}) => {
   const result = await db.query(
     `
     INSERT INTO gig_applications (job_id, employer_id, worker_profile_id, status)
@@ -1004,6 +1071,7 @@ module.exports = {
   fetchJobLockState,
   setJobLocked,
   getUserLocationCoordinates,
+  getStoredLocationCoordinates,
   ensureLocationCoordinates,
   geocodeAddress,
   haversineDistanceMiles,
