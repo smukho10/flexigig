@@ -7,7 +7,10 @@ const NOMINATIM_BASE_URL =
 const NOMINATIM_USER_AGENT =
   process.env.NOMINATIM_USER_AGENT ||
   "FlexyGig/1.0 (contact: admin@flexygig.local)";
-const GEOCODE_COUNTRY = process.env.GEOCODE_COUNTRY || "";
+const GEOCODE_COUNTRY = process.env.GEOCODE_COUNTRY || "Canada";
+const GEOCODE_COUNTRY_CODE = (
+  process.env.GEOCODE_COUNTRY_CODE || "ca"
+).toLowerCase();
 const GEOCODE_THROTTLE_MS = Number(process.env.GEOCODE_THROTTLE_MS || 1500);
 const GEOCODE_RETRY_MS = Number(process.env.GEOCODE_RETRY_MS || 5000);
 
@@ -27,6 +30,11 @@ const toNumberOrNull = (value) => {
   return Number.isFinite(num) ? num : null;
 };
 
+const normalizeText = (value) => {
+  if (value === null || value === undefined) return "";
+  return String(value).trim();
+};
+
 const normalizeAddress = ({
   streetAddress,
   city,
@@ -35,24 +43,29 @@ const normalizeAddress = ({
   country,
 }) => {
   const parts = [
-    streetAddress?.trim(),
-    city?.trim(),
-    province?.trim(),
-    postalCode?.trim(),
-    country?.trim(),
+    normalizeText(streetAddress),
+    normalizeText(city),
+    normalizeText(province),
+    normalizeText(postalCode),
+    normalizeText(country),
   ].filter(Boolean);
 
   return parts.join(", ");
 };
 
+const buildLocationGeocodeInput = (locationRow) => ({
+  streetAddress: normalizeText(
+    locationRow.streetaddress || locationRow.StreetAddress
+  ),
+  city: normalizeText(locationRow.city),
+  province: normalizeText(locationRow.province),
+  postalCode: normalizeText(locationRow.postalcode || locationRow.postalCode),
+  country: normalizeText(GEOCODE_COUNTRY || "Canada"),
+  countryCode: normalizeText(GEOCODE_COUNTRY_CODE || "ca").toLowerCase(),
+});
+
 const buildLocationAddress = (locationRow) =>
-  normalizeAddress({
-    streetAddress: locationRow.streetaddress || locationRow.StreetAddress,
-    city: locationRow.city,
-    province: locationRow.province,
-    postalCode: locationRow.postalcode || locationRow.postalCode,
-    country: GEOCODE_COUNTRY || undefined,
-  });
+  normalizeAddress(buildLocationGeocodeInput(locationRow));
 
 const httpsGetJson = (url, headers = {}) =>
   new Promise((resolve, reject) => {
@@ -93,15 +106,69 @@ const httpsGetJson = (url, headers = {}) =>
     req.end();
   });
 
-const geocodeAddress = async (address, hasRetried = false) => {
-  if (!address) return null;
+const buildGeocodeUrl = (input) => {
+  const params = new URLSearchParams({
+    format: "jsonv2",
+    limit: "1",
+    addressdetails: "1",
+  });
+
+  if (input && typeof input === "object") {
+    const streetAddress = normalizeText(input.streetAddress);
+    const city = normalizeText(input.city);
+    const province = normalizeText(input.province);
+    const postalCode = normalizeText(input.postalCode);
+    const country = normalizeText(input.country || GEOCODE_COUNTRY);
+    const countryCode = normalizeText(
+      input.countryCode || GEOCODE_COUNTRY_CODE
+    ).toLowerCase();
+
+    if (countryCode) {
+      params.set("countrycodes", countryCode);
+    }
+
+    // Prefer structured search when possible
+    if (streetAddress) params.set("street", streetAddress);
+    if (city) params.set("city", city);
+    if (province) params.set("state", province);
+    if (postalCode) params.set("postalcode", postalCode);
+    if (country) params.set("country", country);
+
+    // Fallback q for better matching if structured fields are partial
+    const q = normalizeAddress({
+      streetAddress,
+      city,
+      province,
+      postalCode,
+      country,
+    });
+
+    if (q) {
+      params.set("q", q);
+    }
+  } else {
+    const q = normalizeText(input);
+    if (GEOCODE_COUNTRY_CODE) {
+      params.set("countrycodes", GEOCODE_COUNTRY_CODE.toLowerCase());
+    }
+    params.set("q", q);
+  }
+
+  return `${NOMINATIM_BASE_URL}/search?${params.toString()}`;
+};
+
+const geocodeAddress = async (input, hasRetried = false) => {
+  const hasObjectInput = input && typeof input === "object";
+  const asText = hasObjectInput
+    ? normalizeAddress(input)
+    : normalizeText(input);
+
+  if (!asText) return null;
 
   return enqueueGeocode(async () => {
     await sleep(GEOCODE_THROTTLE_MS);
 
-    const url =
-      `${NOMINATIM_BASE_URL}/search?format=jsonv2&limit=1&addressdetails=1&q=` +
-      encodeURIComponent(address);
+    const url = buildGeocodeUrl(input);
 
     try {
       const data = await httpsGetJson(url);
@@ -129,7 +196,7 @@ const geocodeAddress = async (address, hasRetried = false) => {
       if (!hasRetried && message.includes("status 429")) {
         console.warn("Nominatim rate limit hit. Retrying once after backoff...");
         await sleep(GEOCODE_RETRY_MS);
-        return geocodeAddress(address, true);
+        return geocodeAddress(input, true);
       }
 
       throw err;
@@ -218,10 +285,12 @@ const ensureLocationCoordinates = async (locationId) => {
     };
   }
 
+  const geocodeInput = buildLocationGeocodeInput(location);
   const fullAddress = buildLocationAddress(location);
+
   if (!fullAddress) return null;
 
-  const geocoded = await geocodeAddress(fullAddress);
+  const geocoded = await geocodeAddress(geocodeInput);
   if (!geocoded) return null;
 
   await updateLocationCoordinates(
