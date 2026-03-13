@@ -32,6 +32,7 @@ import AccountSelection from './components/AccountSelection';
 import AuthCallback from './components/AuthCallback';
 import CompleteProfile from './components/CompleteProfile';
 import SearchPage from "./components/SearchPage";
+import ApplicantsPage from "./components/ApplicantsPage";
 
 const App = () => {
   useEffect(() => {
@@ -84,6 +85,7 @@ const App = () => {
                 <Route path="/messages" element={<ProtectedRoute> <Messages /> </ProtectedRoute>} />
                 <Route path="/worker-board" element={<ProtectedRoute> <WorkerBoard /> </ProtectedRoute>} />
                 <Route path="/search" element={<ProtectedRoute> <SearchPage /> </ProtectedRoute>} />
+                <Route path="/my-jobs/:jobId/applicants" element={<ProtectedRoute><ApplicantsPage /></ProtectedRoute>} />
               </Route>
             </Routes>
           </Router>
