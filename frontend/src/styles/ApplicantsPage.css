@@ -1,0 +1,174 @@
+.applicants-page-container {
+    font-family: "Poppins";
+    padding: 0;
+    max-width: 1114px;
+}
+
+.applicants-page-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.applicants-back-btn {
+    width: 45px;
+    height: auto;
+    cursor: pointer;
+}
+
+.applicants-page-title {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 400;
+    color: #0340BE;
+}
+
+.applicants-page-title span {
+    font-weight: 500;
+}
+
+.applicants-loading {
+    color: #6B7280;
+    font-size: 14px;
+}
+
+.no-applicants {
+    color: #9CA3AF;
+    font-size: 14px;
+    text-align: center;
+    padding: 40px 0;
+    margin: 0;
+}
+
+/* Table */
+.applicants-table {
+    border-radius: 12px;
+    box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.applicants-table-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 2fr;
+    background-color: #F9FAFB;
+    border-bottom: 1px solid #E5E7EB;
+    padding: 12px 24px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6B7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.applicant-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 2fr;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1px solid #E5E7EB;
+    background-color: white;
+    transition: background-color 0.15s ease;
+}
+
+.applicant-row:last-child {
+    border-bottom: none;
+}
+
+.applicant-row:hover {
+    background-color: #F9FAFB;
+}
+
+.applicant-name {
+    font-size: 15px;
+    font-weight: 500;
+    color: #111827;
+}
+
+.applicant-status {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 999px;
+    display: inline-block;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    width: fit-content;
+}
+
+.applicant-status.status-accepted   { background-color: #D1FAE5; color: #065F46; }
+.applicant-status.status-rejected   { background-color: #FEE2E2; color: #991B1B; }
+.applicant-status.status-in_review  { background-color: #FEF3C7; color: #92400E; }
+.applicant-status.status-pending    { background-color: #E0E7FF; color: #3730A3; }
+.applicant-status.status-withdrawn  { background-color: #F3F4F6; color: #6B7280; }
+
+.applicant-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.action-btn {
+    height: 30px;
+    padding: 0 14px;
+    border-radius: 5px;
+    border: none;
+    font-family: "Poppins";
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+}
+
+.action-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.accept-btn  { background-color: #10B981; color: white; }
+.accept-btn:hover:not(:disabled)  { background-color: #059669; }
+
+.review-btn  { background-color: #F59E0B; color: white; }
+.review-btn:hover:not(:disabled)  { background-color: #D97706; }
+
+.reject-btn  { background-color: #EF4444; color: white; }
+.reject-btn:hover:not(:disabled)  { background-color: #DC2626; }
+
+/* Pagination */
+.applicants-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 24px;
+}
+
+.appl-page-btn {
+    background-color: white;
+    color: black;
+    border: 1px solid #4EBBC2;
+    width: 70px;
+    height: 28px;
+    font-family: "Poppins";
+    font-size: 11px;
+    font-weight: 400;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.appl-page-btn:hover:not(:disabled) {
+    background-color: #4EBBC2;
+    color: white;
+}
+
+.appl-page-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.appl-page-indicator {
+    font-family: "Poppins";
+    font-size: 12px;
+    color: #555;
+    min-width: 40px;
+    text-align: center;
+}

@@ -5,6 +5,7 @@ import ChevronLeft from "../assets/images/ChevronLeft.png";
 import DollarSign from "../assets/images/DollarSign.png";
 import PlusSign from "../assets/images/PlusSign.png";
 import { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useUser } from "./UserContext";
 import JobPostingForm from "./JobPostingForm";
 
@@ -42,6 +43,7 @@ const NEXT_STATUS_LABEL = {
 
 const JobPosting = () => {
     const { user } = useUser();
+    const navigate = useNavigate();
     const [jobs, setJobs] = useState([]);
     const [activeTab, setActiveTab] = useState(JOB_STATUS.OPEN);
     const [createJob, setCreateJob] = useState(false);
@@ -50,9 +52,6 @@ const JobPosting = () => {
     const [statusLoading, setStatusLoading] = useState(null);
     const backClickRef = useRef(null); // ref to form's back-intercept function
     const [publishMissingPrompt, setPublishMissingPrompt] = useState(null); // { job, missingFields }
-    const [applicantsModal, setApplicantsModal] = useState(null); // { job, applicants }
-    const [applicantsPage, setApplicantsPage] = useState(1);
-    const APPLICANTS_PER_PAGE = 10;
 
     // Local overrides for status — keyed by job_id.
     // This lets status changes feel instant even before the backend endpoint exists.
@@ -96,36 +95,9 @@ const JobPosting = () => {
 
     const handleCancelRemove = () => setRemoveJob(false);
 
-    const handleViewApplicants = async (job) => {
-        try {
-            const res = await axios.get(`/api/job-applicants/${job.job_id}`, { withCredentials: true });
-            setApplicantsPage(1);
-            setApplicantsModal({ job, applicants: res.data.applicants });
-        } catch (error) {
-            console.error("Error fetching applicants:", error);
-        }
+    const handleViewApplicants = (job) => {
+        navigate(`/my-jobs/${job.job_id}/applicants`, { state: { job } });
     };
-
-  const updateApplicationStatus = async (applicationId, status, jobId) => {
-    try {
-      await axios.patch(
-        `/api/applications/${applicationId}/status`,
-        { status },
-        { withCredentials: true }
-      );
-
-      // refresh applicants list after change
-      const res = await axios.get(`/api/job-applicants/${jobId}`, {
-        withCredentials: true,
-      });
-
-      setApplicantsModal((prev) =>
-        prev ? { ...prev, applicants: res.data.applicants } : prev
-      );
-    } catch (error) {
-      console.error("Error updating application status:", error);
-    }
-  };
 
     const handleEdit = (e) => {
         setEditJob(jobs.find(job => job.job_id.toString() === e.target.value));
@@ -367,99 +339,6 @@ const JobPosting = () => {
                         <div className="prompt-buttons">
                             <button onClick={handleCancelRemove}>Cancel</button>
                             <button className="remove-btn" onClick={handleRemove}>Remove</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* ── Applicants modal ── */}
-            {applicantsModal && (
-                <div className="draft-prompt-overlay" onClick={() => setApplicantsModal(null)}>
-                    <div className="applicants-modal" onClick={e => e.stopPropagation()}>
-                        <h3>Applicants — {applicantsModal.job.jobtitle}</h3>
-                        <div className="applicants-list">
-                            {applicantsModal.applicants.length === 0 ? (
-                                <p className="no-applicants">No applicants yet.</p>
-                            ) : (
-                                applicantsModal.applicants
-                                    .slice((applicantsPage - 1) * APPLICANTS_PER_PAGE, applicantsPage * APPLICANTS_PER_PAGE)
-                                  .map(a => (
-                                    <div key={a.application_id} className="applicant-row">
-                                      <span className="applicant-name">
-                                        {a.first_name} {a.last_name}
-                                      </span>
-
-                                      <span className="applicant-status">{a.application_status}</span>
-
-                                      <div className="applicant-actions">
-                                        <button
-                                          onClick={() =>
-                                            updateApplicationStatus(
-                                              a.application_id,
-                                              "ACCEPTED",
-                                              applicantsModal.job.job_id
-                                            )
-                                          }
-                                          disabled={a.application_status === "ACCEPTED" || a.application_status === "WITHDRAWN"}
-                                        >
-                                          Accept
-                                        </button>
-
-                                        <button
-                                          onClick={() =>
-                                            updateApplicationStatus(
-                                              a.application_id,
-                                              "REJECTED",
-                                              applicantsModal.job.job_id
-                                            )
-                                          }
-                                          disabled={a.application_status === "REJECTED" || a.application_status === "ACCEPTED" || a.application_status === "WITHDRAWN"}
-                                        >
-                                          Reject
-                                        </button>
-                                        <button
-                                      onClick={() =>
-                                        updateApplicationStatus(
-                                          a.application_id,
-                                          "IN_REVIEW",
-                                          applicantsModal.job.job_id
-                                        )
-                                      }
-                                      disabled={a.application_status === "REJECTED" || a.application_status === "ACCEPTED" || a.application_status === "IN_REVIEW" || a.application_status === "WITHDRAWN"}
-                                    >
-                                      In Review
-                                    </button>
-
-                                      </div>
-                                    </div>
-                                  ))
-                            )}
-                        </div>
-                        {applicantsModal.applicants.length > APPLICANTS_PER_PAGE && (
-                            <div className="applicants-pagination">
-                                <button
-                                    className="appl-page-btn"
-                                    onClick={() => setApplicantsPage(p => p - 1)}
-                                    disabled={applicantsPage === 1}
-                                >
-                                    &lt; Prev
-                                </button>
-                                <span className="appl-page-indicator">
-                                    {applicantsPage} / {Math.ceil(applicantsModal.applicants.length / APPLICANTS_PER_PAGE)}
-                                </span>
-                                <button
-                                    className="appl-page-btn"
-                                    onClick={() => setApplicantsPage(p => p + 1)}
-                                    disabled={applicantsPage === Math.ceil(applicantsModal.applicants.length / APPLICANTS_PER_PAGE)}
-                                >
-                                    Next &gt;
-                                </button>
-                            </div>
-                        )}
-                        <div className="draft-prompt-buttons">
-                            <button className="draft-prompt-cancel" onClick={() => setApplicantsModal(null)}>
-                                Close
-                            </button>
                         </div>
                     </div>
                 </div>
