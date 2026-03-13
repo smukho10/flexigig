@@ -127,14 +127,12 @@ const buildGeocodeUrl = (input) => {
       params.set("countrycodes", countryCode);
     }
 
-    // Prefer structured search when possible
     if (streetAddress) params.set("street", streetAddress);
     if (city) params.set("city", city);
     if (province) params.set("state", province);
     if (postalCode) params.set("postalcode", postalCode);
     if (country) params.set("country", country);
 
-    // Fallback q for better matching if structured fields are partial
     const q = normalizeAddress({
       streetAddress,
       city,
@@ -246,6 +244,72 @@ const updateLocationCoordinates = async (locationId, latitude, longitude) => {
     [locationId, latitude, longitude]
   );
   return result.rows[0] || null;
+};
+
+const clearLocationCoordinates = async (locationId) => {
+  const result = await db.query(
+    `
+    UPDATE locations
+    SET latitude = NULL,
+        longitude = NULL,
+        geocoded_at = NULL
+    WHERE location_id = $1
+    RETURNING location_id, latitude, longitude, geocoded_at
+    `,
+    [locationId]
+  );
+  return result.rows[0] || null;
+};
+
+const updateLocationAddress = async (
+  locationId,
+  { streetAddress, city, province, postalCode }
+) => {
+  const result = await db.query(
+    `
+    UPDATE locations
+    SET StreetAddress = $2,
+        city = $3,
+        province = $4,
+        postalCode = $5,
+        latitude = NULL,
+        longitude = NULL,
+        geocoded_at = NULL
+    WHERE location_id = $1
+    RETURNING location_id, StreetAddress, city, province, postalCode, latitude, longitude, geocoded_at
+    `,
+    [
+      locationId,
+      streetAddress || null,
+      city || null,
+      province || null,
+      postalCode || null,
+    ]
+  );
+
+  return result.rows[0] || null;
+};
+
+const refreshLocationCoordinates = async (locationId) => {
+  await clearLocationCoordinates(locationId);
+  return ensureLocationCoordinates(locationId);
+};
+
+const updateLocationAddressAndGeocode = async (
+  locationId,
+  { streetAddress, city, province, postalCode }
+) => {
+  const updatedLocation = await updateLocationAddress(locationId, {
+    streetAddress,
+    city,
+    province,
+    postalCode,
+  });
+
+  if (!updatedLocation) return null;
+
+  await ensureLocationCoordinates(locationId);
+  return getLocationById(locationId);
 };
 
 const getStoredLocationCoordinates = async (locationId) => {
@@ -487,28 +551,6 @@ const updateJob = async (
   }
 ) => {
   try {
-    const locationUpdateQuery = `
-      UPDATE locations
-      SET StreetAddress = $1,
-          city = $2,
-          province = $3,
-          postalCode = $4,
-          latitude = NULL,
-          longitude = NULL,
-          geocoded_at = NULL
-      FROM jobPostings
-      WHERE locations.location_id = jobPostings.location_id
-        AND jobPostings.job_id = $5;
-    `;
-
-    await db.query(locationUpdateQuery, [
-      locationData?.streetAddress || null,
-      locationData?.city || null,
-      locationData?.province || null,
-      locationData?.postalCode || null,
-      jobId,
-    ]);
-
     const locationIdResult = await db.query(
       `
       SELECT location_id
@@ -519,8 +561,14 @@ const updateJob = async (
     );
 
     const locationId = locationIdResult.rows[0]?.location_id || null;
+
     if (locationId) {
-      await geocodeAndStoreLocationIfPossible(locationId);
+      await updateLocationAddressAndGeocode(locationId, {
+        streetAddress: locationData?.streetAddress || null,
+        city: locationData?.city || null,
+        province: locationData?.province || null,
+        postalCode: locationData?.postalCode || null,
+      });
     }
 
     const jobUpdateQuery = `
