@@ -83,7 +83,6 @@ const ApplicantsPage = () => {
             {!loading && (
                 <div className="applicants-summary-bar">
                     <span className="summary-count">{applicants.length} total applicant{applicants.length !== 1 ? "s" : ""}</span>
-                    <span className="summary-note">Sorted by application date — earliest first</span>
                 </div>
             )}
 
