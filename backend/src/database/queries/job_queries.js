@@ -127,29 +127,38 @@ const buildGeocodeUrl = (input) => {
       params.set("countrycodes", countryCode);
     }
 
-    if (streetAddress) params.set("street", streetAddress);
-    if (city) params.set("city", city);
-    if (province) params.set("state", province);
-    if (postalCode) params.set("postalcode", postalCode);
-    if (country) params.set("country", country);
+    const hasStructuredFields =
+      streetAddress || city || province || postalCode || country;
 
-    const q = normalizeAddress({
-      streetAddress,
-      city,
-      province,
-      postalCode,
-      country,
-    });
+    if (hasStructuredFields) {
+      if (streetAddress) params.set("street", streetAddress);
+      if (city) params.set("city", city);
+      if (province) params.set("state", province);
+      if (postalCode) params.set("postalcode", postalCode);
+      if (country) params.set("country", country);
+    } else {
+      const q = normalizeAddress({
+        streetAddress,
+        city,
+        province,
+        postalCode,
+        country,
+      });
+
+      if (q) {
+        params.set("q", q);
+      }
+    }
+  } else {
+    const q = normalizeText(input);
+
+    if (GEOCODE_COUNTRY_CODE) {
+      params.set("countrycodes", GEOCODE_COUNTRY_CODE.toLowerCase());
+    }
 
     if (q) {
       params.set("q", q);
     }
-  } else {
-    const q = normalizeText(input);
-    if (GEOCODE_COUNTRY_CODE) {
-      params.set("countrycodes", GEOCODE_COUNTRY_CODE.toLowerCase());
-    }
-    params.set("q", q);
   }
 
   return `${NOMINATIM_BASE_URL}/search?${params.toString()}`;
