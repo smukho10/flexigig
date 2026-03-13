@@ -42,7 +42,8 @@
     margin-bottom: 17px;
     display: flex;
     width: 1114px;
-    height: 203px;
+    min-height: 250px;
+    height: auto;
     box-sizing: border-box;
     justify-content: space-between;
 }
@@ -70,7 +71,7 @@
 .job-posting-container ul li .right button {
     background-color: #4EBBC2;
     color: white;
-    width: 103px;
+    width: 140px;
     height: 30px;
     display: flex;
     align-items: center;
@@ -274,8 +275,7 @@
 /* Advance-status button (Publish / Mark In Review / etc.) */
 .advance-btn {
     color: white;
-    width: auto !important;
-    min-width: 130px !important;
+    width: 140px !important;
     height: 30px;
     padding: 0 14px;
     font-size: 12px;
@@ -531,7 +531,7 @@
     width: 90%;
     max-height: 80vh;
     overflow-y: auto;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
     font-family: "Poppins";
 }
 
@@ -624,8 +624,7 @@
     background-color: rgba(59, 130, 246, 0.12) !important;
     color: #1D4ED8 !important;
     border: 1.5px solid #3B82F6 !important;
-    width: auto !important;
-    min-width: 130px !important;
+    width: 140px !important;
     height: 30px;
     padding: 0 14px;
     font-size: 12px;

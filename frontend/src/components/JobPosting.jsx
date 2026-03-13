@@ -221,9 +221,6 @@ const JobPosting = () => {
                 <div className="left">
                     <h2 className="posting-header">
                         {job.jobtitle}
-                        {job.jobfilled && (
-                            <span style={{ color: "#C2554E", marginLeft: 10 }}>JOB FILLED</span>
-                        )}
                     </h2>
                     <div>
                         <img src={DollarSign} alt="dollar-sign" width="22px" height="auto" />
