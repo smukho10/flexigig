@@ -130,35 +130,29 @@ const buildGeocodeUrl = (input) => {
     const hasStructuredFields =
       streetAddress || city || province || postalCode || country;
 
-    if (hasStructuredFields) {
-      if (streetAddress) params.set("street", streetAddress);
-      if (city) params.set("city", city);
-      if (province) params.set("state", province);
-      if (postalCode) params.set("postalcode", postalCode);
-      if (country) params.set("country", country);
-    } else {
-      const q = normalizeAddress({
-        streetAddress,
-        city,
-        province,
-        postalCode,
-        country,
-      });
-
-      if (q) {
-        params.set("q", q);
-      }
+    if (!hasStructuredFields) {
+      return null;
     }
+
+    // IMPORTANT: use ONLY structured parameters for object input.
+    // Do not send `q` together with structured params.
+    if (streetAddress) params.set("street", streetAddress);
+    if (city) params.set("city", city);
+    if (province) params.set("state", province);
+    if (postalCode) params.set("postalcode", postalCode);
+    if (country) params.set("country", country);
   } else {
     const q = normalizeText(input);
+
+    if (!q) {
+      return null;
+    }
 
     if (GEOCODE_COUNTRY_CODE) {
       params.set("countrycodes", GEOCODE_COUNTRY_CODE.toLowerCase());
     }
 
-    if (q) {
-      params.set("q", q);
-    }
+    params.set("q", q);
   }
 
   return `${NOMINATIM_BASE_URL}/search?${params.toString()}`;
@@ -176,11 +170,13 @@ const geocodeAddress = async (input, hasRetried = false) => {
     await sleep(GEOCODE_THROTTLE_MS);
 
     const url = buildGeocodeUrl(input);
+    if (!url) return null;
 
     try {
       const data = await httpsGetJson(url);
 
       if (!Array.isArray(data) || data.length === 0) {
+        console.warn("Geocoding returned no results for:", asText);
         return null;
       }
 
@@ -200,13 +196,14 @@ const geocodeAddress = async (input, hasRetried = false) => {
     } catch (err) {
       const message = String(err.message || "");
 
-      if (!hasRetried && message.includes("status 429")) {
+      if (!hasRetried && message.includes("429")) {
         console.warn("Nominatim rate limit hit. Retrying once after backoff...");
         await sleep(GEOCODE_RETRY_MS);
         return geocodeAddress(input, true);
       }
 
-      throw err;
+      console.error("Geocoding error:", message);
+      return null;
     }
   });
 };
@@ -364,7 +361,11 @@ const ensureLocationCoordinates = async (locationId) => {
   if (!fullAddress) return null;
 
   const geocoded = await geocodeAddress(geocodeInput);
-  if (!geocoded) return null;
+
+  if (!geocoded) {
+    console.warn("Could not geocode location:", fullAddress);
+    return null;
+  }
 
   await updateLocationCoordinates(
     location.location_id,
@@ -683,7 +684,8 @@ const attachDistanceAndFilterJobs = async (
           source: "query",
         };
       } else if (job.location_id) {
-        jobCoords = await getStoredLocationCoordinates(job.location_id);
+        // Ensure missing job coordinates are geocoded when possible
+        jobCoords = await ensureLocationCoordinates(job.location_id);
       }
 
       if (!jobCoords) {
@@ -1201,4 +1203,6 @@ module.exports = {
   ensureLocationCoordinates,
   geocodeAddress,
   haversineDistanceMiles,
+  refreshLocationCoordinates,
+  updateLocationAddressAndGeocode,
 };
