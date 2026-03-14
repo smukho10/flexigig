@@ -12,16 +12,8 @@ import axios from "axios";
 import { useUser } from "./UserContext";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const JOB_TYPES = [
-  "Full-time",
-  "Part-time",
-  "Contract",
-  "Temporary",
-  "Internship",
-  "Casual",
-];
+const JOB_TYPES = ["Full-time", "Part-time", "Contract", "Temporary", "Internship", "Casual"];
 const MAX_RATE = 100;
-const DISTANCE_OPTIONS = [5, 10, 25, 50, 100];
 
 // ── Dual Range Slider (uncontrolled refs — no re-render on drag) ──────────────
 const DualRangeSlider = ({ min, max, absMax, onChange }) => {
@@ -69,68 +61,48 @@ const DualRangeSlider = ({ min, max, absMax, onChange }) => {
         <div className="dual-range-fill" ref={fillRef} />
       </div>
       <input
-        type="range"
-        min={0}
-        max={absMax}
-        defaultValue={min}
-        ref={minRef}
-        onInput={handleMinInput}
-        onMouseUp={commit}
-        onTouchEnd={commit}
+        type="range" min={0} max={absMax} defaultValue={min} ref={minRef}
+        onInput={handleMinInput} onMouseUp={commit} onTouchEnd={commit}
       />
       <input
-        type="range"
-        min={0}
-        max={absMax}
-        defaultValue={max}
-        ref={maxRef}
-        onInput={handleMaxInput}
-        onMouseUp={commit}
-        onTouchEnd={commit}
+        type="range" min={0} max={absMax} defaultValue={max} ref={maxRef}
+        onInput={handleMaxInput} onMouseUp={commit} onTouchEnd={commit}
       />
     </div>
   );
 };
 
-// ── Filter Dropdowns ───────────────────────────────────────────────────────────
+// ── Filter Dropdowns (defined outside JobBoard to prevent remount on re-render) ──
 
 const LocationDropdown = ({ values, onUpdate, onClear, onApply }) => (
   <div className="filter-dropdown">
     <h4>Location</h4>
     <p className="location-note">
-      Location-based search coming soon. Enter manually to filter by city,
-      province or postal code.
+      Location-based search coming soon. Enter manually to filter by city, province or postal code.
     </p>
     <div className="location-inputs">
       <label>City</label>
       <input
-        type="text"
-        placeholder="e.g. Toronto"
+        type="text" placeholder="e.g. Toronto"
         value={values.city}
         onChange={(e) => onUpdate("city", e.target.value)}
       />
       <label>Province</label>
       <input
-        type="text"
-        placeholder="e.g. Ontario"
+        type="text" placeholder="e.g. Ontario"
         value={values.province}
         onChange={(e) => onUpdate("province", e.target.value)}
       />
       <label>Postal Code</label>
       <input
-        type="text"
-        placeholder="e.g. M5V 2T6"
+        type="text" placeholder="e.g. M5V 2T6"
         value={values.postalCode}
         onChange={(e) => onUpdate("postalCode", e.target.value)}
       />
     </div>
     <div className="filter-actions">
-      <button className="filter-clear-btn" onClick={onClear}>
-        Clear
-      </button>
-      <button className="filter-apply-btn" onClick={onApply}>
-        Apply
-      </button>
+      <button className="filter-clear-btn" onClick={onClear}>Clear</button>
+      <button className="filter-apply-btn" onClick={onApply}>Apply</button>
     </div>
   </div>
 );
@@ -150,12 +122,8 @@ const JobTypeDropdown = ({ selected, onUpdate, onClear, onApply }) => (
       ))}
     </div>
     <div className="filter-actions">
-      <button className="filter-clear-btn" onClick={onClear}>
-        Clear
-      </button>
-      <button className="filter-apply-btn" onClick={onApply}>
-        Apply
-      </button>
+      <button className="filter-clear-btn" onClick={onClear}>Clear</button>
+      <button className="filter-apply-btn" onClick={onApply}>Apply</button>
     </div>
   </div>
 );
@@ -163,9 +131,7 @@ const JobTypeDropdown = ({ selected, onUpdate, onClear, onApply }) => (
 const DateDropdown = ({ values, onUpdate, onClear, onApply }) => (
   <div className="filter-dropdown">
     <h4>Date</h4>
-    <p className="location-note">
-      Filter jobs by start date. Fill in one or both fields.
-    </p>
+    <p className="location-note">Filter jobs by start date. Fill in one or both fields.</p>
     <label>From</label>
     <input
       type="date"
@@ -179,49 +145,13 @@ const DateDropdown = ({ values, onUpdate, onClear, onApply }) => (
       onChange={(e) => onUpdate("startTo", e.target.value)}
     />
     <div className="filter-actions">
-      <button className="filter-clear-btn" onClick={onClear}>
-        Clear
-      </button>
-      <button className="filter-apply-btn" onClick={onApply}>
-        Apply
-      </button>
+      <button className="filter-clear-btn" onClick={onClear}>Clear</button>
+      <button className="filter-apply-btn" onClick={onApply}>Apply</button>
     </div>
   </div>
 );
 
-const DistanceDropdown = ({ selected, onUpdate, onClear, onApply }) => (
-  <div className="filter-dropdown">
-    <h4>Distance</h4>
-    <p className="location-note">
-      Show gigs within a selected distance from your saved address.
-    </p>
-
-    <div className="job-type-grid">
-      {DISTANCE_OPTIONS.map((miles) => (
-        <button
-          key={miles}
-          className={`job-type-pill ${selected === miles ? "selected" : ""}`}
-          onClick={() =>
-            onUpdate("distanceMiles", selected === miles ? "" : miles)
-          }
-        >
-          {miles} miles
-        </button>
-      ))}
-    </div>
-
-    <div className="filter-actions">
-      <button className="filter-clear-btn" onClick={onClear}>
-        Clear
-      </button>
-      <button className="filter-apply-btn" onClick={onApply}>
-        Apply
-      </button>
-    </div>
-  </div>
-);
-
-// PayDropdown
+// PayDropdown needs local state so stays as a component but defined outside
 const PayDropdown = ({ initialMin, initialMax, absMax, onClear, onApply }) => {
   const [localMin, setLocalMin] = useState(initialMin);
   const [localMax, setLocalMax] = useState(initialMax);
@@ -233,49 +163,25 @@ const PayDropdown = ({ initialMin, initialMax, absMax, onClear, onApply }) => {
         min={localMin}
         max={localMax}
         absMax={absMax}
-        onChange={(newMin, newMax) => {
-          setLocalMin(newMin);
-          setLocalMax(newMax);
-        }}
+        onChange={(newMin, newMax) => { setLocalMin(newMin); setLocalMax(newMax); }}
       />
       <div className="pay-number-row">
         <input
-          type="number"
-          min={0}
-          max={absMax}
-          value={localMin}
-          placeholder="Min"
-          onChange={(e) =>
-            setLocalMin(
-              Math.max(0, Math.min(Number(e.target.value), localMax - 1))
-            )
-          }
+          type="number" min={0} max={absMax}
+          value={localMin} placeholder="Min"
+          onChange={(e) => setLocalMin(Math.max(0, Math.min(Number(e.target.value), localMax - 1)))}
         />
         <span className="pay-number-sep">–</span>
         <input
-          type="number"
-          min={0}
-          max={absMax}
-          value={localMax}
-          placeholder="Max"
-          onChange={(e) =>
-            setLocalMax(
-              Math.min(absMax, Math.max(Number(e.target.value), localMin + 1))
-            )
-          }
+          type="number" min={0} max={absMax}
+          value={localMax} placeholder="Max"
+          onChange={(e) => setLocalMax(Math.min(absMax, Math.max(Number(e.target.value), localMin + 1)))}
         />
         <span className="pay-number-unit">/hr</span>
       </div>
       <div className="filter-actions">
-        <button className="filter-clear-btn" onClick={onClear}>
-          Clear
-        </button>
-        <button
-          className="filter-apply-btn"
-          onClick={() => onApply(localMin, localMax)}
-        >
-          Apply
-        </button>
+        <button className="filter-clear-btn" onClick={onClear}>Clear</button>
+        <button className="filter-apply-btn" onClick={() => onApply(localMin, localMax)}>Apply</button>
       </div>
     </div>
   );
@@ -289,17 +195,17 @@ const JobBoard = () => {
 
   const [jobDetails, setJobDetails] = useState(null);
   const [jobs, setJobs] = useState([]);
-  const [applyJobId, setApplyJobId] = useState(null);
+  const [applyJobId, setApplyJobId] = useState(null); // ID of the job the user wants to apply to
   const [refresh, setRefresh] = useState(false);
 
+  // Pagination
   const [page, setPage] = useState(1);
   const [perPage] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
 
+  // Which dropdown is open
   const [openFilter, setOpenFilter] = useState(null);
   const filterBarRef = useRef(null);
-
-  const [errorMessage, setErrorMessage] = useState("");
 
   // ── Filter state ─────────────────────────────────────────────────────────
   const [pendingFilters, setPendingFilters] = useState({
@@ -313,9 +219,9 @@ const JobBoard = () => {
     startTo: "",
     endFrom: "",
     endTo: "",
-    distanceMiles: "",
   });
 
+  // Applied filters (these trigger API calls)
   const [appliedFilters, setAppliedFilters] = useState({});
 
   // ── Close dropdown on outside click ──────────────────────────────────────
@@ -333,49 +239,36 @@ const JobBoard = () => {
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        setErrorMessage("");
-
         const params = { page, perPage, ...appliedFilters };
-
         if (user?.id && !user?.isbusiness) {
           params.currentUserId = user.id;
         }
-
-        const res = await axios.get(`/api/all-jobs`, {
-          params,
-          withCredentials: true,
-        });
-
+        const res = await axios.get(`/api/all-jobs`, { params, withCredentials: true });
         const jobsFromApi = Array.isArray(res.data?.jobs) ? res.data.jobs : [];
         setJobs(jobsFromApi);
         setTotalPages(res.data?.pagination?.totalPages || 1);
       } catch (error) {
         console.error("Error fetching all jobs:", error);
-
-        const backendMessage =
-          error?.response?.data?.message || "Failed to load jobs.";
-
-        setErrorMessage(backendMessage);
         setJobs([]);
         setTotalPages(1);
       }
     };
-
     fetchJobs();
-  }, [refresh, page, perPage, appliedFilters, user]);
+  }, [refresh, page, perPage, appliedFilters]);
 
-  // ── Open details when navigated here with state ──────────────────────────
+  // ── Open details when navigated here with state (e.g. quick apply)
   useEffect(() => {
     if (location.state?.openJobId && jobs.length) {
-      const match = jobs.find(
-        (j) => j.job_id.toString() === location.state.openJobId.toString()
-      );
+      const match = jobs.find((j) => j.job_id.toString() === location.state.openJobId.toString());
       if (match) {
         setJobDetails(match);
+        // remove state so re-visiting /find-gigs doesn't reopen automatically
         navigate(location.pathname, { replace: true });
       }
     }
   }, [location.state, jobs, navigate]);
+
+  // No auto-fetch needed — ApplyModal fetches profiles on open
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   const formatDateForDisplay = (dateTime) => {
@@ -397,11 +290,8 @@ const JobBoard = () => {
 
   const applyFilter = (keys, overrides = {}) => {
     const newApplied = { ...appliedFilters };
-
     keys.forEach((key) => {
-      const val =
-        overrides[key] !== undefined ? overrides[key] : pendingFilters[key];
-
+      const val = overrides[key] !== undefined ? overrides[key] : pendingFilters[key];
       if (val !== "" && val !== null && val !== undefined) {
         if (key === "hourlyRateMin" && val === 0) return;
         if (key === "hourlyRateMax" && val === MAX_RATE) return;
@@ -410,7 +300,6 @@ const JobBoard = () => {
         delete newApplied[key];
       }
     });
-
     setAppliedFilters(newApplied);
     setPage(1);
     setOpenFilter(null);
@@ -419,15 +308,12 @@ const JobBoard = () => {
   const clearFilter = (keys) => {
     const resetPending = { ...pendingFilters };
     const newApplied = { ...appliedFilters };
-
     keys.forEach((key) => {
       delete newApplied[key];
-
       if (key === "hourlyRateMin") resetPending[key] = 0;
       else if (key === "hourlyRateMax") resetPending[key] = MAX_RATE;
       else resetPending[key] = "";
     });
-
     setPendingFilters(resetPending);
     setAppliedFilters(newApplied);
     setPage(1);
@@ -442,15 +328,16 @@ const JobBoard = () => {
   const payKeys = ["hourlyRateMin", "hourlyRateMax"];
   const startKeys = ["startFrom", "startTo"];
   const endKeys = ["endFrom", "endTo"];
-  const distanceKeys = ["distanceMiles"];
 
   // ── Event handlers ────────────────────────────────────────────────────────
+  // Opens the profile-selection modal for the given job
   const handleApply = (e) => {
     const jobId = e.target.value;
     if (!user?.id || user.isbusiness) return;
     setApplyJobId(jobId);
   };
 
+  // Called when the modal successfully submits an application
   const handleApplySuccess = () => {
     setJobDetails(null);
     setRefresh(!refresh);
@@ -461,9 +348,7 @@ const JobBoard = () => {
   };
 
   const handleJobDetails = (e) =>
-    setJobDetails(
-      jobs.find((job) => job.job_id.toString() === e.target.dataset.id)
-    );
+    setJobDetails(jobs.find((job) => job.job_id.toString() === e.target.dataset.id));
 
   const handlePrevPage = () => setPage((p) => Math.max(1, p - 1));
   const handleNextPage = () => setPage((p) => Math.min(totalPages, p + 1));
@@ -473,14 +358,8 @@ const JobBoard = () => {
     const tags = [];
 
     if (hasApplied(locationKeys)) {
-      const parts = [
-        appliedFilters.city,
-        appliedFilters.province,
-        appliedFilters.postalCode,
-      ]
-        .filter(Boolean)
-        .join(", ");
-
+      const parts = [appliedFilters.city, appliedFilters.province, appliedFilters.postalCode]
+        .filter(Boolean).join(", ");
       tags.push(
         <span key="loc" className="active-filter-tag">
           Location: {parts}
@@ -512,18 +391,8 @@ const JobBoard = () => {
     if (hasApplied(startKeys)) {
       tags.push(
         <span key="start" className="active-filter-tag">
-          Date: {appliedFilters.startFrom || "any"} →{" "}
-          {appliedFilters.startTo || "any"}
+          Date: {appliedFilters.startFrom || "any"} → {appliedFilters.startTo || "any"}
           <button onClick={() => clearFilter(startKeys)}>×</button>
-        </span>
-      );
-    }
-
-    if (hasApplied(distanceKeys)) {
-      tags.push(
-        <span key="distance" className="active-filter-tag">
-          Distance: within {appliedFilters.distanceMiles} miles
-          <button onClick={() => clearFilter(distanceKeys)}>×</button>
         </span>
       );
     }
@@ -531,129 +400,80 @@ const JobBoard = () => {
     return tags.length ? <div className="active-filters-row">{tags}</div> : null;
   };
 
-  const listItems =
-    jobs.length === 0
-      ? null
-      : jobs.map((job) => (
-          <li key={job.job_id}>
-            <div className="left">
-              <h2>{job.jobtitle}</h2>
+  // ── Dropdown panels ───────────────────────────────────────────────────────
+  // ── Job list ──────────────────────────────────────────────────────────────
+  const listItems = jobs.length === 0 ? null : jobs.map((job) => (
+    <li key={job.job_id}>
+      <div className="left">
+        <h2>{job.jobtitle}</h2>
+        <div>
+          <img src={DollarSign} alt="dollar-sign" width="22px" height="auto" />
+          {job.hourlyrate}/hr
+        </div>
+        <div>
+          <img id="calendar-icon" src={CalendarIcon} alt="calendar-icon" width="22px" height="auto" />
+          {formatDateForDisplay(job.jobstart)}
+        </div>
+      </div>
+      <div className="right">
+        <img
+          src={ChevronRight} alt="select-job" width="15px" height="auto"
+          onClick={handleJobDetails} data-id={job.job_id}
+        />
+        <button
+          id="apply-btn" value={job.job_id} onClick={handleApply}
+          disabled={!!user?.isbusiness}
+        >
+          Apply
+        </button>
+      </div>
+    </li>
+  ));
 
-              <div>
-                <img
-                  src={DollarSign}
-                  alt="dollar-sign"
-                  width="22px"
-                  height="auto"
-                />
-                {job.hourlyrate}/hr
-              </div>
-
-              <div>
-                <img
-                  id="calendar-icon"
-                  src={CalendarIcon}
-                  alt="calendar-icon"
-                  width="22px"
-                  height="auto"
-                />
-                {formatDateForDisplay(job.jobstart)}
-              </div>
-
-              {job.distanceMiles != null && (
-                <div className="job-distance">{job.distanceMiles} miles away</div>
-              )}
-            </div>
-
-            <div className="right">
-              <img
-                src={ChevronRight}
-                alt="select-job"
-                width="15px"
-                height="auto"
-                onClick={handleJobDetails}
-                data-id={job.job_id}
-              />
-              <button
-                id="apply-btn"
-                value={job.job_id}
-                onClick={handleApply}
-                disabled={!!user?.isbusiness}
-              >
-                Apply
-              </button>
-            </div>
-          </li>
-        ));
-
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="job-board-container">
       {!jobDetails ? (
         <div>
           <h1>Job Board</h1>
 
+          {/* Filter bar */}
           <div className="filter-bar" ref={filterBarRef}>
             <img src={FiltersIcon} alt="filters" width="24px" height="auto" />
 
             <button
-              className={`filter-btn ${
-                openFilter === "location" ? "active" : ""
-              } ${hasApplied(locationKeys) ? "has-value" : ""}`}
+              className={`filter-btn ${openFilter === "location" ? "active" : ""} ${hasApplied(locationKeys) ? "has-value" : ""}`}
               onClick={() => toggleFilter("location")}
             >
               Location
             </button>
 
             <button
-              className={`filter-btn ${
-                openFilter === "distance" ? "active" : ""
-              } ${hasApplied(distanceKeys) ? "has-value" : ""}`}
-              onClick={() => toggleFilter("distance")}
-              disabled={!user?.id || !!user?.isbusiness}
-              title={
-                !user?.id || !!user?.isbusiness
-                  ? "Distance filter is available for logged-in workers with a saved address."
-                  : ""
-              }
-            >
-              Distance
-              {appliedFilters.distanceMiles
-                ? ` · ${appliedFilters.distanceMiles} mi`
-                : ""}
-            </button>
-
-            <button
-              className={`filter-btn ${
-                openFilter === "jobType" ? "active" : ""
-              } ${hasApplied(jobTypeKeys) ? "has-value" : ""}`}
+              className={`filter-btn ${openFilter === "jobType" ? "active" : ""} ${hasApplied(jobTypeKeys) ? "has-value" : ""}`}
               onClick={() => toggleFilter("jobType")}
             >
-              Job Type
-              {appliedFilters.jobType ? ` · ${appliedFilters.jobType}` : ""}
+              Job Type{appliedFilters.jobType ? ` · ${appliedFilters.jobType}` : ""}
             </button>
 
             <button
-              className={`filter-btn ${
-                openFilter === "pay" ? "active" : ""
-              } ${hasApplied(payKeys) ? "has-value" : ""}`}
+              className={`filter-btn ${openFilter === "pay" ? "active" : ""} ${hasApplied(payKeys) ? "has-value" : ""}`}
               onClick={() => toggleFilter("pay")}
             >
               Pay Rate
             </button>
 
             <button
-              className={`filter-btn ${
-                openFilter === "date" ? "active" : ""
-              } ${hasApplied([...startKeys, ...endKeys]) ? "has-value" : ""}`}
+              className={`filter-btn ${openFilter === "date" ? "active" : ""} ${hasApplied([...startKeys, ...endKeys]) ? "has-value" : ""}`}
               onClick={() => toggleFilter("date")}
             >
               Date
             </button>
 
-            <button className="filter-btn" onClick={() => {}}>
+            <button className="filter-btn" onClick={() => { }}>
               Skill Match
             </button>
 
+            {/* Dropdown panels */}
             {openFilter === "location" && (
               <LocationDropdown
                 values={pendingFilters}
@@ -662,16 +482,6 @@ const JobBoard = () => {
                 onApply={() => applyFilter(locationKeys)}
               />
             )}
-
-            {openFilter === "distance" && (
-              <DistanceDropdown
-                selected={pendingFilters.distanceMiles}
-                onUpdate={updatePending}
-                onClear={() => clearFilter(distanceKeys)}
-                onApply={() => applyFilter(distanceKeys)}
-              />
-            )}
-
             {openFilter === "jobType" && (
               <JobTypeDropdown
                 selected={pendingFilters.jobType}
@@ -680,7 +490,6 @@ const JobBoard = () => {
                 onApply={() => applyFilter(jobTypeKeys)}
               />
             )}
-
             {openFilter === "pay" && (
               <PayDropdown
                 initialMin={pendingFilters.hourlyRateMin}
@@ -690,14 +499,10 @@ const JobBoard = () => {
                 onApply={(min, max) => {
                   updatePending("hourlyRateMin", min);
                   updatePending("hourlyRateMax", max);
-                  applyFilter(payKeys, {
-                    hourlyRateMin: min,
-                    hourlyRateMax: max,
-                  });
+                  applyFilter(payKeys, { hourlyRateMin: min, hourlyRateMax: max });
                 }}
               />
             )}
-
             {openFilter === "date" && (
               <DateDropdown
                 values={pendingFilters}
@@ -708,43 +513,34 @@ const JobBoard = () => {
             )}
           </div>
 
+          {/* Active filter tags */}
           {renderActiveTags()}
 
-          {errorMessage && <div className="job-board-error">{errorMessage}</div>}
-
+          {/* Job list */}
           {listItems ? (
             <>
               <ul style={{ listStyleType: "none" }}>{listItems}</ul>
               <div className="pagination-row">
-                <button onClick={handlePrevPage} disabled={page <= 1}>
-                  Prev
-                </button>
-                <span>
-                  Page {page} of {totalPages}
-                </span>
-                <button onClick={handleNextPage} disabled={page >= totalPages}>
-                  Next
-                </button>
+                <button onClick={handlePrevPage} disabled={page <= 1}>Prev</button>
+                <span>Page {page} of {totalPages}</span>
+                <button onClick={handleNextPage} disabled={page >= totalPages}>Next</button>
               </div>
             </>
           ) : (
-            <div>{errorMessage ? "No matching gigs found" : "No Gigs Available"}</div>
+            <div>No Gigs Available</div>
           )}
         </div>
       ) : (
         <div>
           <img
-            id="back-btn"
-            src={ChevronLeft}
-            alt="back"
-            width="45px"
-            height="auto"
-            onClick={handleBack}
+            id="back-btn" src={ChevronLeft} alt="back"
+            width="45px" height="auto" onClick={handleBack}
           />
           <JobDetails jobDetails={jobDetails} handleApply={handleApply} />
         </div>
       )}
 
+      {/* Profile-selection modal */}
       {applyJobId && (
         <ApplyModal
           jobId={applyJobId}

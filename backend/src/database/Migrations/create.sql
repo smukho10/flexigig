@@ -21,10 +21,7 @@ CREATE TABLE locations (
     StreetAddress VARCHAR(255),
     city VARCHAR(255) NOT NULL,
     province VARCHAR(255) NOT NULL,
-    postalCode VARCHAR(20) NOT NULL,
-    latitude DOUBLE PRECISION,
-    longitude DOUBLE PRECISION,
-    geocoded_at TIMESTAMPTZ
+    postalCode VARCHAR(20) NOT NULL
 );
 
 CREATE TABLE pending_users (
