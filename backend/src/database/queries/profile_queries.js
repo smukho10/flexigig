@@ -1,9 +1,17 @@
-const db = require('../connection.js');
+const db = require("../connection.js");
+const { geocodeAddress } = require("../../services/geocodingService");
+
+const buildFullAddress = ({ streetAddress, city, province, postalCode }) => {
+  return [streetAddress, city, province, postalCode].filter(Boolean).join(", ");
+};
 
 const checkWorkerProfile = async (userId) => {
   try {
-    const userProfile = await db.query(`SELECT id FROM workers WHERE user_id = $1;`, [userId]);
-    return userProfile.rows[0]; // Assuming userId is unique, so returning the first row
+    const userProfile = await db.query(
+      `SELECT id FROM workers WHERE user_id = $1;`,
+      [userId]
+    );
+    return userProfile.rows[0];
   } catch (error) {
     console.error("Error fetching user by ID: ", error);
     throw error;
@@ -12,8 +20,11 @@ const checkWorkerProfile = async (userId) => {
 
 const checkBusinessProfile = async (userId) => {
   try {
-    const userProfile = await db.query(`SELECT id FROM businesses WHERE user_id = $1;`, [userId]);
-    return userProfile.rows[0]; // Assuming userId is unique, so returning the first row
+    const userProfile = await db.query(
+      `SELECT id FROM businesses WHERE user_id = $1;`,
+      [userId]
+    );
+    return userProfile.rows[0];
   } catch (error) {
     console.error("Error fetching user by ID: ", error);
     throw error;
@@ -21,11 +32,36 @@ const checkBusinessProfile = async (userId) => {
 };
 
 const addUserProfile = (userId, worker) => {
-
-  const query = `INSERT INTO workers (user_id, biography, worker_phone_number, worker_street_address, worker_city, worker_province, worker_postal_code, desired_work_radius, skills, desired_pay) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *;`;
+  const query = `
+    INSERT INTO workers (
+      user_id,
+      biography,
+      worker_phone_number,
+      worker_street_address,
+      worker_city,
+      worker_province,
+      worker_postal_code,
+      desired_work_radius,
+      skills,
+      desired_pay
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    RETURNING *;
+  `;
 
   return db
-    .query(query, [userId, worker.biography, worker.phone_number, worker.street_address, worker.city, worker.province, worker.postal_code, worker.desired_work_radius, worker.skills, worker.desired_pay])
+    .query(query, [
+      userId,
+      worker.biography,
+      worker.phone_number,
+      worker.street_address,
+      worker.city,
+      worker.province,
+      worker.postal_code,
+      worker.desired_work_radius,
+      worker.skills,
+      worker.desired_pay,
+    ])
     .then((result) => {
       return result.rows[0];
     })
@@ -35,25 +71,30 @@ const addUserProfile = (userId, worker) => {
 };
 
 const getBusinessProfile = (user_id) => {
-  //const query = `SELECT * FROM businesses where user_id = $1`;
-  const query = `SELECT users.id,
-  users.email,
-  users.active,
-  users.signUpDate,
-  users.user_phone_number AS phone_number,
-  businesses.business_name,
-  businesses.business_description,
-  businesses.business_website,
-  locations.streetaddress AS street_address,
-  locations.city,
-  locations.province,
-  locations.postalcode AS postal_code
-FROM users
-JOIN businesses ON users.id = businesses.user_id
-JOIN locations ON users.user_address = locations.location_id
-WHERE users.id = $1;`;
+  const query = `
+    SELECT
+      users.id,
+      users.email,
+      users.active,
+      users.signUpDate,
+      users.user_phone_number AS phone_number,
+      businesses.business_name,
+      businesses.business_description,
+      businesses.business_website,
+      locations.streetaddress AS street_address,
+      locations.city,
+      locations.province,
+      locations.postalcode AS postal_code,
+      locations.latitude,
+      locations.longitude
+    FROM users
+    JOIN businesses ON users.id = businesses.user_id
+    JOIN locations ON users.user_address = locations.location_id
+    WHERE users.id = $1;
+  `;
 
-  return db.query(query, [user_id])
+  return db
+    .query(query, [user_id])
     .then((result) => {
       if (result.rows.length > 0) {
         return result.rows[0];
@@ -66,11 +107,36 @@ WHERE users.id = $1;`;
 };
 
 const addBusinessProfile = (userId, business) => {
-
-  const query = `INSERT INTO businesses (user_id, business_name, business_description, business_phone_number, business_email, business_street_address, business_city, business_province, business_postal_code, business_website) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *;`;
+  const query = `
+    INSERT INTO businesses (
+      user_id,
+      business_name,
+      business_description,
+      business_phone_number,
+      business_email,
+      business_street_address,
+      business_city,
+      business_province,
+      business_postal_code,
+      business_website
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    RETURNING *;
+  `;
 
   return db
-    .query(query, [userId, business.name, business.description, business.phone_number, business.email, business.street_address, business.city, business.province, business.postal_code, business.website])
+    .query(query, [
+      userId,
+      business.name,
+      business.description,
+      business.phone_number,
+      business.email,
+      business.street_address,
+      business.city,
+      business.province,
+      business.postal_code,
+      business.website,
+    ])
     .then((result) => {
       return result.rows[0];
     })
@@ -80,32 +146,45 @@ const addBusinessProfile = (userId, business) => {
 };
 
 const updateBusinessProfile = (business) => {
+  const query = `
+    UPDATE businesses
+    SET
+      business_name = $1,
+      business_description = $2,
+      business_phone_number = $3,
+      business_email = $4,
+      business_street_address = $5,
+      business_city = $6,
+      business_province = $7,
+      business_postal_code = $8,
+      business_website = $9
+    WHERE id = $10
+    RETURNING *;
+  `;
 
-  const query = `UPDATE businesses SET
-    business_name = $1,
-    business_description = $2,
-    business_phone_number = $3,
-    business_email = $4,
-    business_street_address = $5,
-    business_city = $6,
-    business_province = $7,
-    business_postal_code = $8,
-    business_website = $9
-    where id = $10 RETURNING *;`;
   return db
-    .query(query, [business.name, business.description, business.phone_number, business.email, business.street_address, business.city, business.province, business.postal_code, business.website, business.id])
+    .query(query, [
+      business.name,
+      business.description,
+      business.phone_number,
+      business.email,
+      business.street_address,
+      business.city,
+      business.province,
+      business.postal_code,
+      business.website,
+      business.id,
+    ])
     .then((result) => {
       return result.rows[0];
     })
     .catch((err) => {
       console.error("Error updating profile: ", err);
     });
-
 };
 
 const updateUserProfile = async (userId, worker) => {
   try {
-    // Update the workers table and retrieve the updated row
     const updatedWorker = await db.query(
       `UPDATE workers
        SET biography = $2,
@@ -118,21 +197,30 @@ const updateUserProfile = async (userId, worker) => {
            skills = $9,
            desired_pay = $10
        WHERE user_id = $1
-       RETURNING *;`, // Return updated row
-      [userId, worker.biography, worker.phone_number, worker.street_address, worker.city, worker.province, worker.postal_code, worker.desired_work_radius, worker.skills, worker.desired_pay]
+       RETURNING *;`,
+      [
+        userId,
+        worker.biography,
+        worker.phone_number,
+        worker.street_address,
+        worker.city,
+        worker.province,
+        worker.postal_code,
+        worker.desired_work_radius,
+        worker.skills,
+        worker.desired_pay,
+      ]
     );
 
-    // Update the users table and retrieve the updated row
-    const updatedUser = await db.query(
+    await db.query(
       `UPDATE users
        SET firstname = $2,
            lastname = $3
        WHERE id = $1
-       RETURNING *;`, // Return updated row
+       RETURNING *;`,
       [userId, worker.firstname, worker.lastname]
     );
 
-    // Return the updated worker and user data
     return updatedWorker.rows[0];
   } catch (error) {
     console.error("Error updating profile: ", error);
@@ -142,7 +230,6 @@ const updateUserProfile = async (userId, worker) => {
 
 const updateWorkerProfileById = async (workerId, worker) => {
   try {
-    // Update the workers table (profile-specific data)
     const updatedWorker = await db.query(
       `UPDATE workers
        SET biography = $2,
@@ -160,13 +247,17 @@ const updateWorkerProfileById = async (workerId, worker) => {
         worker.lastname,
         worker.profile_name,
         worker.desired_work_radius,
-        worker.desired_pay
+        worker.desired_pay,
       ]
     );
 
-    // If phone/address data is provided, update user-level data too
-    if (worker.phone_number || worker.street_address || worker.city || worker.province || worker.postal_code) {
-      // Get the user_id from the worker
+    if (
+      worker.phone_number ||
+      worker.street_address ||
+      worker.city ||
+      worker.province ||
+      worker.postal_code
+    ) {
       const workerData = await db.query(
         `SELECT user_id FROM workers WHERE id = $1;`,
         [workerId]
@@ -175,17 +266,19 @@ const updateWorkerProfileById = async (workerId, worker) => {
       if (workerData.rows.length > 0) {
         const userId = workerData.rows[0].user_id;
 
-        // Update phone number in users table
         if (worker.phone_number) {
-          await db.query(
-            `UPDATE users SET user_phone_number = $1 WHERE id = $2;`,
-            [worker.phone_number, userId]
-          );
+          await db.query(`UPDATE users SET user_phone_number = $1 WHERE id = $2;`, [
+            worker.phone_number,
+            userId,
+          ]);
         }
 
-        // Update address in locations table
-        if (worker.street_address || worker.city || worker.province || worker.postal_code) {
-          // Get the location_id for this user
+        if (
+          worker.street_address ||
+          worker.city ||
+          worker.province ||
+          worker.postal_code
+        ) {
           const userData = await db.query(
             `SELECT user_address FROM users WHERE id = $1;`,
             [userId]
@@ -194,19 +287,59 @@ const updateWorkerProfileById = async (workerId, worker) => {
           if (userData.rows.length > 0 && userData.rows[0].user_address) {
             const locationId = userData.rows[0].user_address;
 
+            const currentLocationResult = await db.query(
+              `SELECT streetaddress, city, province, postalcode
+               FROM locations
+               WHERE location_id = $1;`,
+              [locationId]
+            );
+
+            const currentLocation = currentLocationResult.rows[0];
+
+            const nextStreetAddress =
+              worker.street_address ?? currentLocation?.streetaddress ?? null;
+            const nextCity = worker.city ?? currentLocation?.city ?? null;
+            const nextProvince =
+              worker.province ?? currentLocation?.province ?? null;
+            const nextPostalCode =
+              worker.postal_code ?? currentLocation?.postalcode ?? null;
+
+            const fullAddress = buildFullAddress({
+              streetAddress: nextStreetAddress,
+              city: nextCity,
+              province: nextProvince,
+              postalCode: nextPostalCode,
+            });
+
+            let latitude = null;
+            let longitude = null;
+
+            if (fullAddress) {
+              const geocoded = await geocodeAddress(fullAddress);
+              if (geocoded) {
+                latitude = geocoded.latitude;
+                longitude = geocoded.longitude;
+              }
+            }
+
             await db.query(
               `UPDATE locations
-               SET streetaddress = COALESCE($1, streetaddress),
-                   city = COALESCE($2, city),
-                   province = COALESCE($3, province),
-                   postalcode = COALESCE($4, postalcode)
-               WHERE location_id = $5;`,
+               SET streetaddress = $1,
+                   city = $2,
+                   province = $3,
+                   postalcode = $4,
+                   latitude = $5,
+                   longitude = $6,
+                   geocoded_at = NOW()
+               WHERE location_id = $7;`,
               [
-                worker.street_address,
-                worker.city,
-                worker.province,
-                worker.postal_code,
-                locationId
+                nextStreetAddress,
+                nextCity,
+                nextProvince,
+                nextPostalCode,
+                latitude,
+                longitude,
+                locationId,
               ]
             );
           }
@@ -222,24 +355,29 @@ const updateWorkerProfileById = async (workerId, worker) => {
 };
 
 const getProfile = (userId) => {
-  const query = `SELECT users.id,
-  users.email,
-  users.active,
-  users.signUpDate,
-  users.user_phone_number AS phone_number,
-  workers.first_name AS firstname,
-  workers.last_name AS lastname,
-  workers.biography,
-  workers.desired_work_radius,
-  workers.desired_pay,
-  locations.streetaddress AS street_address,
-  locations.city,
-  locations.province,
-  locations.postalcode AS postal_code
-FROM users
-JOIN workers ON users.id = workers.user_id
-JOIN locations ON users.user_address = locations.location_id
-WHERE users.id = $1;`;
+  const query = `
+    SELECT
+      users.id,
+      users.email,
+      users.active,
+      users.signUpDate,
+      users.user_phone_number AS phone_number,
+      workers.first_name AS firstname,
+      workers.last_name AS lastname,
+      workers.biography,
+      workers.desired_work_radius,
+      workers.desired_pay,
+      locations.streetaddress AS street_address,
+      locations.city,
+      locations.province,
+      locations.postalcode AS postal_code,
+      locations.latitude,
+      locations.longitude
+    FROM users
+    JOIN workers ON users.id = workers.user_id
+    JOIN locations ON users.user_address = locations.location_id
+    WHERE users.id = $1;
+  `;
 
   return db
     .query(query, [userId])
@@ -264,7 +402,8 @@ const listWorkerProfiles = async (userId) => {
 
 const getProfileByWorkerId = (workerId) => {
   const query = `
-    SELECT users.id,
+    SELECT
+      users.id,
       users.email,
       users.active,
       users.signUpDate,
@@ -279,18 +418,19 @@ const getProfileByWorkerId = (workerId) => {
       locations.streetaddress AS street_address,
       locations.city,
       locations.province,
-      locations.postalcode AS postal_code
+      locations.postalcode AS postal_code,
+      locations.latitude,
+      locations.longitude
     FROM users
     JOIN workers ON users.id = workers.user_id
     JOIN locations ON users.user_address = locations.location_id
     WHERE workers.id = $1;
   `;
 
-  return db.query(query, [workerId]).then(r => r.rows[0]);
+  return db.query(query, [workerId]).then((r) => r.rows[0]);
 };
 
 const createWorkerProfile = async (userId, profileName) => {
-  // get existing worker to copy name defaults (minimal UX)
   const base = await db.query(
     `SELECT first_name, last_name FROM workers WHERE user_id = $1 ORDER BY id ASC LIMIT 1;`,
     [userId]
@@ -313,13 +453,10 @@ const createWorkerProfile = async (userId, profileName) => {
 
 const deleteWorkerProfile = async (workerId) => {
   try {
-    // First, manually delete associated records from junction tables
-    // (CASCADE isn't set up in the current schema)
     await db.query(`DELETE FROM workers_skills WHERE workers_id = $1;`, [workerId]);
     await db.query(`DELETE FROM workers_traits WHERE workers_id = $1;`, [workerId]);
     await db.query(`DELETE FROM workers_experiences WHERE workers_id = $1;`, [workerId]);
 
-    // Then delete the profile itself
     const result = await db.query(
       `DELETE FROM workers WHERE id = $1 RETURNING *;`,
       [workerId]
@@ -331,7 +468,6 @@ const deleteWorkerProfile = async (workerId) => {
     throw error;
   }
 };
-
 
 module.exports = {
   checkWorkerProfile,
@@ -346,5 +482,5 @@ module.exports = {
   getProfileByWorkerId,
   createWorkerProfile,
   deleteWorkerProfile,
-  updateBusinessProfile
+  updateBusinessProfile,
 };

@@ -13,20 +13,21 @@ const handleApplyRequest = async (req, res) => {
     req.body.worker_profile_id ?? req.body.applicantId ?? req.body.applicant_id;
 
   if (isNaN(jobIdInt) || !worker_profile_id) {
-      return res
-        .status(400)
-        .json({ message: "jobId and worker_profile_id are required" });
-    }
+    return res
+      .status(400)
+      .json({ message: "jobId and worker_profile_id are required" });
+  }
 
   const jobState = await job_queries.fetchJobLockState(jobIdInt);
   if (!jobState) return res.status(404).json({ message: "Job not found" });
 
   if (jobState.locked) {
-    return res.status(409).json({ message: "This job is no longer accepting applications." });
+    return res
+      .status(409)
+      .json({ message: "This job is no longer accepting applications." });
   }
 
   try {
-    // 1) Get employer_id from jobPostings
     const jobRes = await job_queries.getEmployerIdForJob(jobIdInt);
     if (!jobRes) {
       return res.status(404).json({ message: "Job not found" });
@@ -34,14 +35,15 @@ const handleApplyRequest = async (req, res) => {
 
     const employerId = jobRes.employer_id;
 
-    // 2) Insert application
     const application = await job_queries.insertGigApplication({
       job_id: jobIdInt,
       employer_id: employerId,
       worker_profile_id,
     });
 
-    return res.status(201).json({ message: "Applied successfully", application });
+    return res
+      .status(201)
+      .json({ message: "Applied successfully", application });
   } catch (err) {
     if (err && err.code === "23505") {
       return res
@@ -55,7 +57,7 @@ const handleApplyRequest = async (req, res) => {
 };
 
 /* ------------------------------
-   Existing endpoints (RESTORED to /api/* paths)
+   Existing endpoints
    ------------------------------ */
 
 router.get("/posted-jobs/:userId", async (req, res) => {
@@ -139,7 +141,7 @@ router.post("/post-job", async (req, res) => {
     res.status(201).json({
       message: "Job and Location successfully created",
       job: newJob,
-      location: location,
+      location,
     });
   } catch (error) {
     console.error("Failed to create job and location:", error);
@@ -193,7 +195,6 @@ router.patch("/edit-job/:jobId", async (req, res) => {
   }
 });
 
-// update just the status of a job (already no /jobs prefix)
 router.patch("/job-status/:jobId", async (req, res) => {
   const { jobId } = req.params;
   const { status } = req.body;
@@ -234,10 +235,9 @@ router.delete("/delete-job/:jobId", async (req, res) => {
   }
 });
 
-// PATCH /api/jobs/:jobId/lock  (toggle lock/unlock)
 router.patch("/jobs/:jobId/lock", async (req, res) => {
   const jobId = parseInt(req.params.jobId, 10);
-  const { locked } = req.body; // true or false
+  const { locked } = req.body;
 
   if (!Number.isInteger(jobId)) {
     return res.status(400).json({ message: "Invalid jobId" });
@@ -250,34 +250,77 @@ router.patch("/jobs/:jobId/lock", async (req, res) => {
     const updated = await job_queries.setJobLocked(jobId, locked);
     if (!updated) return res.status(404).json({ message: "Job not found" });
 
-    return res.json({ message: locked ? "Job locked" : "Job unlocked", job: updated });
+    return res.json({
+      message: locked ? "Job locked" : "Job unlocked",
+      job: updated,
+    });
   } catch (err) {
     console.error("Error toggling lock:", err);
-    return res.status(500).json({ message: "Error toggling lock", error: err.message });
+    return res
+      .status(500)
+      .json({ message: "Error toggling lock", error: err.message });
   }
 });
 
 router.get("/all-jobs", async (req, res) => {
   try {
-    const { page: pageRaw, perPage: perPageRaw, ...filters } = req.query;
-
-    const page = pageRaw ? parseInt(pageRaw, 10) : 1;
-    const perPage = perPageRaw ? parseInt(perPageRaw, 10) : 10;
+    const page = req.query.page ? parseInt(req.query.page, 10) : 1;
+    const perPage = req.query.perPage ? parseInt(req.query.perPage, 10) : 10;
 
     if (!Number.isInteger(page) || page < 1) {
       return res.status(400).json({ message: "page must be an integer >= 1" });
     }
 
     if (!Number.isInteger(perPage) || ![10, 20].includes(perPage)) {
-      return res.status(400).json({ message: "perPage must be either 10 or 20" });
+      return res
+        .status(400)
+        .json({ message: "perPage must be either 10 or 20" });
     }
 
-    const { jobs, total } = await job_queries.fetchAllJobs({ filters, page, perPage });
+    const filters = {
+      status: req.query.status
+        ? Array.isArray(req.query.status)
+          ? req.query.status
+          : [req.query.status]
+        : undefined,
+      jobType: req.query.jobType,
+      userId: req.query.userId,
+      hourlyRateMin: req.query.hourlyRateMin,
+      hourlyRateMax: req.query.hourlyRateMax,
+      startFrom: req.query.startFrom,
+      startTo: req.query.startTo,
+      endFrom: req.query.endFrom,
+      endTo: req.query.endTo,
+      city: req.query.city,
+      province: req.query.province,
+      postalCode: req.query.postalCode,
+      q: req.query.q,
+      currentUserId: req.query.currentUserId,
+      sortBy: req.query.sortBy,
+      sortOrder: req.query.sortOrder,
+
+      // Distance filter support
+      originLat: req.query.originLat,
+      originLon: req.query.originLon,
+      distanceKm: req.query.distanceKm,
+    };
+
+    const { jobs, total } = await job_queries.fetchAllJobs({
+      filters,
+      page,
+      perPage,
+    });
+
     const totalPages = Math.ceil(total / perPage);
 
     return res.json({
       jobs,
-      pagination: { page, perPage, total, totalPages },
+      pagination: {
+        page,
+        perPage,
+        total,
+        totalPages,
+      },
     });
   } catch (error) {
     console.error("Failed to fetch all jobs:", error);
@@ -288,7 +331,6 @@ router.get("/all-jobs", async (req, res) => {
   }
 });
 
-// Legacy apply endpoint (unchanged behavior)
 router.post("/apply-job/:jobId", handleApplyRequest);
 
 router.get("/applied-jobs/:applicantId", async (req, res) => {
@@ -302,30 +344,42 @@ router.get("/applied-jobs/:applicantId", async (req, res) => {
   }
 });
 
-// PATCH /api/applications/:applicationId/status
 router.patch("/applications/:applicationId/status", async (req, res) => {
   const applicationId = parseInt(req.params.applicationId, 10);
   const { status } = req.body;
 
   const ALLOWED = ["IN_REVIEW", "REJECTED", "ACCEPTED", "WITHDRAWN"];
+
   if (!Number.isInteger(applicationId)) {
     return res.status(400).json({ message: "Invalid applicationId" });
   }
+
   if (!status || !ALLOWED.includes(status)) {
-    return res.status(400).json({ message: `Invalid status. Must be one of: ${ALLOWED.join(", ")}` });
+    return res.status(400).json({
+      message: `Invalid status. Must be one of: ${ALLOWED.join(", ")}`,
+    });
   }
 
   try {
-    // 1) Update the status for this application
-    const updated = await job_queries.updateGigApplicationStatus(applicationId, status);
+    const updated = await job_queries.updateGigApplicationStatus(
+      applicationId,
+      status
+    );
+
     if (!updated) {
       return res.status(404).json({ message: "Application not found" });
     }
 
-    return res.json({ message: "Application status updated", application: updated });
+    return res.json({
+      message: "Application status updated",
+      application: updated,
+    });
   } catch (err) {
     console.error("Error updating application status:", err);
-    return res.status(500).json({ message: "Error updating application status", error: err.message });
+    return res.status(500).json({
+      message: "Error updating application status",
+      error: err.message,
+    });
   }
 });
 
@@ -334,12 +388,15 @@ router.get("/job-applicants/:jobId", async (req, res) => {
   if (isNaN(jobId)) {
     return res.status(400).json({ message: "Invalid jobId" });
   }
+
   try {
     const applicants = await job_queries.fetchApplicantsForJob(jobId);
     res.json({ applicants });
   } catch (error) {
     console.error("Error fetching applicants:", error);
-    res.status(500).json({ message: "Error fetching applicants", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error fetching applicants", error: error.message });
   }
 });
 

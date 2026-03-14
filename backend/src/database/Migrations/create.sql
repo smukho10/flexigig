@@ -21,7 +21,12 @@ CREATE TABLE locations (
     StreetAddress VARCHAR(255),
     city VARCHAR(255) NOT NULL,
     province VARCHAR(255) NOT NULL,
-    postalCode VARCHAR(20) NOT NULL
+    postalCode VARCHAR(20) NOT NULL,
+    latitude DOUBLE PRECISION,
+    longitude DOUBLE PRECISION,
+    geocoded_at TIMESTAMP,
+    geocode_source VARCHAR(50),
+    geocode_status VARCHAR(20)
 );
 
 CREATE TABLE pending_users (
@@ -87,24 +92,24 @@ CREATE TABLE schedule (
 );
 
 CREATE TABLE workers (
-  id SERIAL PRIMARY KEY,
-  user_id INT REFERENCES users(id) ON DELETE CASCADE,
-  profile_name VARCHAR(100) NOT NULL DEFAULT 'Profile 1',
-  first_name VARCHAR(255) NOT NULL,
-  last_name VARCHAR(255) NOT NULL,
-  biography TEXT,
-  desired_work_radius INT,
-  desired_pay DECIMAL(10, 2),
-  schedule_id INTEGER REFERENCES schedule(id) ON DELETE SET NULL
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    profile_name VARCHAR(100) NOT NULL DEFAULT 'Profile 1',
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
+    biography TEXT,
+    desired_work_radius INT,
+    desired_pay DECIMAL(10, 2),
+    schedule_id INTEGER REFERENCES schedule(id) ON DELETE SET NULL
 );
 
 CREATE TABLE businesses (
-  id SERIAL PRIMARY KEY,
-  user_id INT REFERENCES users(id) ON DELETE CASCADE,
-  business_name VARCHAR(100),
-  business_description TEXT,
-  business_email VARCHAR(100),
-  business_website VARCHAR(255)
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    business_name VARCHAR(100),
+    business_description TEXT,
+    business_email VARCHAR(100),
+    business_website VARCHAR(255)
 );
 
 CREATE TABLE jobPostings (
@@ -141,8 +146,8 @@ CREATE TABLE workers_skills (
     workers_skills_id SERIAL PRIMARY KEY,
     workers_id INT,
     skill_id INT,
-    CONSTRAINT fk_workers FOREIGN KEY(workers_id) REFERENCES workers(id),
-    CONSTRAINT fk_skills FOREIGN KEY(skill_id) REFERENCES skills(skill_id)
+    CONSTRAINT fk_workers_skills_worker FOREIGN KEY(workers_id) REFERENCES workers(id),
+    CONSTRAINT fk_workers_skills_skill FOREIGN KEY(skill_id) REFERENCES skills(skill_id)
 );
 
 CREATE TABLE experiences (
@@ -154,8 +159,8 @@ CREATE TABLE workers_experiences (
     workers_experiences_id SERIAL PRIMARY KEY,
     workers_id INT,
     experience_id INT,
-    CONSTRAINT fk_workers FOREIGN KEY(workers_id) REFERENCES workers(id),
-    CONSTRAINT fk_experience FOREIGN KEY(experience_id) REFERENCES experiences(experience_id)
+    CONSTRAINT fk_workers_experiences_worker FOREIGN KEY(workers_id) REFERENCES workers(id),
+    CONSTRAINT fk_workers_experiences_experience FOREIGN KEY(experience_id) REFERENCES experiences(experience_id)
 );
 
 CREATE TABLE traits (
@@ -167,8 +172,8 @@ CREATE TABLE workers_traits (
     workers_traits_id SERIAL PRIMARY KEY,
     workers_id INT,
     trait_id INT,
-    CONSTRAINT fk_workers FOREIGN KEY(workers_id) REFERENCES workers(id),
-    CONSTRAINT fk_traits FOREIGN KEY(trait_id) REFERENCES traits(trait_id)
+    CONSTRAINT fk_workers_traits_worker FOREIGN KEY(workers_id) REFERENCES workers(id),
+    CONSTRAINT fk_workers_traits_trait FOREIGN KEY(trait_id) REFERENCES traits(trait_id)
 );
 
 CREATE TABLE messages (
@@ -182,7 +187,6 @@ CREATE TABLE messages (
     is_system BOOLEAN DEFAULT FALSE
 );
 
--- Reviews table
 CREATE TABLE IF NOT EXISTS reviews (
     id SERIAL PRIMARY KEY,
 

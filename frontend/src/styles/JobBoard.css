@@ -241,7 +241,8 @@
 
 .filter-dropdown input[type="date"],
 .filter-dropdown select,
-.filter-dropdown input[type="text"] {
+.filter-dropdown input[type="text"],
+.filter-dropdown input[type="number"] {
   width: 100%;
   border: 1.5px solid #cce9e9;
   border-radius: 8px;
@@ -251,13 +252,62 @@
   outline: none;
   box-sizing: border-box;
   background: #f7fdfd;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, background-color 0.15s, opacity 0.15s;
 }
 
 .filter-dropdown input[type="date"]:focus,
 .filter-dropdown select:focus,
-.filter-dropdown input[type="text"]:focus {
+.filter-dropdown input[type="text"]:focus,
+.filter-dropdown input[type="number"]:focus {
   border-color: #4abfbf;
+}
+
+.filter-dropdown input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.filter-dropdown input[type="number"]::-webkit-inner-spin-button,
+.filter-dropdown input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+}
+
+/* ── Checkbox Row / Distance Filter ─────────────────────────────────────────── */
+.checkbox-row {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px !important;
+  margin-bottom: 6px !important;
+  cursor: pointer;
+  color: #333;
+}
+
+.checkbox-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #4EBBC2;
+  cursor: pointer;
+}
+
+.checkbox-row span {
+  font-size: 13px;
+  color: #333;
+  line-height: 1.2;
+}
+
+.filter-dropdown input:disabled,
+.filter-dropdown select:disabled,
+.filter-dropdown button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.filter-dropdown input[type="date"]:disabled,
+.filter-dropdown input[type="text"]:disabled,
+.filter-dropdown input[type="number"]:disabled,
+.filter-dropdown select:disabled {
+  background: #f1f5f5;
 }
 
 /* ── Dual Range Slider ───────────────────────────────────────────────────────── */
@@ -407,6 +457,7 @@
   font-size: 12px;
   color: #999;
   margin: 0 0 4px 0;
+  line-height: 1.45;
 }
 
 /* ── Filter Actions ──────────────────────────────────────────────────────────── */

@@ -1,5 +1,18 @@
 // backend/src/database/queries/job_queries.js
 const db = require("../connection.js");
+const { geocodeAddress } = require("../../services/geocodingService");
+
+// Helper: build a full address string
+const buildFullAddress = ({
+  streetAddress,
+  city,
+  province,
+  postalCode,
+}) => {
+  return [streetAddress, city, province, postalCode]
+    .filter(Boolean)
+    .join(", ");
+};
 
 const insertLocation = async ({
   jobStreetAddress,
@@ -7,19 +20,48 @@ const insertLocation = async ({
   jobProvince,
   jobPostalCode,
 }) => {
-  const locationQuery = `
-    INSERT INTO locations (StreetAddress, city, province, postalCode)
-    VALUES ($1, $2, $3, $4)
-    RETURNING *;
-  `;
+  const fullAddress = buildFullAddress({
+    streetAddress: jobStreetAddress,
+    city: jobCity,
+    province: jobProvince,
+    postalCode: jobPostalCode,
+  });
+
+  let latitude = null;
+  let longitude = null;
 
   try {
+    if (fullAddress) {
+      const geocoded = await geocodeAddress(fullAddress);
+      if (geocoded) {
+        latitude = geocoded.latitude;
+        longitude = geocoded.longitude;
+      }
+    }
+
+    const locationQuery = `
+      INSERT INTO locations (
+        StreetAddress,
+        city,
+        province,
+        postalCode,
+        latitude,
+        longitude,
+        geocoded_at
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      RETURNING *;
+    `;
+
     const locationResult = await db.query(locationQuery, [
       jobStreetAddress || null,
       jobCity || null,
       jobProvince || null,
       jobPostalCode || null,
+      latitude,
+      longitude,
     ]);
+
     return locationResult.rows[0];
   } catch (err) {
     console.error("Error inserting location:", err);
@@ -68,7 +110,14 @@ const postJob = async ({
 // status now included in SELECT via jp.*  (it's already covered by the wildcard)
 const fetchPostedJobsByUserId = async (userId) => {
   const query = `
-    SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode
+    SELECT
+      jp.*,
+      loc.StreetAddress,
+      loc.city,
+      loc.province,
+      loc.postalCode,
+      loc.latitude,
+      loc.longitude
     FROM jobPostings jp
     JOIN locations loc ON jp.location_id = loc.location_id
     WHERE jp.user_id = $1;
@@ -84,7 +133,14 @@ const fetchPostedJobsByUserId = async (userId) => {
 
 const fetchUnfilledJobsByUserId = async (userId) => {
   const query = `
-    SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode
+    SELECT
+      jp.*,
+      loc.StreetAddress,
+      loc.city,
+      loc.province,
+      loc.postalCode,
+      loc.latitude,
+      loc.longitude
     FROM jobPostings jp
     JOIN locations loc ON jp.location_id = loc.location_id
     WHERE jp.user_id = $1 AND jp.jobfilled = false;
@@ -100,7 +156,14 @@ const fetchUnfilledJobsByUserId = async (userId) => {
 
 const fetchFilledJobsByUserId = async (userId) => {
   const query = `
-    SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode
+    SELECT
+      jp.*,
+      loc.StreetAddress,
+      loc.city,
+      loc.province,
+      loc.postalCode,
+      loc.latitude,
+      loc.longitude
     FROM jobPostings jp
     JOIN locations loc ON jp.location_id = loc.location_id
     WHERE jp.user_id = $1 AND jp.jobfilled = true;
@@ -116,7 +179,14 @@ const fetchFilledJobsByUserId = async (userId) => {
 
 const fetchJobByJobId = async (jobId) => {
   const query = `
-    SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode
+    SELECT
+      jp.*,
+      loc.StreetAddress,
+      loc.city,
+      loc.province,
+      loc.postalCode,
+      loc.latitude,
+      loc.longitude
     FROM jobPostings jp
     JOIN locations loc ON jp.location_id = loc.location_id
     WHERE jp.job_id = $1;
@@ -146,26 +216,65 @@ const updateJob = async (
   }
 ) => {
   try {
+    let latitude = null;
+    let longitude = null;
+
+    if (locationData) {
+      const fullAddress = buildFullAddress({
+        streetAddress: locationData?.streetAddress,
+        city: locationData?.city,
+        province: locationData?.province,
+        postalCode: locationData?.postalCode,
+      });
+
+      if (fullAddress) {
+        const geocoded = await geocodeAddress(fullAddress);
+        if (geocoded) {
+          latitude = geocoded.latitude;
+          longitude = geocoded.longitude;
+        }
+      }
+    }
+
     const locationUpdateQuery = `
       UPDATE locations
-      SET StreetAddress = $1, city = $2, province = $3, postalCode = $4
+      SET
+        StreetAddress = $1,
+        city = $2,
+        province = $3,
+        postalCode = $4,
+        latitude = $5,
+        longitude = $6,
+        geocoded_at = NOW()
       FROM jobPostings
-      WHERE locations.location_id = jobPostings.location_id AND jobPostings.job_id = $5;
+      WHERE locations.location_id = jobPostings.location_id
+        AND jobPostings.job_id = $7;
     `;
+
     await db.query(locationUpdateQuery, [
       locationData?.streetAddress || null,
       locationData?.city || null,
       locationData?.province || null,
       locationData?.postalCode || null,
+      latitude,
+      longitude,
       jobId,
     ]);
 
     const jobUpdateQuery = `
       UPDATE jobPostings
-      SET jobTitle = $1, jobType = $2, jobDescription = $3, hourlyRate = $4::numeric, jobStart = $5::timestamp, jobEnd = $6::timestamp, status = $7
+      SET
+        jobTitle = $1,
+        jobType = $2,
+        jobDescription = $3,
+        hourlyRate = $4::numeric,
+        jobStart = $5::timestamp,
+        jobEnd = $6::timestamp,
+        status = $7
       WHERE job_id = $8 AND user_id = $9
       RETURNING *;
     `;
+
     const result = await db.query(jobUpdateQuery, [
       jobTitle,
       jobType,
@@ -231,22 +340,57 @@ const fetchAllJobs = async (input = {}) => {
   const offsetNum = (pageNum - 1) * limitNum;
 
   const SORT_COLUMNS = {
-    jobPostedDate: "jp.jobposteddate", // main behavior
+    jobPostedDate: "jp.jobposteddate",
     jobStart: "jp.jobStart",
     hourlyRate: "jp.hourlyRate",
     jobId: "jp.job_id",
+    distance: "distance_km",
   };
 
-  // Default to newest posted first (same as main)
+  const rawOriginLat = parseFloat(filters.originLat);
+  const rawOriginLon = parseFloat(filters.originLon);
+  const rawDistanceKm = parseFloat(filters.distanceKm);
+
+  const useDistanceFilter =
+    Number.isFinite(rawOriginLat) &&
+    Number.isFinite(rawOriginLon) &&
+    Number.isFinite(rawDistanceKm) &&
+    rawDistanceKm > 0;
+
+  // Haversine formula in KM
+  const distanceSql = useDistanceFilter
+    ? `
+      (
+        6371 * acos(
+          LEAST(
+            1,
+            GREATEST(
+              -1,
+              cos(radians(${rawOriginLat})) *
+              cos(radians(loc.latitude)) *
+              cos(radians(loc.longitude) - radians(${rawOriginLon})) +
+              sin(radians(${rawOriginLat})) *
+              sin(radians(loc.latitude))
+            )
+          )
+        )
+      )
+    `
+    : `NULL`;
+
   const sortBy =
     SORT_COLUMNS[filters.sortBy] ? filters.sortBy : "jobPostedDate";
+
   const sortOrder =
     String(filters.sortOrder || "desc").toLowerCase() === "asc"
       ? "ASC"
       : "DESC";
-  const orderClause = `ORDER BY ${SORT_COLUMNS[sortBy]} ${sortOrder}, jp.job_id DESC`;
 
-  // Base query
+  const orderClause =
+    sortBy === "distance" && useDistanceFilter
+      ? `ORDER BY distance_km ${sortOrder}, jp.job_id DESC`
+      : `ORDER BY ${SORT_COLUMNS[sortBy]} ${sortOrder}, jp.job_id DESC`;
+
   let baseQuery = `
     FROM jobPostings jp
     JOIN locations loc ON jp.location_id = loc.location_id
@@ -295,6 +439,7 @@ const fetchAllJobs = async (input = {}) => {
     baseQuery += ` AND jp.hourlyRate >= $${params.length + 1}::numeric`;
     params.push(filters.hourlyRateMin);
   }
+
   if (filters.hourlyRateMax != null) {
     baseQuery += ` AND jp.hourlyRate <= $${params.length + 1}::numeric`;
     params.push(filters.hourlyRateMax);
@@ -304,6 +449,7 @@ const fetchAllJobs = async (input = {}) => {
     baseQuery += ` AND jp.jobStart >= $${params.length + 1}::timestamp`;
     params.push(filters.startFrom);
   }
+
   if (filters.startTo) {
     baseQuery += ` AND jp.jobStart <= $${params.length + 1}::timestamp`;
     params.push(filters.startTo);
@@ -313,6 +459,7 @@ const fetchAllJobs = async (input = {}) => {
     baseQuery += ` AND jp.jobEnd >= $${params.length + 1}::timestamp`;
     params.push(filters.endFrom);
   }
+
   if (filters.endTo) {
     baseQuery += ` AND jp.jobEnd <= $${params.length + 1}::timestamp`;
     params.push(filters.endTo);
@@ -322,10 +469,12 @@ const fetchAllJobs = async (input = {}) => {
     baseQuery += ` AND loc.city ILIKE $${params.length + 1}`;
     params.push(`%${filters.city}%`);
   }
+
   if (filters.province) {
     baseQuery += ` AND loc.province ILIKE $${params.length + 1}`;
     params.push(`%${filters.province}%`);
   }
+
   if (filters.postalCode) {
     baseQuery += ` AND loc.postalCode ILIKE $${params.length + 1}`;
     params.push(`%${filters.postalCode}%`);
@@ -349,6 +498,15 @@ const fetchAllJobs = async (input = {}) => {
     params.push(filters.currentUserId);
   }
 
+  if (useDistanceFilter) {
+    baseQuery += `
+      AND loc.latitude IS NOT NULL
+      AND loc.longitude IS NOT NULL
+      AND ${distanceSql} <= $${params.length + 1}
+    `;
+    params.push(rawDistanceKm);
+  }
+
   const countQuery = `
     SELECT COUNT(*)::int AS total
     ${baseQuery};
@@ -361,7 +519,14 @@ const fetchAllJobs = async (input = {}) => {
       loc.city,
       loc.province,
       loc.postalCode,
-      COALESCE(bs.business_name, 'Unknown Business') AS business_name
+      loc.latitude,
+      loc.longitude,
+      COALESCE(bs.business_name, 'Unknown Business') AS business_name,
+      ${
+        useDistanceFilter
+          ? `ROUND((${distanceSql})::numeric, 2) AS distance_km`
+          : `NULL::numeric AS distance_km`
+      }
     ${baseQuery}
     ${orderClause}
     LIMIT $${params.length + 1}
@@ -415,16 +580,24 @@ const setJobLocked = async (jobId, locked) => {
   return result.rows[0] || null;
 };
 
-
 const fetchAppliedJobs = async (userId) => {
   try {
     const result = await db.query(
       `
-      SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode,
-             ga.application_id, ga.status AS application_status, ga.applied_at,
-             ga.worker_profile_id,
-             w.profile_name,
-             COALESCE(bs.business_name, 'Unknown Business') AS business_name
+      SELECT
+        jp.*,
+        loc.StreetAddress,
+        loc.city,
+        loc.province,
+        loc.postalCode,
+        loc.latitude,
+        loc.longitude,
+        ga.application_id,
+        ga.status AS application_status,
+        ga.applied_at,
+        ga.worker_profile_id,
+        w.profile_name,
+        COALESCE(bs.business_name, 'Unknown Business') AS business_name
       FROM gig_applications ga
       JOIN workers w ON ga.worker_profile_id = w.id AND w.user_id = $1
       JOIN jobPostings jp ON ga.job_id = jp.job_id
@@ -470,7 +643,11 @@ const getEmployerIdForJob = async (jobId) => {
 };
 
 // NEW: insert into gig_applications when worker applies
-const insertGigApplication = async ({ job_id, employer_id, worker_profile_id }) => {
+const insertGigApplication = async ({
+  job_id,
+  employer_id,
+  worker_profile_id,
+}) => {
   const result = await db.query(
     `
     INSERT INTO gig_applications (job_id, employer_id, worker_profile_id, status)
@@ -513,7 +690,7 @@ const rejectOtherApplicationsForJob = async (jobId, acceptedApplicationId) => {
   );
 };
 
-// Mark job as filled (so it disappears from Find Gigs if you filter on jobfilled/status)
+// Mark job as filled
 const markJobAsFilled = async (jobId) => {
   await db.query(
     `
@@ -526,15 +703,10 @@ const markJobAsFilled = async (jobId) => {
   );
 };
 
-
-
 const fetchRecommendedJobs = async (userId) => {
   try {
-    // This query finds jobs that match keywords in any of the worker's profiles
-    // and returns which profiles matched each job.
     const query = `
       WITH worker_data AS (
-        -- collect profiles for the user (profile name, bio, desired pay)
         SELECT
           w.id AS profile_id,
           w.profile_name,
@@ -545,19 +717,15 @@ const fetchRecommendedJobs = async (userId) => {
         WHERE w.user_id = $1
       ),
       scored_matches AS (
-        -- score each job against each profile
         SELECT
           jp.job_id,
           wd.profile_name,
           wd.profile_id,
           (
-            -- strong signals
             (CASE WHEN jp.jobtitle ILIKE '%' || wd.profile_name || '%' THEN 20 ELSE 0 END) +
             (CASE WHEN jp.jobdescription ILIKE '%' || wd.profile_name || '%' THEN 10 ELSE 0 END) +
-            -- pay preference (small boost)
             (CASE WHEN wd.desired_pay IS NOT NULL AND jp.hourlyRate >= wd.desired_pay THEN 2
                   WHEN wd.desired_pay IS NOT NULL AND jp.hourlyRate >= (wd.desired_pay * 0.8) THEN 1 ELSE 0 END) +
-            -- biography keyword matches (lower weight). Require strong bio match (title AND description) to count as enabling match
             (CASE WHEN wd.bio_regex IS NOT NULL AND jp.jobtitle ~* ('\\\m(' || wd.bio_regex || ')') AND jp.jobdescription ~* ('\\\m(' || wd.bio_regex || ')') THEN 6
                   WHEN wd.bio_regex IS NOT NULL AND (jp.jobtitle ~* ('\\\m(' || wd.bio_regex || ')') OR jp.jobdescription ~* ('\\\m(' || wd.bio_regex || ')')) THEN 2 ELSE 0 END)
           ) AS match_score
@@ -566,7 +734,6 @@ const fetchRecommendedJobs = async (userId) => {
         WHERE jp.jobfilled = false
           AND jp.status ILIKE 'open'
           AND jp.locked = false
-          -- don't recommend jobs the user has already applied to
           AND NOT EXISTS (
             SELECT 1 FROM gig_applications ga
             JOIN workers w ON ga.worker_profile_id = w.id
@@ -574,7 +741,6 @@ const fetchRecommendedJobs = async (userId) => {
               AND w.user_id = $1
               AND ga.status IN ('APPLIED', 'IN_REVIEW', 'ACCEPTED')
           )
-          -- require profile relevance: either profile name appears OR a strong bio match (keywords in both title and description)
           AND (
             jp.jobtitle ILIKE '%' || wd.profile_name || '%'
             OR jp.jobdescription ILIKE '%' || wd.profile_name || '%'
@@ -584,10 +750,14 @@ const fetchRecommendedJobs = async (userId) => {
       filtered_matches AS (
         SELECT * FROM scored_matches WHERE match_score > 0
       )
-      -- Aggregate matches per job so we return unique job postings with the profiles that matched
       SELECT
         jp.*,
-        loc.StreetAddress, loc.city, loc.province, loc.postalCode,
+        loc.StreetAddress,
+        loc.city,
+        loc.province,
+        loc.postalCode,
+        loc.latitude,
+        loc.longitude,
         COALESCE(bs.business_name, 'Unknown Business') AS business_name,
         string_agg(DISTINCT m.profile_name, ', ') AS recommended_for_profiles,
         MAX(m.match_score) as max_score
@@ -601,7 +771,9 @@ const fetchRecommendedJobs = async (userId) => {
     `;
 
     const result = await db.query(query, [userId]);
-    console.log(`Recommendation query found ${result.rows.length} matches for user ${userId}`);
+    console.log(
+      `Recommendation query found ${result.rows.length} matches for user ${userId}`
+    );
     return result.rows;
   } catch (err) {
     console.error("Error fetching recommended jobs:", err);
@@ -657,5 +829,4 @@ module.exports = {
   markJobAsFilled,
   fetchJobLockState,
   setJobLocked,
-
 };
