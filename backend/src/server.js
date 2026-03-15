@@ -93,6 +93,7 @@ const jobRouter = require('./database/routes/job_routes.js');
 const workersRouter = require('./database/routes/workers_routes.js');
 const calendar = require('./database/routes/calendar-routes.js');
 const businessRoutes = require('./database/routes/business_routes.js');
+const templateRouter = require('./database/routes/template_routes.js');
 
 const fs = require('fs');
 app.use(express.static('public'));
@@ -136,6 +137,7 @@ app.use('/api', jobRouter);
 app.use('/api', calendar);
 app.use('/api', workersRouter);
 app.use('/api', businessRoutes);
+app.use('/api', templateRouter);
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}!!!`);

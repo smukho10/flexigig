@@ -3,6 +3,7 @@ import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { useUser } from "./UserContext";
 import { JOB_STATUS } from "./JobPosting";
+import SaveTemplateModal from "./SaveTemplateModal";
 
 // Fields required to publish a job
 const REQUIRED_FIELDS = [
@@ -25,6 +26,8 @@ const JobPostingForm = ({ job, setDone, onBackClick }) => {
     const [errorMessage, setErrorMessage] = useState("");
     const [submitting, setSubmitting] = useState(null);
     const [isDirty, setIsDirty] = useState(false);
+    const [showTemplateModal, setShowTemplateModal] = useState(false);
+    const [templateSavedMsg, setTemplateSavedMsg] = useState("");
 
     // prompt state: null | "nav-with-title" | "nav-no-title"
     const [promptType, setPromptType] = useState(null);
@@ -254,6 +257,11 @@ const JobPostingForm = ({ job, setDone, onBackClick }) => {
                                 value={jobPost.jobType} onChange={handleChange} />
                         </div>
                         <div className="top-right">
+                            <button type="button" className="template-btn"
+                                onClick={() => setShowTemplateModal(true)}
+                                disabled={submitting !== null}>
+                                Save as Template
+                            </button>
                             {isDraftMode && (
                                 <button type="button" className="draft-btn"
                                     onClick={handleSaveAsDraft} disabled={submitting !== null}>
@@ -328,6 +336,7 @@ const JobPostingForm = ({ job, setDone, onBackClick }) => {
                     </div>
                 </div>
                 {errorMessage && <p className="error-message">{errorMessage}</p>}
+                {templateSavedMsg && <p className="template-saved-msg">{templateSavedMsg}</p>}
             </div>
 
             {/* ── Prompt: has title — Stay / Discard / Save as Draft ── */}
@@ -349,6 +358,18 @@ const JobPostingForm = ({ job, setDone, onBackClick }) => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* ── Save as Template modal ── */}
+            {showTemplateModal && (
+                <SaveTemplateModal
+                    jobPost={jobPost}
+                    onClose={() => setShowTemplateModal(false)}
+                    onSaved={() => {
+                        setTemplateSavedMsg("Template saved successfully!");
+                        setTimeout(() => setTemplateSavedMsg(""), 3000);
+                    }}
+                />
             )}
 
             {/* ── Prompt: no title — Stay / Discard only ── */}
