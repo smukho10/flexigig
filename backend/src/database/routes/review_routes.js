@@ -44,12 +44,12 @@ router.post("/reviews", async (req, res) => {
       return res.status(400).json({ message: "Reviewer or reviewee does not exist." });
     }
 
-    const created = await reviewQueries.createReview({
-      reviewer_id,
-      reviewee_id,
-      rating,
-      review_text: review_text ?? null,
-    });
+ const created = await reviewQueries.createReview({
+   reviewer_id,
+   reviewee_id,
+   rating,
+   review_text: review_text ?? null,
+ });
 
     return res.status(201).json(created);
   } catch (err) {
@@ -123,12 +123,13 @@ router.post("/reviews/employer-to-worker", async (req, res) => {
       });
     }
 
-    const created = await reviewQueries.createReview({
-      reviewer_id,
-      reviewee_id,
-      rating,
-      review_text: review_text ?? null,
-    });
+const created = await reviewQueries.createReview({
+  reviewer_id,
+  reviewee_id,
+  rating,
+  review_text: review_text ?? null,
+  job_id,
+});
 
     return res.status(201).json(created);
   } catch (err) {
@@ -169,6 +170,77 @@ router.get("/reviews/:userId/summary", async (req, res) => {
     return res.json(summary);
   } catch (err) {
     console.error("Error fetching review summary:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// POST /api/reviews/worker-to-employer
+// body: { reviewer_id, reviewee_id, job_id, rating?, review_text? }
+router.post("/reviews/worker-to-employer", async (req, res) => {
+  try {
+    const reviewer_id = req.body.reviewer_id ? parseInt(req.body.reviewer_id, 10) : null;
+    const reviewee_id = req.body.reviewee_id ? parseInt(req.body.reviewee_id, 10) : null;
+    const job_id      = req.body.job_id      ? parseInt(req.body.job_id,      10) : null;
+    const ratingRaw   = req.body.rating;
+    const review_text = req.body.review_text ? String(req.body.review_text).trim() : null;
+
+    if (!reviewer_id || !reviewee_id || !job_id) {
+      return res.status(400).json({ message: "reviewer_id, reviewee_id, and job_id are required." });
+    }
+    if (reviewer_id === reviewee_id) {
+      return res.status(400).json({ message: "You cannot review yourself." });
+    }
+
+    let rating = null;
+    if (ratingRaw !== undefined && ratingRaw !== null && ratingRaw !== "") {
+      const parsed = parseInt(ratingRaw, 10);
+      if (Number.isNaN(parsed) || parsed < 1 || parsed > 5) {
+        return res.status(400).json({ message: "Rating must be between 1 and 5." });
+      }
+      rating = parsed;
+    }
+
+    if (rating === null && (!review_text || review_text.length === 0)) {
+      return res.status(400).json({ message: "Provide rating or review_text (or both)." });
+    }
+
+    // Validate: reviewer is the worker with ACCEPTED application on this job,
+    // and reviewee is the employer who owns the job
+    const validation = await db.query(
+      `
+      SELECT ga.application_id
+      FROM gig_applications ga
+      JOIN workers w     ON ga.worker_profile_id = w.id
+      JOIN jobPostings jp ON jp.job_id = ga.job_id
+      WHERE ga.job_id   = $1
+        AND w.user_id   = $2
+        AND jp.user_id  = $3
+        AND ga.status   = 'ACCEPTED'
+      LIMIT 1
+      `,
+      [job_id, reviewer_id, reviewee_id]
+    );
+
+    if (validation.rows.length === 0) {
+      return res.status(403).json({
+        message: "Worker can only review an employer for a job they were accepted on.",
+      });
+    }
+
+    const created = await reviewQueries.createReview({
+      reviewer_id,
+      reviewee_id,
+      rating,
+      review_text: review_text ?? null,
+      job_id,
+    });
+
+    return res.status(201).json(created);
+  } catch (err) {
+    console.error("Error creating worker-to-employer review:", err);
+    if (err && err.code === "23505") {
+      return res.status(400).json({ message: "You have already reviewed this employer for this job." });
+    }
     return res.status(500).json({ message: "Internal server error" });
   }
 });

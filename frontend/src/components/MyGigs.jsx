@@ -126,16 +126,17 @@ const MyGigs = () => {
         return;
       }
 
-      await axios.post(
-        `/api/reviews`,
-        {
-          reviewer_id,
-          reviewee_id,
-          rating: ratingToSend,
-          review_text: textToSend,
-        },
-        { withCredentials: true }
-      );
+await axios.post(
+  `/api/reviews/worker-to-employer`,
+  {
+    reviewer_id,
+    reviewee_id,
+    job_id: currentReviewGig?.job_id,
+    rating: ratingToSend,
+    review_text: textToSend,
+  },
+  { withCredentials: true }
+);
 
       // Show success message
       setShowSuccessMessage(true);
