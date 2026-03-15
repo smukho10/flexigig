@@ -26,19 +26,19 @@
 }
 
 .job-board-container ul li {
-  padding: 31px 28px 35px;
+  padding: 31px 28px 28px;
   border-radius: 19px;
   box-shadow: 0 4px 4px rgb(0, 0, 0, 0.25);
   margin-bottom: 17px;
   display: flex;
   width: 1114px;
-  height: 203px;
+  min-height: 203px;
   box-sizing: border-box;
   justify-content: space-between;
 }
 
 .job-board-container ul li .left div {
-  margin: 0 0 25px 0;
+  margin: 0 0 16px 0;
   display: flex;
   justify-content: left;
   align-items: center;
@@ -48,6 +48,25 @@
 
 .job-board-container ul li .left div img {
   margin: 0 10px 0 0;
+}
+
+.job-board-container ul li .left .distance-row {
+  margin: 0;
+  display: flex;
+  justify-content: left;
+  align-items: center;
+  font-size: 16px;
+  font-weight: 400;
+  color: #333;
+}
+
+.job-board-container ul li .left .distance-dot {
+  width: 10px;
+  height: 10px;
+  min-width: 10px;
+  border-radius: 50%;
+  background-color: #4EBBC2;
+  margin-right: 12px;
 }
 
 .job-board-container ul li .right {
