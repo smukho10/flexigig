@@ -11,11 +11,9 @@ import ApplyModal from "./ApplyModal";
 import axios from "axios";
 import { useUser } from "./UserContext";
 
-// ── Constants ─────────────────────────────────────────────────────────────────
 const JOB_TYPES = ["Full-time", "Part-time", "Contract", "Temporary", "Internship", "Casual"];
 const MAX_RATE = 100;
 
-// ── Dual Range Slider (uncontrolled refs — no re-render on drag) ──────────────
 const DualRangeSlider = ({ min, max, absMax, onChange }) => {
   const minRef = useRef(null);
   const maxRef = useRef(null);
@@ -61,18 +59,28 @@ const DualRangeSlider = ({ min, max, absMax, onChange }) => {
         <div className="dual-range-fill" ref={fillRef} />
       </div>
       <input
-        type="range" min={0} max={absMax} defaultValue={min} ref={minRef}
-        onInput={handleMinInput} onMouseUp={commit} onTouchEnd={commit}
+        type="range"
+        min={0}
+        max={absMax}
+        defaultValue={min}
+        ref={minRef}
+        onInput={handleMinInput}
+        onMouseUp={commit}
+        onTouchEnd={commit}
       />
       <input
-        type="range" min={0} max={absMax} defaultValue={max} ref={maxRef}
-        onInput={handleMaxInput} onMouseUp={commit} onTouchEnd={commit}
+        type="range"
+        min={0}
+        max={absMax}
+        defaultValue={max}
+        ref={maxRef}
+        onInput={handleMaxInput}
+        onMouseUp={commit}
+        onTouchEnd={commit}
       />
     </div>
   );
 };
-
-// ── Filter Dropdowns ────────────────────────────────────────────────────────────
 
 const LocationDropdown = ({
   values,
@@ -81,43 +89,54 @@ const LocationDropdown = ({
   onApply,
   workerCoords,
   workerRadius,
-  canUseDistance,
+  isWorker,
+  hasWorkerCoords,
 }) => (
   <div className="filter-dropdown">
     <h4>Location</h4>
 
     <div className="location-inputs">
-      <label className="checkbox-row" style={{ marginBottom: "10px" }}>
-        <input
-          type="checkbox"
-          checked={!!values.useDistanceFilter}
-          onChange={(e) => onUpdate("useDistanceFilter", e.target.checked)}
-          disabled={!canUseDistance}
-        />
-        <span style={{ marginLeft: "8px" }}>Use my saved address</span>
-      </label>
+      {isWorker && (
+        <>
+          <label className="checkbox-row" style={{ marginBottom: "10px" }}>
+            <input
+              type="checkbox"
+              checked={!!values.useDistanceFilter}
+              onChange={(e) => onUpdate("useDistanceFilter", e.target.checked)}
+            />
+            <span style={{ marginLeft: "8px" }}>Use my saved address</span>
+          </label>
 
-      {!canUseDistance ? (
-        <p className="location-note">
-          Add your address in your profile to use distance filtering.
-        </p>
-      ) : (
-        <p className="location-note">
-          Using your saved profile address
-          {workerCoords?.lat != null && workerCoords?.lon != null ? "" : " (coordinates unavailable)"}.
-          {workerRadius ? ` Default radius: ${workerRadius} km.` : ""}
-        </p>
+          {!hasWorkerCoords ? (
+            <p className="location-note">
+              Your saved address does not have coordinates yet. Update and save your
+              profile address, then refresh this page to use distance filtering.
+            </p>
+          ) : (
+            <p className="location-note">
+              Using your saved profile address
+              {workerCoords?.lat != null && workerCoords?.lon != null ? "" : " (coordinates unavailable)"}.
+              {workerRadius ? ` Default radius: ${workerRadius} km.` : ""}
+            </p>
+          )}
+
+          <label>Max Distance (km)</label>
+          <input
+            type="number"
+            min="1"
+            placeholder={workerRadius ? `e.g. ${workerRadius}` : "e.g. 25"}
+            value={values.distanceKm}
+            onChange={(e) => onUpdate("distanceKm", e.target.value)}
+            disabled={!values.useDistanceFilter}
+          />
+        </>
       )}
 
-      <label>Max Distance (km)</label>
-      <input
-        type="number"
-        min="1"
-        placeholder={workerRadius ? `e.g. ${workerRadius}` : "e.g. 25"}
-        value={values.distanceKm}
-        onChange={(e) => onUpdate("distanceKm", e.target.value)}
-        disabled={!values.useDistanceFilter || !canUseDistance}
-      />
+      {!isWorker && (
+        <p className="location-note">
+          Distance filtering is available for worker accounts with a saved address.
+        </p>
+      )}
 
       <label>City</label>
       <input
@@ -145,8 +164,12 @@ const LocationDropdown = ({
     </div>
 
     <div className="filter-actions">
-      <button className="filter-clear-btn" onClick={onClear}>Clear</button>
-      <button className="filter-apply-btn" onClick={onApply}>Apply</button>
+      <button className="filter-clear-btn" onClick={onClear}>
+        Clear
+      </button>
+      <button className="filter-apply-btn" onClick={onApply}>
+        Apply
+      </button>
     </div>
   </div>
 );
@@ -166,8 +189,12 @@ const JobTypeDropdown = ({ selected, onUpdate, onClear, onApply }) => (
       ))}
     </div>
     <div className="filter-actions">
-      <button className="filter-clear-btn" onClick={onClear}>Clear</button>
-      <button className="filter-apply-btn" onClick={onApply}>Apply</button>
+      <button className="filter-clear-btn" onClick={onClear}>
+        Clear
+      </button>
+      <button className="filter-apply-btn" onClick={onApply}>
+        Apply
+      </button>
     </div>
   </div>
 );
@@ -189,8 +216,12 @@ const DateDropdown = ({ values, onUpdate, onClear, onApply }) => (
       onChange={(e) => onUpdate("startTo", e.target.value)}
     />
     <div className="filter-actions">
-      <button className="filter-clear-btn" onClick={onClear}>Clear</button>
-      <button className="filter-apply-btn" onClick={onApply}>Apply</button>
+      <button className="filter-clear-btn" onClick={onClear}>
+        Clear
+      </button>
+      <button className="filter-apply-btn" onClick={onApply}>
+        Apply
+      </button>
     </div>
   </div>
 );
@@ -206,31 +237,47 @@ const PayDropdown = ({ initialMin, initialMax, absMax, onClear, onApply }) => {
         min={localMin}
         max={localMax}
         absMax={absMax}
-        onChange={(newMin, newMax) => { setLocalMin(newMin); setLocalMax(newMax); }}
+        onChange={(newMin, newMax) => {
+          setLocalMin(newMin);
+          setLocalMax(newMax);
+        }}
       />
       <div className="pay-number-row">
         <input
-          type="number" min={0} max={absMax}
-          value={localMin} placeholder="Min"
-          onChange={(e) => setLocalMin(Math.max(0, Math.min(Number(e.target.value), localMax - 1)))}
+          type="number"
+          min={0}
+          max={absMax}
+          value={localMin}
+          placeholder="Min"
+          onChange={(e) =>
+            setLocalMin(Math.max(0, Math.min(Number(e.target.value), localMax - 1)))
+          }
         />
         <span className="pay-number-sep">–</span>
         <input
-          type="number" min={0} max={absMax}
-          value={localMax} placeholder="Max"
-          onChange={(e) => setLocalMax(Math.min(absMax, Math.max(Number(e.target.value), localMin + 1)))}
+          type="number"
+          min={0}
+          max={absMax}
+          value={localMax}
+          placeholder="Max"
+          onChange={(e) =>
+            setLocalMax(Math.min(absMax, Math.max(Number(e.target.value), localMin + 1)))
+          }
         />
         <span className="pay-number-unit">/hr</span>
       </div>
       <div className="filter-actions">
-        <button className="filter-clear-btn" onClick={onClear}>Clear</button>
-        <button className="filter-apply-btn" onClick={() => onApply(localMin, localMax)}>Apply</button>
+        <button className="filter-clear-btn" onClick={onClear}>
+          Clear
+        </button>
+        <button className="filter-apply-btn" onClick={() => onApply(localMin, localMax)}>
+          Apply
+        </button>
       </div>
     </div>
   );
 };
 
-// ── JobBoard ──────────────────────────────────────────────────────────────────
 const JobBoard = () => {
   const { user } = useUser();
   const location = useLocation();
@@ -241,20 +288,16 @@ const JobBoard = () => {
   const [applyJobId, setApplyJobId] = useState(null);
   const [refresh, setRefresh] = useState(false);
 
-  // Worker location state
   const [workerCoords, setWorkerCoords] = useState(null);
   const [workerRadius, setWorkerRadius] = useState("");
 
-  // Pagination
   const [page, setPage] = useState(1);
   const [perPage] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Which dropdown is open
   const [openFilter, setOpenFilter] = useState(null);
   const filterBarRef = useRef(null);
 
-  // ── Filter state ─────────────────────────────────────────────────────────
   const [pendingFilters, setPendingFilters] = useState({
     city: "",
     province: "",
@@ -270,10 +313,8 @@ const JobBoard = () => {
     endTo: "",
   });
 
-  // Applied filters
   const [appliedFilters, setAppliedFilters] = useState({});
 
-  // ── Close dropdown on outside click ──────────────────────────────────────
   useEffect(() => {
     const handleClick = (e) => {
       if (filterBarRef.current && !filterBarRef.current.contains(e.target)) {
@@ -284,7 +325,6 @@ const JobBoard = () => {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  // ── Fetch worker profile coordinates ─────────────────────────────────────
   useEffect(() => {
     const fetchWorkerLocation = async () => {
       if (!user?.id || user?.isbusiness) {
@@ -298,7 +338,10 @@ const JobBoard = () => {
           withCredentials: true,
         });
 
+        console.log("PROFILE RESPONSE:", res.data);
+
         const profile = res.data?.profileData || res.data;
+        console.log("PARSED PROFILE:", profile);
 
         if (
           profile?.latitude != null &&
@@ -324,8 +367,7 @@ const JobBoard = () => {
 
         setPendingFilters((prev) => ({
           ...prev,
-          distanceKm:
-            prev.distanceKm !== "" ? prev.distanceKm : radius || "",
+          distanceKm: prev.distanceKm !== "" ? prev.distanceKm : radius || "",
         }));
       } catch (error) {
         console.error("Error fetching worker profile coordinates:", error);
@@ -337,7 +379,6 @@ const JobBoard = () => {
     fetchWorkerLocation();
   }, [user]);
 
-  // ── Fetch jobs ────────────────────────────────────────────────────────────
   useEffect(() => {
     const fetchJobs = async () => {
       try {
@@ -347,19 +388,18 @@ const JobBoard = () => {
           params.currentUserId = user.id;
         }
 
-        if (
-          appliedFilters.useDistanceFilter &&
-          workerCoords?.lat != null &&
-          workerCoords?.lon != null
-        ) {
-          const effectiveDistance =
-            appliedFilters.distanceKm || workerRadius || "";
+        const wantsDistanceFilter = !!appliedFilters.useDistanceFilter;
+        const effectiveDistance = appliedFilters.distanceKm || workerRadius || "";
 
-          if (effectiveDistance !== "") {
-            params.originLat = workerCoords.lat;
-            params.originLon = workerCoords.lon;
-            params.distanceKm = effectiveDistance;
-          }
+        if (
+          wantsDistanceFilter &&
+          workerCoords?.lat != null &&
+          workerCoords?.lon != null &&
+          effectiveDistance !== ""
+        ) {
+          params.originLat = workerCoords.lat;
+          params.originLon = workerCoords.lon;
+          params.distanceKm = effectiveDistance;
         }
 
         const res = await axios.get(`/api/all-jobs`, {
@@ -380,10 +420,11 @@ const JobBoard = () => {
     fetchJobs();
   }, [refresh, page, perPage, appliedFilters, workerCoords, workerRadius, user]);
 
-  // ── Open details when navigated here with state ──────────────────────────
   useEffect(() => {
     if (location.state?.openJobId && jobs.length) {
-      const match = jobs.find((j) => j.job_id.toString() === location.state.openJobId.toString());
+      const match = jobs.find(
+        (j) => j.job_id.toString() === location.state.openJobId.toString()
+      );
       if (match) {
         setJobDetails(match);
         navigate(location.pathname, { replace: true });
@@ -391,7 +432,6 @@ const JobBoard = () => {
     }
   }, [location.state, jobs, navigate]);
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
   const formatDateForDisplay = (dateTime) => {
     if (!dateTime) return "";
     return new Date(dateTime).toLocaleString("en-US", {
@@ -470,18 +510,26 @@ const JobBoard = () => {
   };
 
   const hasApplied = (keys) =>
-    keys.some((k) => appliedFilters[k] != null && appliedFilters[k] !== "" && appliedFilters[k] !== false);
+    keys.some(
+      (k) =>
+        appliedFilters[k] != null &&
+        appliedFilters[k] !== "" &&
+        appliedFilters[k] !== false
+    );
 
-  // ── Key groups ────────────────────────────────────────────────────────────
-  const locationKeys = ["city", "province", "postalCode", "useDistanceFilter", "distanceKm"];
+  const locationKeys = [
+    "city",
+    "province",
+    "postalCode",
+    "useDistanceFilter",
+    "distanceKm",
+  ];
   const manualLocationKeys = ["city", "province", "postalCode"];
   const distanceKeys = ["useDistanceFilter", "distanceKm"];
   const jobTypeKeys = ["jobType"];
   const payKeys = ["hourlyRateMin", "hourlyRateMax"];
   const startKeys = ["startFrom", "startTo"];
-  const endKeys = ["endFrom", "endTo"];
 
-  // ── Event handlers ────────────────────────────────────────────────────────
   const handleApply = (e) => {
     const jobId = e.target.value;
     if (!user?.id || user.isbusiness) return;
@@ -498,12 +546,13 @@ const JobBoard = () => {
   };
 
   const handleJobDetails = (e) =>
-    setJobDetails(jobs.find((job) => job.job_id.toString() === e.target.dataset.id));
+    setJobDetails(
+      jobs.find((job) => job.job_id.toString() === e.target.dataset.id)
+    );
 
   const handlePrevPage = () => setPage((p) => Math.max(1, p - 1));
   const handleNextPage = () => setPage((p) => Math.min(totalPages, p + 1));
 
-  // ── Active filter tags ────────────────────────────────────────────────────
   const renderActiveTags = () => {
     const tags = [];
 
@@ -511,7 +560,11 @@ const JobBoard = () => {
     const hasDistance = !!appliedFilters.useDistanceFilter;
 
     if (hasManualLocation) {
-      const parts = [appliedFilters.city, appliedFilters.province, appliedFilters.postalCode]
+      const parts = [
+        appliedFilters.city,
+        appliedFilters.province,
+        appliedFilters.postalCode,
+      ]
         .filter(Boolean)
         .join(", ");
 
@@ -555,7 +608,8 @@ const JobBoard = () => {
     if (hasApplied(startKeys)) {
       tags.push(
         <span key="start" className="active-filter-tag">
-          Date: {appliedFilters.startFrom || "any"} → {appliedFilters.startTo || "any"}
+          Date: {appliedFilters.startFrom || "any"} →{" "}
+          {appliedFilters.startTo || "any"}
           <button onClick={() => clearFilter(startKeys)}>×</button>
         </span>
       );
@@ -564,53 +618,64 @@ const JobBoard = () => {
     return tags.length ? <div className="active-filters-row">{tags}</div> : null;
   };
 
-  // ── Job list ──────────────────────────────────────────────────────────────
-  const listItems = jobs.length === 0 ? null : jobs.map((job) => (
-    <li key={job.job_id}>
-      <div className="left">
-        <h2>{job.jobtitle}</h2>
-        <div>
-          <img src={DollarSign} alt="dollar-sign" width="22px" height="auto" />
-          {job.hourlyrate}/hr
-        </div>
-        <div>
-          <img id="calendar-icon" src={CalendarIcon} alt="calendar-icon" width="22px" height="auto" />
-          {formatDateForDisplay(job.jobstart)}
-        </div>
-        {job.distance_km != null && (
-          <div>
-            {Number(job.distance_km).toFixed(1)} km away
-          </div>
-        )}
-      </div>
-      <div className="right">
-        <img
-          src={ChevronRight}
-          alt="select-job"
-          width="15px"
-          height="auto"
-          onClick={handleJobDetails}
-          data-id={job.job_id}
-        />
-        <button
-          id="apply-btn"
-          value={job.job_id}
-          onClick={handleApply}
-          disabled={!!user?.isbusiness}
-        >
-          Apply
-        </button>
-      </div>
-    </li>
-  ));
+  const listItems =
+    jobs.length === 0
+      ? null
+      : jobs.map((job) => (
+          <li key={job.job_id}>
+            <div className="left">
+              <h2>{job.jobtitle}</h2>
+              <div>
+                <img
+                  src={DollarSign}
+                  alt="dollar-sign"
+                  width="22px"
+                  height="auto"
+                />
+                {job.hourlyrate}/hr
+              </div>
+              <div>
+                <img
+                  id="calendar-icon"
+                  src={CalendarIcon}
+                  alt="calendar-icon"
+                  width="22px"
+                  height="auto"
+                />
+                {formatDateForDisplay(job.jobstart)}
+              </div>
+              {job.distance_km != null && (
+                <div className="distance-row">
+                  <span className="distance-dot" />
+                  {Number(job.distance_km).toFixed(1)} km away
+                </div>
+              )}
+            </div>
+            <div className="right">
+              <img
+                src={ChevronRight}
+                alt="select-job"
+                width="15px"
+                height="auto"
+                onClick={handleJobDetails}
+                data-id={job.job_id}
+              />
+              <button
+                id="apply-btn"
+                value={job.job_id}
+                onClick={handleApply}
+                disabled={!!user?.isbusiness}
+              >
+                Apply
+              </button>
+            </div>
+          </li>
+        ));
 
-  const canUseDistance =
-    !!user?.id &&
-    !user?.isbusiness &&
-    workerCoords?.lat != null &&
-    workerCoords?.lon != null;
+  const isWorker = !!user?.id && !user?.isbusiness;
+  const hasWorkerCoords =
+    workerCoords?.lat != null && workerCoords?.lon != null;
 
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="job-board-container">
       {!jobDetails ? (
@@ -621,28 +686,36 @@ const JobBoard = () => {
             <img src={FiltersIcon} alt="filters" width="24px" height="auto" />
 
             <button
-              className={`filter-btn ${openFilter === "location" ? "active" : ""} ${hasApplied(locationKeys) ? "has-value" : ""}`}
+              className={`filter-btn ${
+                openFilter === "location" ? "active" : ""
+              } ${hasApplied(locationKeys) ? "has-value" : ""}`}
               onClick={() => toggleFilter("location")}
             >
               Location
             </button>
 
             <button
-              className={`filter-btn ${openFilter === "jobType" ? "active" : ""} ${hasApplied(jobTypeKeys) ? "has-value" : ""}`}
+              className={`filter-btn ${
+                openFilter === "jobType" ? "active" : ""
+              } ${hasApplied(jobTypeKeys) ? "has-value" : ""}`}
               onClick={() => toggleFilter("jobType")}
             >
               Job Type{appliedFilters.jobType ? ` · ${appliedFilters.jobType}` : ""}
             </button>
 
             <button
-              className={`filter-btn ${openFilter === "pay" ? "active" : ""} ${hasApplied(payKeys) ? "has-value" : ""}`}
+              className={`filter-btn ${
+                openFilter === "pay" ? "active" : ""
+              } ${hasApplied(payKeys) ? "has-value" : ""}`}
               onClick={() => toggleFilter("pay")}
             >
               Pay Rate
             </button>
 
             <button
-              className={`filter-btn ${openFilter === "date" ? "active" : ""} ${hasApplied([...startKeys, ...endKeys]) ? "has-value" : ""}`}
+              className={`filter-btn ${
+                openFilter === "date" ? "active" : ""
+              } ${hasApplied(startKeys) ? "has-value" : ""}`}
               onClick={() => toggleFilter("date")}
             >
               Date
@@ -660,7 +733,8 @@ const JobBoard = () => {
                 onApply={() => applyFilter(locationKeys)}
                 workerCoords={workerCoords}
                 workerRadius={workerRadius}
-                canUseDistance={canUseDistance}
+                isWorker={isWorker}
+                hasWorkerCoords={hasWorkerCoords}
               />
             )}
 
@@ -682,7 +756,10 @@ const JobBoard = () => {
                 onApply={(min, max) => {
                   updatePending("hourlyRateMin", min);
                   updatePending("hourlyRateMax", max);
-                  applyFilter(payKeys, { hourlyRateMin: min, hourlyRateMax: max });
+                  applyFilter(payKeys, {
+                    hourlyRateMin: min,
+                    hourlyRateMax: max,
+                  });
                 }}
               />
             )}
@@ -703,9 +780,15 @@ const JobBoard = () => {
             <>
               <ul style={{ listStyleType: "none" }}>{listItems}</ul>
               <div className="pagination-row">
-                <button onClick={handlePrevPage} disabled={page <= 1}>Prev</button>
-                <span>Page {page} of {totalPages}</span>
-                <button onClick={handleNextPage} disabled={page >= totalPages}>Next</button>
+                <button onClick={handlePrevPage} disabled={page <= 1}>
+                  Prev
+                </button>
+                <span>
+                  Page {page} of {totalPages}
+                </span>
+                <button onClick={handleNextPage} disabled={page >= totalPages}>
+                  Next
+                </button>
               </div>
             </>
           ) : (
