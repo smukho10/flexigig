@@ -1,0 +1,113 @@
+/* ── Save Template Modal ─────────────────────── */
+
+.template-modal-overlay {
+    background-color: #00000033;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1000;
+}
+
+.template-modal {
+    background-color: white;
+    border-radius: 19px;
+    padding: 32px 36px;
+    max-width: 460px;
+    width: 90%;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+    font-family: "Poppins";
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.template-modal h3 {
+    margin: 0 0 4px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #0340BE;
+}
+
+.template-modal p {
+    margin: 0 0 8px;
+    font-size: 14px;
+    color: #4B5563;
+    line-height: 1.5;
+}
+
+.template-modal label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #374151;
+}
+
+.template-modal input[type="text"] {
+    width: 100%;
+    height: 38px;
+    padding: 0 12px;
+    font-size: 14px;
+    font-family: "Nunito";
+    border: 1px solid #D0D5DD;
+    border-radius: 8px;
+    box-sizing: border-box;
+    outline: none;
+}
+
+.template-modal input[type="text"]:focus {
+    border-color: #4EBBC2;
+    box-shadow: 0 0 0 2px rgba(78, 187, 194, 0.2);
+}
+
+.template-modal-error {
+    margin: 0;
+    font-size: 13px;
+    color: #C2554E;
+}
+
+.template-modal-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
+.template-modal-buttons button {
+    height: 34px;
+    padding: 0 18px;
+    border-radius: 5px;
+    border: none;
+    font-family: "Poppins";
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.template-modal-cancel {
+    background-color: white;
+    color: #6B7280;
+    border: 1.5px solid #D0D5DD !important;
+}
+
+.template-modal-cancel:hover {
+    background-color: #F9FAFB;
+}
+
+.template-modal-save {
+    background-color: #4EBBC2;
+    color: white;
+}
+
+.template-modal-save:hover {
+    background-color: #3aa3aa;
+}
+
+.template-modal-save:disabled,
+.template-modal-cancel:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
