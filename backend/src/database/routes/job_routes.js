@@ -22,9 +22,7 @@ const handleApplyRequest = async (req, res) => {
   if (!jobState) return res.status(404).json({ message: "Job not found" });
 
   if (jobState.locked) {
-    return res
-      .status(409)
-      .json({ message: "This job is no longer accepting applications." });
+    return res.status(409).json({ message: "This job is no longer accepting applications." });
   }
 
   try {
@@ -41,9 +39,7 @@ const handleApplyRequest = async (req, res) => {
       worker_profile_id,
     });
 
-    return res
-      .status(201)
-      .json({ message: "Applied successfully", application });
+    return res.status(201).json({ message: "Applied successfully", application });
   } catch (err) {
     if (err && err.code === "23505") {
       return res
@@ -56,9 +52,6 @@ const handleApplyRequest = async (req, res) => {
   }
 };
 
-/* ------------------------------
-   Existing endpoints
-   ------------------------------ */
 
 router.get("/posted-jobs/:userId", async (req, res) => {
   const { userId } = req.params;
@@ -141,7 +134,7 @@ router.post("/post-job", async (req, res) => {
     res.status(201).json({
       message: "Job and Location successfully created",
       job: newJob,
-      location,
+      location: location,
     });
   } catch (error) {
     console.error("Failed to create job and location:", error);
@@ -250,15 +243,10 @@ router.patch("/jobs/:jobId/lock", async (req, res) => {
     const updated = await job_queries.setJobLocked(jobId, locked);
     if (!updated) return res.status(404).json({ message: "Job not found" });
 
-    return res.json({
-      message: locked ? "Job locked" : "Job unlocked",
-      job: updated,
-    });
+    return res.json({ message: locked ? "Job locked" : "Job unlocked", job: updated });
   } catch (err) {
     console.error("Error toggling lock:", err);
-    return res
-      .status(500)
-      .json({ message: "Error toggling lock", error: err.message });
+    return res.status(500).json({ message: "Error toggling lock", error: err.message });
   }
 });
 
@@ -272,9 +260,7 @@ router.get("/all-jobs", async (req, res) => {
     }
 
     if (!Number.isInteger(perPage) || ![10, 20].includes(perPage)) {
-      return res
-        .status(400)
-        .json({ message: "perPage must be either 10 or 20" });
+      return res.status(400).json({ message: "perPage must be either 10 or 20" });
     }
 
     const filters = {
@@ -315,12 +301,7 @@ router.get("/all-jobs", async (req, res) => {
 
     return res.json({
       jobs,
-      pagination: {
-        page,
-        perPage,
-        total,
-        totalPages,
-      },
+      pagination: { page, perPage, total, totalPages},
     });
   } catch (error) {
     console.error("Failed to fetch all jobs:", error);
@@ -355,31 +336,19 @@ router.patch("/applications/:applicationId/status", async (req, res) => {
   }
 
   if (!status || !ALLOWED.includes(status)) {
-    return res.status(400).json({
-      message: `Invalid status. Must be one of: ${ALLOWED.join(", ")}`,
-    });
+    return res.status(400).json({ message: `Invalid status. Must be one of: ${ALLOWED.join(", ")}`});
   }
 
   try {
-    const updated = await job_queries.updateGigApplicationStatus(
-      applicationId,
-      status
-    );
-
+    const updated = await job_queries.updateGigApplicationStatus(applicationId, status);
     if (!updated) {
       return res.status(404).json({ message: "Application not found" });
     }
 
-    return res.json({
-      message: "Application status updated",
-      application: updated,
-    });
+    return res.json({message: "Application status updated",application: updated});
   } catch (err) {
     console.error("Error updating application status:", err);
-    return res.status(500).json({
-      message: "Error updating application status",
-      error: err.message,
-    });
+    return res.status(500).json({message: "Error updating application status",error: err.message});
   }
 });
 
@@ -394,9 +363,7 @@ router.get("/job-applicants/:jobId", async (req, res) => {
     res.json({ applicants });
   } catch (error) {
     console.error("Error fetching applicants:", error);
-    res
-      .status(500)
-      .json({ message: "Error fetching applicants", error: error.message });
+    res.status(500).json({ message: "Error fetching applicants", error: error.message });
   }
 });
 

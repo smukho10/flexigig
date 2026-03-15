@@ -1,30 +1,16 @@
-// backend/src/database/queries/job_queries.js
 const db = require("../connection.js");
 const { geocodeAddress } = require("../../services/geocodingService");
 
-// Helper: build a full address string
-const buildFullAddress = ({
-  streetAddress,
-  city,
-  province,
-  postalCode,
-}) => {
-  return [streetAddress, city, province, postalCode]
-    .filter(Boolean)
-    .join(", ");
+const buildFullAddress = ({ streetAddress, city, province, postalCode }) => {
+  return [streetAddress, city, province, postalCode].filter(Boolean).join(", ");
 };
 
-const insertLocation = async ({
-  jobStreetAddress,
-  jobCity,
-  jobProvince,
-  jobPostalCode,
-}) => {
+const insertLocation = async ({ jobStreetAddress, jobCity, jobProvince, jobPostalCode }) => {
   const fullAddress = buildFullAddress({
     streetAddress: jobStreetAddress,
     city: jobCity,
     province: jobProvince,
-    postalCode: jobPostalCode,
+    postalCode: jobPostalCode
   });
 
   let latitude = null;
@@ -59,7 +45,7 @@ const insertLocation = async ({
       jobProvince || null,
       jobPostalCode || null,
       latitude,
-      longitude,
+      longitude
     ]);
 
     return locationResult.rows[0];
@@ -69,7 +55,6 @@ const insertLocation = async ({
   }
 };
 
-// status param added — defaults to 'open' if not provided
 const postJob = async ({
   jobTitle,
   jobType,
@@ -79,7 +64,7 @@ const postJob = async ({
   jobEnd,
   location_id,
   user_id,
-  status = "open",
+  status = "open"
 }) => {
   const jobQuery = `
     INSERT INTO jobPostings (
@@ -98,7 +83,7 @@ const postJob = async ({
       jobEnd || null,
       location_id,
       user_id,
-      status,
+      status
     ]);
     return jobResult.rows[0];
   } catch (err) {
@@ -107,17 +92,9 @@ const postJob = async ({
   }
 };
 
-// status now included in SELECT via jp.*  (it's already covered by the wildcard)
 const fetchPostedJobsByUserId = async (userId) => {
   const query = `
-    SELECT
-      jp.*,
-      loc.StreetAddress,
-      loc.city,
-      loc.province,
-      loc.postalCode,
-      loc.latitude,
-      loc.longitude
+    SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode, loc.latitude, loc.longitude
     FROM jobPostings jp
     JOIN locations loc ON jp.location_id = loc.location_id
     WHERE jp.user_id = $1;
@@ -133,14 +110,7 @@ const fetchPostedJobsByUserId = async (userId) => {
 
 const fetchUnfilledJobsByUserId = async (userId) => {
   const query = `
-    SELECT
-      jp.*,
-      loc.StreetAddress,
-      loc.city,
-      loc.province,
-      loc.postalCode,
-      loc.latitude,
-      loc.longitude
+    SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode, loc.latitude, loc.longitude
     FROM jobPostings jp
     JOIN locations loc ON jp.location_id = loc.location_id
     WHERE jp.user_id = $1 AND jp.jobfilled = false;
@@ -156,14 +126,7 @@ const fetchUnfilledJobsByUserId = async (userId) => {
 
 const fetchFilledJobsByUserId = async (userId) => {
   const query = `
-    SELECT
-      jp.*,
-      loc.StreetAddress,
-      loc.city,
-      loc.province,
-      loc.postalCode,
-      loc.latitude,
-      loc.longitude
+    SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode, loc.latitude, loc.longitude
     FROM jobPostings jp
     JOIN locations loc ON jp.location_id = loc.location_id
     WHERE jp.user_id = $1 AND jp.jobfilled = true;
@@ -179,14 +142,7 @@ const fetchFilledJobsByUserId = async (userId) => {
 
 const fetchJobByJobId = async (jobId) => {
   const query = `
-    SELECT
-      jp.*,
-      loc.StreetAddress,
-      loc.city,
-      loc.province,
-      loc.postalCode,
-      loc.latitude,
-      loc.longitude
+    SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode, loc.latitude, loc.longitude
     FROM jobPostings jp
     JOIN locations loc ON jp.location_id = loc.location_id
     WHERE jp.job_id = $1;
@@ -200,20 +156,9 @@ const fetchJobByJobId = async (jobId) => {
   }
 };
 
-// status param added to updateJob
 const updateJob = async (
   jobId,
-  {
-    jobTitle,
-    jobType,
-    jobDescription,
-    hourlyRate,
-    jobStart,
-    jobEnd,
-    locationData,
-    user_id,
-    status,
-  }
+  { jobTitle, jobType, jobDescription, hourlyRate, jobStart, jobEnd, locationData, user_id, status }
 ) => {
   try {
     let latitude = null;
@@ -224,7 +169,7 @@ const updateJob = async (
         streetAddress: locationData?.streetAddress,
         city: locationData?.city,
         province: locationData?.province,
-        postalCode: locationData?.postalCode,
+        postalCode: locationData?.postalCode
       });
 
       if (fullAddress) {
@@ -238,17 +183,9 @@ const updateJob = async (
 
     const locationUpdateQuery = `
       UPDATE locations
-      SET
-        StreetAddress = $1,
-        city = $2,
-        province = $3,
-        postalCode = $4,
-        latitude = $5,
-        longitude = $6,
-        geocoded_at = NOW()
+      SET StreetAddress = $1, city = $2, province = $3, postalCode = $4, latitude = $5, longitude = $6, geocoded_at = NOW()
       FROM jobPostings
-      WHERE locations.location_id = jobPostings.location_id
-        AND jobPostings.job_id = $7;
+      WHERE locations.location_id = jobPostings.location_id AND jobPostings.job_id = $7;
     `;
 
     await db.query(locationUpdateQuery, [
@@ -258,19 +195,12 @@ const updateJob = async (
       locationData?.postalCode || null,
       latitude,
       longitude,
-      jobId,
+      jobId
     ]);
 
     const jobUpdateQuery = `
       UPDATE jobPostings
-      SET
-        jobTitle = $1,
-        jobType = $2,
-        jobDescription = $3,
-        hourlyRate = $4::numeric,
-        jobStart = $5::timestamp,
-        jobEnd = $6::timestamp,
-        status = $7
+      SET jobTitle = $1, jobType = $2, jobDescription = $3, hourlyRate = $4::numeric, jobStart = $5::timestamp, jobEnd = $6::timestamp, status = $7
       WHERE job_id = $8 AND user_id = $9
       RETURNING *;
     `;
@@ -284,7 +214,7 @@ const updateJob = async (
       jobEnd || null,
       status,
       jobId,
-      user_id,
+      user_id
     ]);
 
     return result.rows[0];
@@ -294,7 +224,6 @@ const updateJob = async (
   }
 };
 
-// NEW: just updates the status column for a job
 const updateJobStatus = async (jobId, status) => {
   const query = `
     UPDATE jobPostings
@@ -357,7 +286,6 @@ const fetchAllJobs = async (input = {}) => {
     Number.isFinite(rawDistanceKm) &&
     rawDistanceKm > 0;
 
-  // Haversine formula in KM
   const distanceSql = useDistanceFilter
     ? `
       (
@@ -378,13 +306,8 @@ const fetchAllJobs = async (input = {}) => {
     `
     : `NULL`;
 
-  const sortBy =
-    SORT_COLUMNS[filters.sortBy] ? filters.sortBy : "jobPostedDate";
-
-  const sortOrder =
-    String(filters.sortOrder || "desc").toLowerCase() === "asc"
-      ? "ASC"
-      : "DESC";
+  const sortBy = SORT_COLUMNS[filters.sortBy] ? filters.sortBy : "jobPostedDate";
+  const sortOrder = String(filters.sortOrder || "desc").toLowerCase() === "asc" ? "ASC" : "DESC";
 
   const orderClause =
     sortBy === "distance" && useDistanceFilter
@@ -633,7 +556,6 @@ const removeApplication = async (userId, jobId) => {
   }
 };
 
-// NEW: fetch employer_id (job poster) for a job
 const getEmployerIdForJob = async (jobId) => {
   const result = await db.query(
     `SELECT user_id AS employer_id FROM jobPostings WHERE job_id = $1`,
@@ -642,12 +564,7 @@ const getEmployerIdForJob = async (jobId) => {
   return result.rows[0] || null;
 };
 
-// NEW: insert into gig_applications when worker applies
-const insertGigApplication = async ({
-  job_id,
-  employer_id,
-  worker_profile_id,
-}) => {
+const insertGigApplication = async ({ job_id, employer_id, worker_profile_id }) => {
   const result = await db.query(
     `
     INSERT INTO gig_applications (job_id, employer_id, worker_profile_id, status)
@@ -660,7 +577,6 @@ const insertGigApplication = async ({
   return result.rows[0];
 };
 
-// Update gig application status
 const updateGigApplicationStatus = async (applicationId, status) => {
   const result = await db.query(
     `
@@ -675,7 +591,6 @@ const updateGigApplicationStatus = async (applicationId, status) => {
   return result.rows[0] || null;
 };
 
-// Reject other active applications when one is accepted
 const rejectOtherApplicationsForJob = async (jobId, acceptedApplicationId) => {
   await db.query(
     `
@@ -690,7 +605,6 @@ const rejectOtherApplicationsForJob = async (jobId, acceptedApplicationId) => {
   );
 };
 
-// Mark job as filled
 const markJobAsFilled = async (jobId) => {
   await db.query(
     `
@@ -771,9 +685,7 @@ const fetchRecommendedJobs = async (userId) => {
     `;
 
     const result = await db.query(query, [userId]);
-    console.log(
-      `Recommendation query found ${result.rows.length} matches for user ${userId}`
-    );
+    console.log(`Recommendation query found ${result.rows.length} matches for user ${userId}`);
     return result.rows;
   } catch (err) {
     console.error("Error fetching recommended jobs:", err);

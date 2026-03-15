@@ -1,6 +1,6 @@
 const axios = require("axios");
 
-const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
+const NOMINATIM_URL = process.env.NOMINATIM_URL;
 
 async function geocodeAddress(address) {
   try {

@@ -7,10 +7,7 @@ const buildFullAddress = ({ streetAddress, city, province, postalCode }) => {
 
 const checkWorkerProfile = async (userId) => {
   try {
-    const userProfile = await db.query(
-      `SELECT id FROM workers WHERE user_id = $1;`,
-      [userId]
-    );
+    const userProfile = await db.query(`SELECT id FROM workers WHERE user_id = $1;`, [userId]);
     return userProfile.rows[0];
   } catch (error) {
     console.error("Error fetching user by ID: ", error);
@@ -20,10 +17,7 @@ const checkWorkerProfile = async (userId) => {
 
 const checkBusinessProfile = async (userId) => {
   try {
-    const userProfile = await db.query(
-      `SELECT id FROM businesses WHERE user_id = $1;`,
-      [userId]
-    );
+    const userProfile = await db.query(`SELECT id FROM businesses WHERE user_id = $1;`, [userId]);
     return userProfile.rows[0];
   } catch (error) {
     console.error("Error fetching user by ID: ", error);
@@ -32,22 +26,7 @@ const checkBusinessProfile = async (userId) => {
 };
 
 const addUserProfile = (userId, worker) => {
-  const query = `
-    INSERT INTO workers (
-      user_id,
-      biography,
-      worker_phone_number,
-      worker_street_address,
-      worker_city,
-      worker_province,
-      worker_postal_code,
-      desired_work_radius,
-      skills,
-      desired_pay
-    )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-    RETURNING *;
-  `;
+  const query = `INSERT INTO workers (user_id, biography, worker_phone_number, worker_street_address, worker_city, worker_province, worker_postal_code, desired_work_radius, skills, desired_pay) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *;`;
 
   return db
     .query(query, [
@@ -60,7 +39,7 @@ const addUserProfile = (userId, worker) => {
       worker.postal_code,
       worker.desired_work_radius,
       worker.skills,
-      worker.desired_pay,
+      worker.desired_pay
     ])
     .then((result) => {
       return result.rows[0];
@@ -71,27 +50,24 @@ const addUserProfile = (userId, worker) => {
 };
 
 const getBusinessProfile = (user_id) => {
-  const query = `
-    SELECT
-      users.id,
-      users.email,
-      users.active,
-      users.signUpDate,
-      users.user_phone_number AS phone_number,
-      businesses.business_name,
-      businesses.business_description,
-      businesses.business_website,
-      locations.streetaddress AS street_address,
-      locations.city,
-      locations.province,
-      locations.postalcode AS postal_code,
-      locations.latitude,
-      locations.longitude
+  const query = `SELECT users.id,
+    users.email,
+    users.active,
+    users.signUpDate,
+    users.user_phone_number AS phone_number,
+    businesses.business_name,
+    businesses.business_description,
+    businesses.business_website,
+    locations.streetaddress AS street_address,
+    locations.city,
+    locations.province,
+    locations.postalcode AS postal_code,
+    locations.latitude,
+    locations.longitude
     FROM users
     JOIN businesses ON users.id = businesses.user_id
     JOIN locations ON users.user_address = locations.location_id
-    WHERE users.id = $1;
-  `;
+    WHERE users.id = $1;`;
 
   return db
     .query(query, [user_id])
@@ -107,22 +83,7 @@ const getBusinessProfile = (user_id) => {
 };
 
 const addBusinessProfile = (userId, business) => {
-  const query = `
-    INSERT INTO businesses (
-      user_id,
-      business_name,
-      business_description,
-      business_phone_number,
-      business_email,
-      business_street_address,
-      business_city,
-      business_province,
-      business_postal_code,
-      business_website
-    )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-    RETURNING *;
-  `;
+  const query = `INSERT INTO businesses (user_id, business_name, business_description, business_phone_number, business_email, business_street_address, business_city, business_province, business_postal_code, business_website) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *;`;
 
   return db
     .query(query, [
@@ -135,7 +96,7 @@ const addBusinessProfile = (userId, business) => {
       business.city,
       business.province,
       business.postal_code,
-      business.website,
+      business.website
     ])
     .then((result) => {
       return result.rows[0];
@@ -146,21 +107,17 @@ const addBusinessProfile = (userId, business) => {
 };
 
 const updateBusinessProfile = (business) => {
-  const query = `
-    UPDATE businesses
-    SET
-      business_name = $1,
-      business_description = $2,
-      business_phone_number = $3,
-      business_email = $4,
-      business_street_address = $5,
-      business_city = $6,
-      business_province = $7,
-      business_postal_code = $8,
-      business_website = $9
-    WHERE id = $10
-    RETURNING *;
-  `;
+  const query = `UPDATE businesses SET
+    business_name = $1,
+    business_description = $2,
+    business_phone_number = $3,
+    business_email = $4,
+    business_street_address = $5,
+    business_city = $6,
+    business_province = $7,
+    business_postal_code = $8,
+    business_website = $9
+    WHERE id = $10 RETURNING *;`;
 
   return db
     .query(query, [
@@ -173,7 +130,7 @@ const updateBusinessProfile = (business) => {
       business.province,
       business.postal_code,
       business.website,
-      business.id,
+      business.id
     ])
     .then((result) => {
       return result.rows[0];
@@ -208,7 +165,7 @@ const updateUserProfile = async (userId, worker) => {
         worker.postal_code,
         worker.desired_work_radius,
         worker.skills,
-        worker.desired_pay,
+        worker.desired_pay
       ]
     );
 
@@ -247,21 +204,12 @@ const updateWorkerProfileById = async (workerId, worker) => {
         worker.lastname,
         worker.profile_name,
         worker.desired_work_radius,
-        worker.desired_pay,
+        worker.desired_pay
       ]
     );
 
-    if (
-      worker.phone_number ||
-      worker.street_address ||
-      worker.city ||
-      worker.province ||
-      worker.postal_code
-    ) {
-      const workerData = await db.query(
-        `SELECT user_id FROM workers WHERE id = $1;`,
-        [workerId]
-      );
+    if (worker.phone_number || worker.street_address || worker.city || worker.province || worker.postal_code) {
+      const workerData = await db.query(`SELECT user_id FROM workers WHERE id = $1;`, [workerId]);
 
       if (workerData.rows.length > 0) {
         const userId = workerData.rows[0].user_id;
@@ -269,20 +217,12 @@ const updateWorkerProfileById = async (workerId, worker) => {
         if (worker.phone_number) {
           await db.query(`UPDATE users SET user_phone_number = $1 WHERE id = $2;`, [
             worker.phone_number,
-            userId,
+            userId
           ]);
         }
 
-        if (
-          worker.street_address ||
-          worker.city ||
-          worker.province ||
-          worker.postal_code
-        ) {
-          const userData = await db.query(
-            `SELECT user_address FROM users WHERE id = $1;`,
-            [userId]
-          );
+        if (worker.street_address || worker.city || worker.province || worker.postal_code) {
+          const userData = await db.query(`SELECT user_address FROM users WHERE id = $1;`, [userId]);
 
           if (userData.rows.length > 0 && userData.rows[0].user_address) {
             const locationId = userData.rows[0].user_address;
@@ -296,19 +236,16 @@ const updateWorkerProfileById = async (workerId, worker) => {
 
             const currentLocation = currentLocationResult.rows[0];
 
-            const nextStreetAddress =
-              worker.street_address ?? currentLocation?.streetaddress ?? null;
+            const nextStreetAddress = worker.street_address ?? currentLocation?.streetaddress ?? null;
             const nextCity = worker.city ?? currentLocation?.city ?? null;
-            const nextProvince =
-              worker.province ?? currentLocation?.province ?? null;
-            const nextPostalCode =
-              worker.postal_code ?? currentLocation?.postalcode ?? null;
+            const nextProvince = worker.province ?? currentLocation?.province ?? null;
+            const nextPostalCode = worker.postal_code ?? currentLocation?.postalcode ?? null;
 
             const fullAddress = buildFullAddress({
               streetAddress: nextStreetAddress,
               city: nextCity,
               province: nextProvince,
-              postalCode: nextPostalCode,
+              postalCode: nextPostalCode
             });
 
             let latitude = null;
@@ -339,7 +276,7 @@ const updateWorkerProfileById = async (workerId, worker) => {
                 nextPostalCode,
                 latitude,
                 longitude,
-                locationId,
+                locationId
               ]
             );
           }
@@ -355,29 +292,26 @@ const updateWorkerProfileById = async (workerId, worker) => {
 };
 
 const getProfile = (userId) => {
-  const query = `
-    SELECT
-      users.id,
-      users.email,
-      users.active,
-      users.signUpDate,
-      users.user_phone_number AS phone_number,
-      workers.first_name AS firstname,
-      workers.last_name AS lastname,
-      workers.biography,
-      workers.desired_work_radius,
-      workers.desired_pay,
-      locations.streetaddress AS street_address,
-      locations.city,
-      locations.province,
-      locations.postalcode AS postal_code,
-      locations.latitude,
-      locations.longitude
+  const query = `SELECT users.id,
+    users.email,
+    users.active,
+    users.signUpDate,
+    users.user_phone_number AS phone_number,
+    workers.first_name AS firstname,
+    workers.last_name AS lastname,
+    workers.biography,
+    workers.desired_work_radius,
+    workers.desired_pay,
+    locations.streetaddress AS street_address,
+    locations.city,
+    locations.province,
+    locations.postalcode AS postal_code,
+    locations.latitude,
+    locations.longitude
     FROM users
     JOIN workers ON users.id = workers.user_id
     JOIN locations ON users.user_address = locations.location_id
-    WHERE users.id = $1;
-  `;
+    WHERE users.id = $1;`;
 
   return db
     .query(query, [userId])
@@ -401,31 +335,28 @@ const listWorkerProfiles = async (userId) => {
 };
 
 const getProfileByWorkerId = (workerId) => {
-  const query = `
-    SELECT
-      users.id,
-      users.email,
-      users.active,
-      users.signUpDate,
-      users.user_phone_number AS phone_number,
-      workers.id AS worker_id,
-      workers.profile_name,
-      workers.first_name AS firstname,
-      workers.last_name AS lastname,
-      workers.biography,
-      workers.desired_work_radius,
-      workers.desired_pay,
-      locations.streetaddress AS street_address,
-      locations.city,
-      locations.province,
-      locations.postalcode AS postal_code,
-      locations.latitude,
-      locations.longitude
+  const query = `SELECT users.id,
+    users.email,
+    users.active,
+    users.signUpDate,
+    users.user_phone_number AS phone_number,
+    workers.id AS worker_id,
+    workers.profile_name,
+    workers.first_name AS firstname,
+    workers.last_name AS lastname,
+    workers.biography,
+    workers.desired_work_radius,
+    workers.desired_pay,
+    locations.streetaddress AS street_address,
+    locations.city,
+    locations.province,
+    locations.postalcode AS postal_code,
+    locations.latitude,
+    locations.longitude
     FROM users
     JOIN workers ON users.id = workers.user_id
     JOIN locations ON users.user_address = locations.location_id
-    WHERE workers.id = $1;
-  `;
+    WHERE workers.id = $1;`;
 
   return db.query(query, [workerId]).then((r) => r.rows[0]);
 };
@@ -457,10 +388,7 @@ const deleteWorkerProfile = async (workerId) => {
     await db.query(`DELETE FROM workers_traits WHERE workers_id = $1;`, [workerId]);
     await db.query(`DELETE FROM workers_experiences WHERE workers_id = $1;`, [workerId]);
 
-    const result = await db.query(
-      `DELETE FROM workers WHERE id = $1 RETURNING *;`,
-      [workerId]
-    );
+    const result = await db.query(`DELETE FROM workers WHERE id = $1 RETURNING *;`, [workerId]);
 
     return result.rows[0];
   } catch (error) {

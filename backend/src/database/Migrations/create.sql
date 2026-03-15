@@ -104,37 +104,41 @@ CREATE TABLE workers (
 );
 
 CREATE TABLE businesses (
-    id SERIAL PRIMARY KEY,
-    user_id INT REFERENCES users(id) ON DELETE CASCADE,
-    business_name VARCHAR(100),
-    business_description TEXT,
-    business_email VARCHAR(100),
-    business_website VARCHAR(255)
+     id SERIAL PRIMARY KEY,
+     user_id INT REFERENCES users(id) ON DELETE CASCADE,
+     business_name VARCHAR(100),
+     business_description TEXT,
+     business_email VARCHAR(100),
+     business_website VARCHAR(255)
 );
 
 CREATE TABLE jobPostings (
     job_id SERIAL PRIMARY KEY,
-    jobTitle VARCHAR(255),
-    jobType VARCHAR(50),
-    jobDescription TEXT,
-    hourlyRate DECIMAL(10, 2),
-    jobStart TIMESTAMP WITHOUT TIME ZONE,
-    jobEnd TIMESTAMP WITHOUT TIME ZONE,
-    jobPostedDate TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    jobfilled BOOLEAN,
-    location_id INT,
-    user_id INT,
-    applicant_id INT DEFAULT NULL,
-    CONSTRAINT fk_job_posting_location
-        FOREIGN KEY (location_id)
-        REFERENCES locations(location_id)
-        ON DELETE SET NULL
-        ON UPDATE CASCADE,
-    CONSTRAINT fk_job_posting_user
-        FOREIGN KEY (user_id)
-        REFERENCES users(id)
-        ON DELETE SET NULL
-        ON UPDATE CASCADE
+        jobTitle VARCHAR(255),
+        jobType VARCHAR(50),
+        jobDescription TEXT,
+        hourlyRate DECIMAL(10, 2),
+        jobStart TIMESTAMP WITHOUT TIME ZONE,
+        jobEnd TIMESTAMP WITHOUT TIME ZONE,
+        jobPostedDate TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        jobfilled BOOLEAN,
+        location_id INT,
+        user_id INT,
+        applicant_id INT DEFAULT NULL,
+        CONSTRAINT fk_job_posting_location
+            FOREIGN KEY (location_id)
+            REFERENCES locations(location_id)
+            ON DELETE SET NULL
+            ON UPDATE CASCADE,
+        CONSTRAINT fk_job_posting_user
+            FOREIGN KEY (user_id)
+            REFERENCES users(id)
+            ON DELETE SET NULL
+        workers_skills_id SERIAL PRIMARY KEY,
+        workers_id INT,
+        skill_id INT,
+        CONSTRAINT fk_workers FOREIGN KEY(workers_id) REFERENCES workers(id),
+        CONSTRAINT fk_skills FOREIGN KEY(skill_id) REFERENCES skills(skill_id)
 );
 
 CREATE TABLE skills (
@@ -159,8 +163,8 @@ CREATE TABLE workers_experiences (
     workers_experiences_id SERIAL PRIMARY KEY,
     workers_id INT,
     experience_id INT,
-    CONSTRAINT fk_workers_experiences_worker FOREIGN KEY(workers_id) REFERENCES workers(id),
-    CONSTRAINT fk_workers_experiences_experience FOREIGN KEY(experience_id) REFERENCES experiences(experience_id)
+    CONSTRAINT fk_workers FOREIGN KEY(workers_id) REFERENCES workers(id),
+    CONSTRAINT fk_experience FOREIGN KEY(experience_id) REFERENCES experiences(experience_id)
 );
 
 CREATE TABLE traits (
@@ -172,8 +176,8 @@ CREATE TABLE workers_traits (
     workers_traits_id SERIAL PRIMARY KEY,
     workers_id INT,
     trait_id INT,
-    CONSTRAINT fk_workers_traits_worker FOREIGN KEY(workers_id) REFERENCES workers(id),
-    CONSTRAINT fk_workers_traits_trait FOREIGN KEY(trait_id) REFERENCES traits(trait_id)
+    CONSTRAINT fk_workers FOREIGN KEY(workers_id) REFERENCES workers(id),
+    CONSTRAINT fk_traits FOREIGN KEY(trait_id) REFERENCES traits(trait_id)
 );
 
 CREATE TABLE messages (

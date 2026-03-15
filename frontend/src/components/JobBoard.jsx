@@ -59,23 +59,12 @@ const DualRangeSlider = ({ min, max, absMax, onChange }) => {
         <div className="dual-range-fill" ref={fillRef} />
       </div>
       <input
-        type="range"
-        min={0}
-        max={absMax}
-        defaultValue={min}
-        ref={minRef}
-        onInput={handleMinInput}
-        onMouseUp={commit}
-        onTouchEnd={commit}
+        type="range" min={0} max={absMax} defaultValue={min} ref={minRef}
+        onInput={handleMinInput} onMouseUp={commit} onTouchEnd={commit}
       />
       <input
-        type="range"
-        min={0}
-        max={absMax}
-        defaultValue={max}
-        ref={maxRef}
-        onInput={handleMaxInput}
-        onMouseUp={commit}
+         type="range" min={0} max={absMax} defaultValue={max} ref={maxRef}
+         onInput={handleMaxInput} onMouseUp={commit} onTouchEnd={commit}
         onTouchEnd={commit}
       />
     </div>
@@ -140,36 +129,29 @@ const LocationDropdown = ({
 
       <label>City</label>
       <input
-        type="text"
-        placeholder="e.g. Toronto"
+        type="text" placeholder="e.g. Toronto"
         value={values.city}
         onChange={(e) => onUpdate("city", e.target.value)}
       />
 
       <label>Province</label>
       <input
-        type="text"
-        placeholder="e.g. Ontario"
+        type="text" placeholder="e.g. Ontario"
         value={values.province}
         onChange={(e) => onUpdate("province", e.target.value)}
       />
 
       <label>Postal Code</label>
       <input
-        type="text"
-        placeholder="e.g. M5V 2T6"
+        type="text" placeholder="e.g. M5V 2T6"
         value={values.postalCode}
         onChange={(e) => onUpdate("postalCode", e.target.value)}
       />
     </div>
 
     <div className="filter-actions">
-      <button className="filter-clear-btn" onClick={onClear}>
-        Clear
-      </button>
-      <button className="filter-apply-btn" onClick={onApply}>
-        Apply
-      </button>
+      <button className="filter-clear-btn" onClick={onClear}>Clear</button>
+      <button className="filter-apply-btn" onClick={onApply}>Apply</button>
     </div>
   </div>
 );
@@ -189,12 +171,8 @@ const JobTypeDropdown = ({ selected, onUpdate, onClear, onApply }) => (
       ))}
     </div>
     <div className="filter-actions">
-      <button className="filter-clear-btn" onClick={onClear}>
-        Clear
-      </button>
-      <button className="filter-apply-btn" onClick={onApply}>
-        Apply
-      </button>
+      <button className="filter-clear-btn" onClick={onClear}>Clear</button>
+      <button className="filter-apply-btn" onClick={onApply}>Apply</button>
     </div>
   </div>
 );
@@ -216,12 +194,8 @@ const DateDropdown = ({ values, onUpdate, onClear, onApply }) => (
       onChange={(e) => onUpdate("startTo", e.target.value)}
     />
     <div className="filter-actions">
-      <button className="filter-clear-btn" onClick={onClear}>
-        Clear
-      </button>
-      <button className="filter-apply-btn" onClick={onApply}>
-        Apply
-      </button>
+      <button className="filter-clear-btn" onClick={onClear}>Clear</button>
+      <button className="filter-apply-btn" onClick={onApply}>Apply</button>
     </div>
   </div>
 );
@@ -237,42 +211,25 @@ const PayDropdown = ({ initialMin, initialMax, absMax, onClear, onApply }) => {
         min={localMin}
         max={localMax}
         absMax={absMax}
-        onChange={(newMin, newMax) => {
-          setLocalMin(newMin);
-          setLocalMax(newMax);
-        }}
+        onChange={(newMin, newMax) => { setLocalMin(newMin); setLocalMax(newMax); }}
       />
       <div className="pay-number-row">
         <input
-          type="number"
-          min={0}
-          max={absMax}
-          value={localMin}
-          placeholder="Min"
-          onChange={(e) =>
-            setLocalMin(Math.max(0, Math.min(Number(e.target.value), localMax - 1)))
-          }
+          type="number" min={0} max={absMax}
+          value={localMin} placeholder="Min"
+          onChange={(e) => setLocalMin(Math.max(0, Math.min(Number(e.target.value), localMax - 1)))}
         />
         <span className="pay-number-sep">–</span>
         <input
-          type="number"
-          min={0}
-          max={absMax}
-          value={localMax}
-          placeholder="Max"
-          onChange={(e) =>
-            setLocalMax(Math.min(absMax, Math.max(Number(e.target.value), localMin + 1)))
-          }
+          type="number" min={0} max={absMax}
+          value={localMax} placeholder="Max"
+          onChange={(e) => setLocalMax(Math.min(absMax, Math.max(Number(e.target.value), localMin + 1)))}
         />
         <span className="pay-number-unit">/hr</span>
       </div>
       <div className="filter-actions">
-        <button className="filter-clear-btn" onClick={onClear}>
-          Clear
-        </button>
-        <button className="filter-apply-btn" onClick={() => onApply(localMin, localMax)}>
-          Apply
-        </button>
+        <button className="filter-clear-btn" onClick={onClear}>Clear</button>
+        <button className="filter-apply-btn" onClick={() => onApply(localMin, localMax)}>Apply</button>
       </div>
     </div>
   );
@@ -422,9 +379,7 @@ const JobBoard = () => {
 
   useEffect(() => {
     if (location.state?.openJobId && jobs.length) {
-      const match = jobs.find(
-        (j) => j.job_id.toString() === location.state.openJobId.toString()
-      );
+      const match = jobs.find((j) => j.job_id.toString() === location.state.openJobId.toString());
       if (match) {
         setJobDetails(match);
         navigate(location.pathname, { replace: true });
@@ -546,9 +501,7 @@ const JobBoard = () => {
   };
 
   const handleJobDetails = (e) =>
-    setJobDetails(
-      jobs.find((job) => job.job_id.toString() === e.target.dataset.id)
-    );
+    setJobDetails(jobs.find((job) => job.job_id.toString() === e.target.dataset.id));
 
   const handlePrevPage = () => setPage((p) => Math.max(1, p - 1));
   const handleNextPage = () => setPage((p) => Math.min(totalPages, p + 1));
