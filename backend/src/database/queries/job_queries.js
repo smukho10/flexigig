@@ -103,13 +103,52 @@ const fetchFilledJobsByUserId = async (userId) => {
     SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode
     FROM jobPostings jp
     JOIN locations loc ON jp.location_id = loc.location_id
-    WHERE jp.user_id = $1 AND jp.jobfilled = true;
+    WHERE jp.user_id = $1 AND jp.status = 'completed';
   `;
   try {
     const result = await db.query(query, [userId]);
     return result.rows;
   } catch (err) {
     console.error("Error fetching filled jobs by user ID:", err);
+    throw err;
+  }
+};
+
+const fetchFilledJobsWithWorkers = async (userId) => {
+  try {
+    const result = await db.query(
+      `
+      SELECT
+        jp.job_id,
+        jp.jobtitle,
+        jp.jobdescription,
+        jp.jobtype,
+        jp.hourlyrate,
+        jp.jobstart,
+        jp.jobend,
+        jp.status,
+        loc.StreetAddress AS streetaddress,
+        loc.city,
+        loc.province,
+        loc.postalCode    AS postalcode,
+        w.first_name      AS worker_first_name,
+        w.last_name       AS worker_last_name,
+        w.profile_name,
+        w.id              AS worker_profile_id,
+        u.id              AS worker_user_id
+      FROM jobPostings jp
+      JOIN locations loc       ON loc.location_id = jp.location_id
+      JOIN gig_applications ga ON ga.job_id = jp.job_id AND ga.status = 'ACCEPTED'
+      JOIN workers w           ON w.id = ga.worker_profile_id
+      JOIN users u             ON u.id = w.user_id
+      WHERE jp.user_id = $1
+        AND jp.status = 'completed'
+      `,
+      [userId]
+    );
+    return result.rows;
+  } catch (err) {
+    console.error("Error fetching completed jobs with workers:", err);
     throw err;
   }
 };
@@ -640,6 +679,7 @@ module.exports = {
   fetchPostedJobsByUserId,
   fetchUnfilledJobsByUserId,
   fetchFilledJobsByUserId,
+  fetchFilledJobsWithWorkers,
   fetchJobByJobId,
   updateJob,
   updateJobStatus,

@@ -3,6 +3,7 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import ChevronLeft from "../assets/images/ChevronLeft.png";
 import "../styles/ApplicantsPage.css";
+import { useUser } from "./UserContext";
 
 const APPLICANTS_PER_PAGE = 20;
 
@@ -15,14 +16,23 @@ const STATUS_COLORS = {
 };
 
 const ApplicantsPage = () => {
+    const { user } = useUser();
     const { jobId } = useParams();
     const { state } = useLocation();
     const navigate = useNavigate();
 
     const [applicants, setApplicants] = useState([]);
     const [jobTitle] = useState(state?.job?.jobtitle || "");
+    const [jobStatus] = useState(state?.job?.status || "");
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(true);
+
+    const [showReviewModal, setShowReviewModal] = useState(false);
+    const [currentApplicant, setCurrentApplicant] = useState(null);
+    const [rating, setRating] = useState(0);
+    const [hoverRating, setHoverRating] = useState(0);
+    const [reviewComment, setReviewComment] = useState("");
+    const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
     const fetchApplicants = async () => {
         try {
@@ -52,11 +62,86 @@ const ApplicantsPage = () => {
         }
     };
 
+    const openReviewModal = (applicant) => {
+        setCurrentApplicant(applicant);
+        setRating(0);
+        setHoverRating(0);
+        setReviewComment("");
+        setShowSuccessMessage(false);
+        setShowReviewModal(true);
+    };
+
+    const handleCloseModal = () => {
+        setShowReviewModal(false);
+        fetchApplicants();
+        setCurrentApplicant(null);
+        setRating(0);
+        setHoverRating(0);
+        setReviewComment("");
+        setShowSuccessMessage(false);
+    };
+
+    const handleReviewSubmit = async () => {
+        if (!currentApplicant) return;
+
+        try {
+            const reviewer_id = user?.id;
+            const reviewee_id = currentApplicant?.user_id;
+
+            if (!reviewer_id || !reviewee_id || !jobId) {
+                console.error("Missing reviewer_id, reviewee_id, or job_id", {
+                    reviewer_id,
+                    reviewee_id,
+                    jobId
+                });
+                return;
+            }
+
+            const ratingToSend = rating > 0 ? rating : null;
+            const textToSend = reviewComment?.trim() ? reviewComment.trim() : null;
+
+            if (ratingToSend === null && textToSend === null) {
+                handleCloseModal();
+                return;
+            }
+
+            await axios.post(
+                `/api/reviews/employer-to-worker`,
+                {
+                    reviewer_id,
+                    reviewee_id,
+                    job_id: parseInt(jobId, 10),
+                    rating: ratingToSend,
+                    review_text: textToSend,
+                },
+                { withCredentials: true }
+            );
+
+            setShowSuccessMessage(true);
+
+            setTimeout(() => {
+                setShowSuccessMessage(false);
+                setShowReviewModal(false);
+                fetchApplicants();
+                setRating(0);
+                setHoverRating(0);
+                setReviewComment("");
+                setCurrentApplicant(null);
+            }, 2000);
+        } catch (error) {
+            console.error("Error submitting review:", error);
+            alert(error?.response?.data?.message || "Failed to submit review");
+        }
+    };
+
     const formatDate = (dateStr) => {
         if (!dateStr) return "—";
         return new Date(dateStr).toLocaleString("en-US", {
-            month: "short", day: "numeric", year: "numeric",
-            hour: "numeric", minute: "2-digit",
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
         });
     };
 
@@ -65,7 +150,6 @@ const ApplicantsPage = () => {
 
     return (
         <div className="applicants-page-container">
-            {/* Header */}
             <div className="applicants-page-header">
                 <img
                     src={ChevronLeft}
@@ -79,10 +163,11 @@ const ApplicantsPage = () => {
                 </div>
             </div>
 
-            {/* Summary bar */}
             {!loading && (
                 <div className="applicants-summary-bar">
-                    <span className="summary-count">{applicants.length} total applicant{applicants.length !== 1 ? "s" : ""}</span>
+                    <span className="summary-count">
+                        {applicants.length} total applicant{applicants.length !== 1 ? "s" : ""}
+                    </span>
                 </div>
             )}
 
@@ -96,7 +181,6 @@ const ApplicantsPage = () => {
             ) : (
                 <>
                     <div className="applicants-table">
-                        {/* Table header */}
                         <div className="applicants-table-header">
                             <span>#</span>
                             <span>Applicant</span>
@@ -108,6 +192,7 @@ const ApplicantsPage = () => {
                         {paginated.map((a, index) => {
                             const statusStyle = STATUS_COLORS[a.application_status] || STATUS_COLORS.APPLIED;
                             const rowNumber = (page - 1) * APPLICANTS_PER_PAGE + index + 1;
+
                             return (
                                 <div key={a.application_id} className="applicant-row">
                                     <span className="applicant-index">{rowNumber}</span>
@@ -139,6 +224,7 @@ const ApplicantsPage = () => {
                                         >
                                             Accept
                                         </button>
+
                                         <button
                                             className="action-btn review-btn"
                                             onClick={() => updateStatus(a.application_id, "IN_REVIEW")}
@@ -151,6 +237,7 @@ const ApplicantsPage = () => {
                                         >
                                             In Review
                                         </button>
+
                                         <button
                                             className="action-btn reject-btn"
                                             onClick={() => updateStatus(a.application_id, "REJECTED")}
@@ -162,13 +249,21 @@ const ApplicantsPage = () => {
                                         >
                                             Reject
                                         </button>
+
+                                      {jobStatus === "completed" && a.application_status === "ACCEPTED" && (
+                                          <button
+                                              className="action-btn rate-worker-btn"   // ← fixed
+                                              onClick={() => openReviewModal(a)}
+                                          >
+                                              Rate Worker
+                                          </button>
+                                      )}
                                     </div>
                                 </div>
                             );
                         })}
                     </div>
 
-                    {/* Pagination */}
                     {totalPages > 1 && (
                         <div className="applicants-pagination">
                             <button
@@ -191,6 +286,58 @@ const ApplicantsPage = () => {
                         </div>
                     )}
                 </>
+            )}
+
+            {showReviewModal && (
+                <div className="review-modal-overlay" onClick={handleCloseModal}>
+                    <div className="review-modal" onClick={(e) => e.stopPropagation()}>
+                        <button className="close-modal-btn" onClick={handleCloseModal}>×</button>
+                        {!showSuccessMessage ? (
+                            <>
+                                <h2>Rate Worker</h2>
+                                <p className="employer-name">
+                                    {currentApplicant?.first_name} {currentApplicant?.last_name}
+                                </p>
+
+                                <div className="star-rating">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <span
+                                            key={star}
+                                            className={`star ${star <= (hoverRating || rating) ? "filled" : ""}`}
+                                            onClick={() => setRating(star)}
+                                            onMouseEnter={() => setHoverRating(star)}
+                                            onMouseLeave={() => setHoverRating(0)}
+                                        >
+                                            ★
+                                        </span>
+                                    ))}
+                                </div>
+
+                                <textarea
+                                    className="review-comment"
+                                    placeholder="Share your experience (optional)"
+                                    value={reviewComment}
+                                    onChange={(e) => setReviewComment(e.target.value)}
+                                    rows={4}
+                                />
+
+                                <div className="modal-buttons">
+                                    <button className="cancel-btn" onClick={handleCloseModal}>
+                                        Cancel
+                                    </button>
+                                    <button className="submit-btn" onClick={handleReviewSubmit}>
+                                        Submit
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="success-message">
+                                <div className="success-icon">✓</div>
+                                <h2>Thanks for rating!</h2>
+                            </div>
+                        )}
+                    </div>
+                </div>
             )}
         </div>
     );
