@@ -142,12 +142,10 @@ const Messages = () => {
         setSearch(e.target.value);
     };
 
-    const isActive = (path) => location.pathname === path;
-
     return (!user ? (<div>Loading...</div>) : (
         <div className="messages-container">
             <header className="messages-header">
-                <Link to="/dashboard" className={isActive("/find-gigs") ? "active" : ""}>
+                <Link to="/dashboard">
                     <img className="dash-back-btn" src={ChevronLeft} alt="Return to Dashboard" />
                 </Link>
             </header>
