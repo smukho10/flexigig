@@ -8,7 +8,6 @@ import DollarSign from "../assets/images/DollarSign.png";
 import DefaultAvatar from "../assets/images/DefaultAvatar.png";
 import MessageBubbles from "../assets/images/MessageBubbles.png";
 
-
 const MyGigs = () => {
   const { user } = useUser();
   const [approvedGigs, setApprovedGigs] = useState([]);
@@ -20,10 +19,13 @@ const MyGigs = () => {
   const [reviewComment, setReviewComment] = useState("");
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [refresh, setRefresh] = useState(false);
+  const [ratedEmployerJobs, setRatedEmployerJobs] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("ratedEmployerJobs") || "{}"); }
+    catch { return {}; }
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Fetch approved gigs from localStorage
     const fetchApprovedGigs = () => {
       const storedStatuses = JSON.parse(localStorage.getItem('jobStatuses') || '{}');
       const storedGigStatuses = JSON.parse(localStorage.getItem('gigStatuses') || '{}');
@@ -34,10 +36,9 @@ const MyGigs = () => {
       );
 
       if (user && user.id && approvedJobIds.length > 0) {
-        // Fetch all applied jobs and filter for approved ones
-      axios.get(`/api/applied-jobs/${user.id}`, { withCredentials: true })
+        axios.get(`/api/applied-jobs/${user.id}`, { withCredentials: true })
           .then(res => {
-            const approved = res.data.jobs.filter(job => 
+            const approved = res.data.jobs.filter(job =>
               approvedJobIds.includes(job.job_id.toString())
             ).sort((a, b) => a.jobstart.localeCompare(b.jobstart));
             setApprovedGigs(approved);
@@ -52,56 +53,42 @@ const MyGigs = () => {
 
     fetchApprovedGigs();
 
-    // Listen for storage changes to update when status changes
-    const handleStorageChange = () => {
-      fetchApprovedGigs();
-    };
+    const handleStorageChange = () => fetchApprovedGigs();
     window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, [user, refresh]);
 
   const handleRemove = (jobId) => {
-    // Remove from My Gigs and return to Jobs Applied
     const storedStatuses = JSON.parse(localStorage.getItem('jobStatuses') || '{}');
     delete storedStatuses[jobId];
     localStorage.setItem('jobStatuses', JSON.stringify(storedStatuses));
 
-    // Also remove gig status
     const storedGigStatuses = JSON.parse(localStorage.getItem('gigStatuses') || '{}');
     delete storedGigStatuses[jobId];
     localStorage.setItem('gigStatuses', JSON.stringify(storedGigStatuses));
 
-    // Trigger refresh
     window.dispatchEvent(new Event('storage'));
     setRefresh(!refresh);
   };
 
   const handleStatusChange = (jobId, newStatus) => {
-    if (newStatus === 'completed') {
-      // Update status to completed first
-      const updatedGigStatuses = {
-        ...gigStatuses,
-        [jobId]: 'completed'
-      };
-      localStorage.setItem('gigStatuses', JSON.stringify(updatedGigStatuses));
-      setGigStatuses(updatedGigStatuses);
+    const updatedGigStatuses = { ...gigStatuses, [jobId]: newStatus };
+    localStorage.setItem('gigStatuses', JSON.stringify(updatedGigStatuses));
+    setGigStatuses(updatedGigStatuses);
 
-      // Then open optional review modal
+    if (newStatus === 'completed') {
       const gig = approvedGigs.find(g => g.job_id === jobId);
-      setCurrentReviewGig(gig);
-      setShowReviewModal(true);
-    } else {
-      // Update status directly for "in_progress"
-      const updatedGigStatuses = {
-        ...gigStatuses,
-        [jobId]: newStatus
-      };
-      localStorage.setItem('gigStatuses', JSON.stringify(updatedGigStatuses));
-      setGigStatuses(updatedGigStatuses);
+      openReviewModal(gig);
     }
+  };
+
+  const openReviewModal = (gig) => {
+    setCurrentReviewGig(gig);
+    setRating(0);
+    setHoverRating(0);
+    setReviewComment("");
+    setShowSuccessMessage(false);
+    setShowReviewModal(true);
   };
 
   const handleReviewSubmit = async () => {
@@ -109,39 +96,39 @@ const MyGigs = () => {
 
     try {
       const reviewer_id = user?.id;
-      const reviewee_id = currentReviewGig?.user_id; // employer's users.id
+      const reviewee_id = currentReviewGig?.user_id;
 
       if (!reviewer_id || !reviewee_id) {
         console.error("Missing reviewer_id or reviewee_id", { reviewer_id, reviewee_id });
         return;
       }
 
-      // OPTIONAL fields (but backend requires at least one)
       const ratingToSend = rating > 0 ? rating : null;
       const textToSend = reviewComment?.trim() ? reviewComment.trim() : null;
 
-      // If both empty -> user chose not to review, just close
       if (ratingToSend === null && textToSend === null) {
         handleCloseModal();
         return;
       }
 
-await axios.post(
-  `/api/reviews/worker-to-employer`,
-  {
-    reviewer_id,
-    reviewee_id,
-    job_id: currentReviewGig?.job_id,
-    rating: ratingToSend,
-    review_text: textToSend,
-  },
-  { withCredentials: true }
-);
+      await axios.post(
+        `/api/reviews/worker-to-employer`,
+        {
+          reviewer_id,
+          reviewee_id,
+          job_id: currentReviewGig?.job_id,
+          rating: ratingToSend,
+          review_text: textToSend,
+        },
+        { withCredentials: true }
+      );
 
-      // Show success message
+      // Mark this job as rated in localStorage
+      const updatedRated = { ...ratedEmployerJobs, [currentReviewGig.job_id]: true };
+      localStorage.setItem("ratedEmployerJobs", JSON.stringify(updatedRated));
+      setRatedEmployerJobs(updatedRated);
+
       setShowSuccessMessage(true);
-
-      // Close modal after 2 seconds
       setTimeout(() => {
         setShowSuccessMessage(false);
         setShowReviewModal(false);
@@ -165,19 +152,14 @@ await axios.post(
     setShowSuccessMessage(false);
   };
 
-  const findJob = () => {
-    navigate("/find-gigs");
-  };
+  const findJob = () => navigate("/find-gigs");
 
   const formatDateForDisplay = (dateTime) => {
     if (!dateTime) return "";
     const date = new Date(dateTime);
     return date.toLocaleString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
+      year: "numeric", month: "long", day: "numeric",
+      hour: "numeric", minute: "2-digit",
     });
   };
 
@@ -189,12 +171,8 @@ await axios.post(
 
   const getGigStatusBadge = (jobId) => {
     const status = gigStatuses[jobId];
-    if (status === 'in_progress') {
-      return <span className="in-progress-badge">In Progress</span>;
-    } else if (status === 'completed') {
-      return <span className="completed-badge">Completed</span>;
-    }
-    // If no status, show Approved
+    if (status === 'in_progress') return <span className="in-progress-badge">In Progress</span>;
+    if (status === 'completed') return <span className="completed-badge">Completed</span>;
     return <span className="approved-badge">Approved</span>;
   };
 
@@ -223,7 +201,22 @@ await axios.post(
                   </div>
                   <div className="action-buttons">
                     <button className="remove-btn" onClick={() => handleRemove(job.job_id)}>Remove</button>
-                    <select 
+
+                    {/* Rate Employer button — only shown when gig is completed */}
+                    {gigStatuses[job.job_id] === 'completed' && (
+                      ratedEmployerJobs[job.job_id] ? (
+                        <button className="rated-employer-btn" disabled>✓ Rated</button>
+                      ) : (
+                        <button
+                          className="rate-employer-btn"
+                          onClick={() => openReviewModal(job)}
+                        >
+                          Rate Employer
+                        </button>
+                      )
+                    )}
+
+                    <select
                       className="status-dropdown"
                       value={gigStatuses[job.job_id] || ''}
                       onChange={(e) => handleStatusChange(job.job_id, e.target.value)}
@@ -283,7 +276,6 @@ await axios.post(
               <>
                 <h2>Rate Your Employer</h2>
                 <p className="employer-name">{currentReviewGig?.business_name}</p>
-                
                 <div className="star-rating">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <span
@@ -297,7 +289,6 @@ await axios.post(
                     </span>
                   ))}
                 </div>
-
                 <textarea
                   className="review-comment"
                   placeholder="Share your experience (optional)"
@@ -305,15 +296,9 @@ await axios.post(
                   onChange={(e) => setReviewComment(e.target.value)}
                   rows={4}
                 />
-
                 <div className="modal-buttons">
                   <button className="cancel-btn" onClick={handleCloseModal}>Cancel</button>
-                  <button 
-                    className="submit-btn" 
-                    onClick={handleReviewSubmit}
-                  >
-                    Submit
-                  </button>
+                  <button className="submit-btn" onClick={handleReviewSubmit}>Submit</button>
                 </div>
               </>
             ) : (
