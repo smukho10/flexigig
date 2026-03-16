@@ -1,5 +1,22 @@
 // backend/src/database/queries/job_queries.js
 const db = require("../connection.js");
+const { geocodeAddress } = require("../../services/geocodingService");
+
+const buildFullAddress = ({ streetAddress, city, province, postalCode }) => {
+  const parts = [streetAddress, city, province, postalCode].filter(Boolean);
+  return parts.length > 0 ? parts.join(', ') : null;
+};
+
+const insertLocation = async ({ jobStreetAddress, jobCity, jobProvince, jobPostalCode }) => {
+  let latitude = null;
+  let longitude = null;
+
+  const fullAddress = buildFullAddress({
+    streetAddress: jobStreetAddress,
+    city: jobCity,
+    province: jobProvince,
+    postalCode: jobPostalCode
+  });
 
   try {
     if (fullAddress) {
