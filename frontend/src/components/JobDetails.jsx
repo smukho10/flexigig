@@ -18,9 +18,9 @@ const TagList = ({ items }) => {
 };
 
 const JobDetails = ({ jobDetails, handleApply }) => {
-  const navigate = useNavigate();
+    const navigate = useNavigate();
 
-  const handleEmployer = () => {};
+    const handleEmployer = () => {};
 
   const handleMessage = () => {
     navigate(`/messages`, {

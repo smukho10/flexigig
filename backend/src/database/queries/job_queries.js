@@ -234,8 +234,7 @@ const updateJob = async (
 
     const locationUpdateQuery = `
       UPDATE locations
-      SET StreetAddress = $1, city = $2, province = $3, postalCode = $4,
-          latitude = $5, longitude = $6, geocoded_at = NOW()
+      SET StreetAddress = $1, city = $2, province = $3, postalCode = $4, latitude = $5, longitude = $6, geocoded_at = NOW()
       FROM jobPostings
       WHERE locations.location_id = jobPostings.location_id AND jobPostings.job_id = $7;
     `;
