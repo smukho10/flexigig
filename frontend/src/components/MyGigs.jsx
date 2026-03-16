@@ -12,83 +12,48 @@ const MyGigs = () => {
   const { user } = useUser();
   const [approvedGigs, setApprovedGigs] = useState([]);
   const [gigStatuses, setGigStatuses] = useState({});
+  const [ratedEmployerJobs, setRatedEmployerJobs] = useState({});
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [currentReviewGig, setCurrentReviewGig] = useState(null);
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-  const [refresh, setRefresh] = useState(false);
-  const [ratedEmployerJobs, setRatedEmployerJobs] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("ratedEmployerJobs") || "{}"); }
-    catch { return {}; }
-  });
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchApprovedGigs = () => {
-      const storedStatuses = JSON.parse(localStorage.getItem('jobStatuses') || '{}');
-      const storedGigStatuses = JSON.parse(localStorage.getItem('gigStatuses') || '{}');
-      setGigStatuses(storedGigStatuses);
-
-      const approvedJobIds = Object.keys(storedStatuses).filter(
-        jobId => storedStatuses[jobId] === 'approved'
-      );
-
-      if (user && user.id && approvedJobIds.length > 0) {
-        axios.get(`/api/applied-jobs/${user.id}`, { withCredentials: true })
-          .then(res => {
-            const approved = res.data.jobs.filter(job =>
-              approvedJobIds.includes(job.job_id.toString())
-            ).sort((a, b) => a.jobstart.localeCompare(b.jobstart));
-            setApprovedGigs(approved);
-          })
-          .catch(error => {
-            console.error("Error fetching approved gigs:", error);
-          });
-      } else {
-        setApprovedGigs([]);
-      }
-    };
-
-    fetchApprovedGigs();
-
-    const handleStorageChange = () => fetchApprovedGigs();
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [user, refresh]);
-
-  const handleRemove = (jobId) => {
-    const storedStatuses = JSON.parse(localStorage.getItem('jobStatuses') || '{}');
-    delete storedStatuses[jobId];
-    localStorage.setItem('jobStatuses', JSON.stringify(storedStatuses));
-
+    // Load worker-side status overrides and rated-employer tracking from localStorage
     const storedGigStatuses = JSON.parse(localStorage.getItem('gigStatuses') || '{}');
-    delete storedGigStatuses[jobId];
-    localStorage.setItem('gigStatuses', JSON.stringify(storedGigStatuses));
+    setGigStatuses(storedGigStatuses);
 
-    window.dispatchEvent(new Event('storage'));
-    setRefresh(!refresh);
+    const storedRatedEmployerJobs = JSON.parse(localStorage.getItem('ratedEmployerJobs') || '{}');
+    setRatedEmployerJobs(storedRatedEmployerJobs);
+
+    // Fetch accepted gigs directly from the backend
+    if (user && user.id) {
+      axios.get(`/api/applied-jobs/${user.id}`, { withCredentials: true })
+        .then(res => {
+          // Show only ACCEPTED applications
+          const accepted = res.data.jobs.filter(
+            job => job.application_status === 'ACCEPTED'
+          ).sort((a, b) => a.jobstart.localeCompare(b.jobstart));
+          setApprovedGigs(accepted);
+        })
+        .catch(error => {
+          console.error("Error fetching approved gigs:", error);
+        });
+    }
+  }, [user]);
+
+  const openReviewModal = (gig) => {
+    setCurrentReviewGig(gig);
+    setShowReviewModal(true);
   };
 
   const handleStatusChange = (jobId, newStatus) => {
     const updatedGigStatuses = { ...gigStatuses, [jobId]: newStatus };
     localStorage.setItem('gigStatuses', JSON.stringify(updatedGigStatuses));
     setGigStatuses(updatedGigStatuses);
-
-    if (newStatus === 'completed') {
-      const gig = approvedGigs.find(g => g.job_id === jobId);
-      openReviewModal(gig);
-    }
-  };
-
-  const openReviewModal = (gig) => {
-    setCurrentReviewGig(gig);
-    setRating(0);
-    setHoverRating(0);
-    setReviewComment("");
-    setShowSuccessMessage(false);
-    setShowReviewModal(true);
   };
 
   const handleReviewSubmit = async () => {
@@ -96,7 +61,8 @@ const MyGigs = () => {
 
     try {
       const reviewer_id = user?.id;
-      const reviewee_id = currentReviewGig?.user_id;
+      const reviewee_id = currentReviewGig?.user_id; // employer's user_id from jp.user_id
+      const job_id = currentReviewGig?.job_id;
 
       if (!reviewer_id || !reviewee_id) {
         console.error("Missing reviewer_id or reviewee_id", { reviewer_id, reviewee_id });
@@ -116,19 +82,20 @@ const MyGigs = () => {
         {
           reviewer_id,
           reviewee_id,
-          job_id: currentReviewGig?.job_id,
           rating: ratingToSend,
           review_text: textToSend,
+          job_id,
         },
         { withCredentials: true }
       );
 
       // Mark this job as rated in localStorage
-      const updatedRated = { ...ratedEmployerJobs, [currentReviewGig.job_id]: true };
-      localStorage.setItem("ratedEmployerJobs", JSON.stringify(updatedRated));
+      const updatedRated = { ...ratedEmployerJobs, [job_id]: true };
+      localStorage.setItem('ratedEmployerJobs', JSON.stringify(updatedRated));
       setRatedEmployerJobs(updatedRated);
 
       setShowSuccessMessage(true);
+
       setTimeout(() => {
         setShowSuccessMessage(false);
         setShowReviewModal(false);
@@ -152,14 +119,19 @@ const MyGigs = () => {
     setShowSuccessMessage(false);
   };
 
-  const findJob = () => navigate("/find-gigs");
+  const findJob = () => {
+    navigate("/find-gigs");
+  };
 
   const formatDateForDisplay = (dateTime) => {
     if (!dateTime) return "";
     const date = new Date(dateTime);
     return date.toLocaleString("en-US", {
-      year: "numeric", month: "long", day: "numeric",
-      hour: "numeric", minute: "2-digit",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
     });
   };
 
@@ -169,10 +141,18 @@ const MyGigs = () => {
     navigate(`/messages`, { state: { partnerId: job.user_id } });
   };
 
-  const getGigStatusBadge = (jobId) => {
-    const status = gigStatuses[jobId];
-    if (status === 'in_progress') return <span className="in-progress-badge">In Progress</span>;
-    if (status === 'completed') return <span className="completed-badge">Completed</span>;
+  const getGigStatusBadge = (job) => {
+    // If the job posting itself is completed, show Completed badge
+    if (job.status === 'completed') {
+      return <span className="completed-badge">Completed</span>;
+    }
+    // Otherwise check the worker's self-tracked status
+    const workerStatus = gigStatuses[job.job_id];
+    if (workerStatus === 'in_progress') {
+      return <span className="in-progress-badge">In Progress</span>;
+    } else if (workerStatus === 'completed') {
+      return <span className="completed-badge">Completed</span>;
+    }
     return <span className="approved-badge">Approved</span>;
   };
 
@@ -197,13 +177,24 @@ const MyGigs = () => {
                     <h1>{job.jobtitle}</h1>
                   </div>
                   <div className="status-badges">
-                    {getGigStatusBadge(job.job_id)}
+                    {getGigStatusBadge(job)}
                   </div>
                   <div className="action-buttons">
-                    <button className="remove-btn" onClick={() => handleRemove(job.job_id)}>Remove</button>
+                    {/* Only show status dropdown if job is not yet completed by employer */}
+                    {job.status !== 'completed' && (
+                      <select
+                        className="status-dropdown"
+                        value={gigStatuses[job.job_id] || ''}
+                        onChange={(e) => handleStatusChange(job.job_id, e.target.value)}
+                      >
+                        <option value="">Select Status</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                      </select>
+                    )}
 
-                    {/* Rate Employer button — only shown when gig is completed */}
-                    {gigStatuses[job.job_id] === 'completed' && (
+                    {/* Rate Employer button — shows when job is completed by employer */}
+                    {job.status === 'completed' && (
                       ratedEmployerJobs[job.job_id] ? (
                         <button className="rated-employer-btn" disabled>✓ Rated</button>
                       ) : (
@@ -215,16 +206,6 @@ const MyGigs = () => {
                         </button>
                       )
                     )}
-
-                    <select
-                      className="status-dropdown"
-                      value={gigStatuses[job.job_id] || ''}
-                      onChange={(e) => handleStatusChange(job.job_id, e.target.value)}
-                    >
-                      <option value="">Select Status</option>
-                      <option value="in_progress">In Progress</option>
-                      <option value="completed">Completed</option>
-                    </select>
                   </div>
                 </div>
                 <div className="top-right">
@@ -276,6 +257,7 @@ const MyGigs = () => {
               <>
                 <h2>Rate Your Employer</h2>
                 <p className="employer-name">{currentReviewGig?.business_name}</p>
+
                 <div className="star-rating">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <span
@@ -289,6 +271,7 @@ const MyGigs = () => {
                     </span>
                   ))}
                 </div>
+
                 <textarea
                   className="review-comment"
                   placeholder="Share your experience (optional)"
@@ -296,9 +279,15 @@ const MyGigs = () => {
                   onChange={(e) => setReviewComment(e.target.value)}
                   rows={4}
                 />
+
                 <div className="modal-buttons">
                   <button className="cancel-btn" onClick={handleCloseModal}>Cancel</button>
-                  <button className="submit-btn" onClick={handleReviewSubmit}>Submit</button>
+                  <button
+                    className="submit-btn"
+                    onClick={handleReviewSubmit}
+                  >
+                    Submit
+                  </button>
                 </div>
               </>
             ) : (
