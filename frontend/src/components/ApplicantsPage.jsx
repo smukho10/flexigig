@@ -3,6 +3,7 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import ChevronLeft from "../assets/images/ChevronLeft.png";
 import "../styles/ApplicantsPage.css";
+import { useUser } from "./UserContext";
 
 const APPLICANTS_PER_PAGE = 20;
 
@@ -18,11 +19,26 @@ const ApplicantsPage = () => {
     const { jobId } = useParams();
     const { state } = useLocation();
     const navigate = useNavigate();
+    const { user } = useUser();
 
     const [applicants, setApplicants] = useState([]);
     const [jobTitle] = useState(state?.job?.jobtitle || "");
+    const [jobStatus, setJobStatus] = useState(state?.job?.status || null);
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(true);
+
+    // Review modal state
+    const [reviewModal, setReviewModal] = useState(false);
+    const [currentApplicant, setCurrentApplicant] = useState(null);
+    const [rating, setRating] = useState(0);
+    const [hoverRating, setHoverRating] = useState(0);
+    const [reviewText, setReviewText] = useState("");
+    const [reviewSuccess, setReviewSuccess] = useState(false);
+    const [reviewError, setReviewError] = useState("");
+    const [reviewedWorkers, setReviewedWorkers] = useState(() => {
+        try { return JSON.parse(localStorage.getItem("reviewedWorkerJobs") || "{}"); }
+        catch { return {}; }
+    });
 
     const fetchApplicants = async () => {
         try {
@@ -35,8 +51,19 @@ const ApplicantsPage = () => {
         }
     };
 
+    // Always fetch fresh job status from backend
+    const fetchJobStatus = async () => {
+        try {
+            const res = await axios.get(`/api/edit-job/${jobId}`, { withCredentials: true });
+            if (res.data?.status) setJobStatus(res.data.status);
+        } catch (error) {
+            console.error("Error fetching job status:", error);
+        }
+    };
+
     useEffect(() => {
         fetchApplicants();
+        fetchJobStatus();
     }, [jobId]);
 
     const updateStatus = async (applicationId, status) => {
@@ -52,6 +79,49 @@ const ApplicantsPage = () => {
         }
     };
 
+    const openReviewModal = (applicant) => {
+        setCurrentApplicant(applicant);
+        setRating(0);
+        setHoverRating(0);
+        setReviewText("");
+        setReviewSuccess(false);
+        setReviewError("");
+        setReviewModal(true);
+    };
+
+    const closeReviewModal = () => {
+        setReviewModal(false);
+        setCurrentApplicant(null);
+    };
+
+    const handleReviewSubmit = async () => {
+        if (!rating && !reviewText.trim()) {
+            setReviewError("Please provide a rating or review text.");
+            return;
+        }
+        try {
+            await axios.post(
+                "/api/reviews/employer-to-worker",
+                {
+                    reviewer_id: user.id,
+                    reviewee_id: currentApplicant.user_id,
+                    job_id: parseInt(jobId, 10),
+                    rating: rating || undefined,
+                    review_text: reviewText.trim() || undefined,
+                },
+                { withCredentials: true }
+            );
+            // Save to localStorage so button shows "Rated" on next open
+            const updated = { ...reviewedWorkers, [`${jobId}_${currentApplicant.user_id}`]: true };
+            localStorage.setItem("reviewedWorkerJobs", JSON.stringify(updated));
+            setReviewedWorkers(updated);
+            setReviewSuccess(true);
+            setTimeout(() => closeReviewModal(), 1800);
+        } catch (err) {
+            setReviewError(err.response?.data?.message || "Failed to submit review.");
+        }
+    };
+
     const formatDate = (dateStr) => {
         if (!dateStr) return "—";
         return new Date(dateStr).toLocaleString("en-US", {
@@ -62,6 +132,8 @@ const ApplicantsPage = () => {
 
     const totalPages = Math.ceil(applicants.length / APPLICANTS_PER_PAGE);
     const paginated = applicants.slice((page - 1) * APPLICANTS_PER_PAGE, page * APPLICANTS_PER_PAGE);
+
+    const isJobCompleted = jobStatus === "completed";
 
     return (
         <div className="applicants-page-container">
@@ -76,6 +148,9 @@ const ApplicantsPage = () => {
                 <div>
                     <h1 className="applicants-page-title">Applicants</h1>
                     {jobTitle && <p className="applicants-job-subtitle">{jobTitle}</p>}
+                    {isJobCompleted && (
+                        <span className="job-completed-badge">✓ Completed</span>
+                    )}
                 </div>
             </div>
 
@@ -83,6 +158,9 @@ const ApplicantsPage = () => {
             {!loading && (
                 <div className="applicants-summary-bar">
                     <span className="summary-count">{applicants.length} total applicant{applicants.length !== 1 ? "s" : ""}</span>
+                    {isJobCompleted && (
+                        <span className="summary-note">You can rate accepted workers for this completed job.</span>
+                    )}
                 </div>
             )}
 
@@ -108,6 +186,9 @@ const ApplicantsPage = () => {
                         {paginated.map((a, index) => {
                             const statusStyle = STATUS_COLORS[a.application_status] || STATUS_COLORS.APPLIED;
                             const rowNumber = (page - 1) * APPLICANTS_PER_PAGE + index + 1;
+                            const alreadyReviewed = !!reviewedWorkers[`${jobId}_${a.user_id}`];
+                            const canRate = isJobCompleted && a.application_status === "ACCEPTED";
+
                             return (
                                 <div key={a.application_id} className="applicant-row">
                                     <span className="applicant-index">{rowNumber}</span>
@@ -132,36 +213,57 @@ const ApplicantsPage = () => {
                                     </span>
 
                                     <div className="applicant-actions">
-                                        <button
-                                            className="action-btn accept-btn"
-                                            onClick={() => updateStatus(a.application_id, "ACCEPTED")}
-                                            disabled={a.application_status === "ACCEPTED" || a.application_status === "WITHDRAWN"}
-                                        >
-                                            Accept
-                                        </button>
-                                        <button
-                                            className="action-btn review-btn"
-                                            onClick={() => updateStatus(a.application_id, "IN_REVIEW")}
-                                            disabled={
-                                                a.application_status === "REJECTED" ||
-                                                a.application_status === "ACCEPTED" ||
-                                                a.application_status === "IN_REVIEW" ||
-                                                a.application_status === "WITHDRAWN"
-                                            }
-                                        >
-                                            In Review
-                                        </button>
-                                        <button
-                                            className="action-btn reject-btn"
-                                            onClick={() => updateStatus(a.application_id, "REJECTED")}
-                                            disabled={
-                                                a.application_status === "REJECTED" ||
-                                                a.application_status === "ACCEPTED" ||
-                                                a.application_status === "WITHDRAWN"
-                                            }
-                                        >
-                                            Reject
-                                        </button>
+                                        {/* Standard status buttons — hidden for completed jobs */}
+                                        {!isJobCompleted && (
+                                            <>
+                                                <button
+                                                    className="action-btn accept-btn"
+                                                    onClick={() => updateStatus(a.application_id, "ACCEPTED")}
+                                                    disabled={a.application_status === "ACCEPTED" || a.application_status === "WITHDRAWN"}
+                                                >
+                                                    Accept
+                                                </button>
+                                                <button
+                                                    className="action-btn review-btn"
+                                                    onClick={() => updateStatus(a.application_id, "IN_REVIEW")}
+                                                    disabled={
+                                                        a.application_status === "REJECTED" ||
+                                                        a.application_status === "ACCEPTED" ||
+                                                        a.application_status === "IN_REVIEW" ||
+                                                        a.application_status === "WITHDRAWN"
+                                                    }
+                                                >
+                                                    In Review
+                                                </button>
+                                                <button
+                                                    className="action-btn reject-btn"
+                                                    onClick={() => updateStatus(a.application_id, "REJECTED")}
+                                                    disabled={
+                                                        a.application_status === "REJECTED" ||
+                                                        a.application_status === "ACCEPTED" ||
+                                                        a.application_status === "WITHDRAWN"
+                                                    }
+                                                >
+                                                    Reject
+                                                </button>
+                                            </>
+                                        )}
+
+                                        {/* Rate Worker button — only for completed jobs with ACCEPTED worker */}
+                                        {canRate && (
+                                            alreadyReviewed ? (
+                                                <button className="action-btn rated-btn" disabled>
+                                                    ✓ Rated
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    className="action-btn rate-worker-btn"
+                                                    onClick={() => openReviewModal(a)}
+                                                >
+                                                    Rate Worker
+                                                </button>
+                                            )
+                                        )}
                                     </div>
                                 </div>
                             );
@@ -191,6 +293,49 @@ const ApplicantsPage = () => {
                         </div>
                     )}
                 </>
+            )}
+
+            {/* Review Modal */}
+            {reviewModal && (
+                <div className="review-modal-overlay" onClick={closeReviewModal}>
+                    <div className="review-modal" onClick={(e) => e.stopPropagation()}>
+                        {reviewSuccess ? (
+                            <div className="success-message">
+                                <div className="success-icon">✓</div>
+                                <p>Review submitted!</p>
+                            </div>
+                        ) : (
+                            <>
+                                <h2>Rate {currentApplicant?.first_name} {currentApplicant?.last_name}</h2>
+                                <div className="star-rating">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <span
+                                            key={star}
+                                            className={`star ${star <= (hoverRating || rating) ? "filled" : ""}`}
+                                            onClick={() => setRating(star)}
+                                            onMouseEnter={() => setHoverRating(star)}
+                                            onMouseLeave={() => setHoverRating(0)}
+                                        >
+                                            ★
+                                        </span>
+                                    ))}
+                                </div>
+                               <textarea
+                                   className="review-comment"
+                                   placeholder="Write a review (optional)"
+                                   value={reviewText}
+                                   onChange={(e) => setReviewText(e.target.value)}
+                                   rows={4}
+                               />
+                                {reviewError && <p className="review-error">{reviewError}</p>}
+                                <div className="modal-buttons">
+                                    <button className="cancel-btn" onClick={closeReviewModal}>Cancel</button>
+                                    <button className="submit-btn" onClick={handleReviewSubmit}>Submit</button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
             )}
         </div>
     );

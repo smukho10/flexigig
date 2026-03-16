@@ -191,6 +191,7 @@ CREATE TABLE messages (
     is_system BOOLEAN DEFAULT FALSE
 );
 
+-- Reviews table
 CREATE TABLE IF NOT EXISTS reviews (
     id SERIAL PRIMARY KEY,
 

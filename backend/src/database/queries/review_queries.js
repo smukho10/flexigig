@@ -2,12 +2,12 @@
 const db = require("../connection");
 
 // create a review (rating and/or review_text optional)
-async function createReview({ reviewer_id, reviewee_id, rating = null, review_text = null }) {
+async function createReview({ reviewer_id, reviewee_id, rating = null, review_text = null, job_id = null }) {
   const result = await db.query(
-    `INSERT INTO reviews (reviewer_id, reviewee_id, rating, review_text)
-     VALUES ($1, $2, $3, $4)
+    `INSERT INTO reviews (reviewer_id, reviewee_id, rating, review_text, job_id)
+     VALUES ($1, $2, $3, $4, $5)
      RETURNING *;`,
-    [reviewer_id, reviewee_id, rating, review_text]
+    [reviewer_id, reviewee_id, rating, review_text, job_id]
   );
   return result.rows[0];
 }

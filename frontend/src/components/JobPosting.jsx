@@ -206,13 +206,13 @@ const JobPosting = () => {
 
                 <div className="right">
                     <div className="card-actions">
-                        {/* View Applicants — shown for open jobs */}
-                        {status === JOB_STATUS.OPEN && (
+                        {/* View Applicants — shown for open, in-review, filled, and completed jobs */}
+                        {[JOB_STATUS.OPEN, JOB_STATUS.IN_REVIEW, JOB_STATUS.FILLED, JOB_STATUS.COMPLETED].includes(status) && (
                             <button
                                 className="view-applicants-btn"
                                 onClick={() => handleViewApplicants(job)}
                             >
-                                View Applicants
+                                {status === JOB_STATUS.COMPLETED ? "View Applicants / Rate" : "View Applicants"}
                             </button>
                         )}
 

@@ -13,10 +13,10 @@ const handleApplyRequest = async (req, res) => {
     req.body.worker_profile_id ?? req.body.applicantId ?? req.body.applicant_id;
 
   if (isNaN(jobIdInt) || !worker_profile_id) {
-    return res
-      .status(400)
-      .json({ message: "jobId and worker_profile_id are required" });
-  }
+      return res
+        .status(400)
+        .json({ message: "jobId and worker_profile_id are required" });
+    }
 
   const jobState = await job_queries.fetchJobLockState(jobIdInt);
   if (!jobState) return res.status(404).json({ message: "Job not found" });
@@ -26,6 +26,7 @@ const handleApplyRequest = async (req, res) => {
   }
 
   try {
+    // 1) Get employer_id from jobPostings
     const jobRes = await job_queries.getEmployerIdForJob(jobIdInt);
     if (!jobRes) {
       return res.status(404).json({ message: "Job not found" });
@@ -33,6 +34,7 @@ const handleApplyRequest = async (req, res) => {
 
     const employerId = jobRes.employer_id;
 
+    // 2) Insert application
     const application = await job_queries.insertGigApplication({
       job_id: jobIdInt,
       employer_id: employerId,
