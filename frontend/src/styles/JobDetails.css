@@ -124,3 +124,47 @@
         /* scrollbar-width: none; */
     }
 }
+
+/* ============================================================
+   APPEND THIS TO YOUR EXISTING JobDetails.css
+   ============================================================ */
+ 
+.requirements-div {
+  margin-top: 20px;
+}
+ 
+.requirements-div h1 {
+  font-family: "Poppins", sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 10px 0;
+  color: #1a1a1a;
+}
+ 
+.requirement-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+ 
+.requirement-tag {
+  display: inline-flex;
+  width: fit-content;
+  padding: 5px 13px;
+  border-radius: 20px;
+  border: 1.5px solid #4EBBC2;
+  background-color: #e0f5f5;
+  color: #2a9d9d;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: "Poppins", sans-serif;
+  white-space: nowrap;
+}
+ 
+.no-requirements {
+  font-size: 13px;
+  color: #9CA3AF;
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+}
+ 

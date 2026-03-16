@@ -161,3 +161,167 @@ select {
   color: #15803d;
   font-family: "Poppins";
 }
+
+/* ============================================================
+   APPEND THIS TO YOUR EXISTING JobPostingForm.css
+   ============================================================ */
+ 
+.requirements-section {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+ 
+.msd-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: static; /* no relative — dropdown is inline, not floating */
+}
+ 
+.msd-label {
+  font-family: "Poppins", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 6px 0;
+}
+ 
+/* Trigger bar */
+.msd-trigger {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  min-height: 42px !important;
+  border: 1.5px solid #d1d5db !important;
+  border-radius: 8px !important;
+  padding: 8px 12px !important;
+  cursor: pointer !important;
+  background: #fff !important;
+  transition: border-color 0.15s, border-radius 0.15s !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  font-size: unset !important;
+}
+ 
+.msd-trigger:hover {
+  border-color: #4EBBC2 !important;
+}
+ 
+/* When open — square off bottom corners so it flows into the list */
+.msd-trigger--open {
+  border-color: #4EBBC2 !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  border-bottom-color: transparent !important;
+}
+ 
+.msd-tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+ 
+.msd-placeholder {
+  font-size: 13px;
+  color: #9CA3AF;
+  font-family: "Poppins", sans-serif;
+  line-height: 26px;
+}
+ 
+/* Tag chips */
+.msd-tag {
+  display: inline-flex !important;
+  align-items: center !important;
+  width: fit-content !important;
+  gap: 5px !important;
+  background-color: #e0f5f5 !important;
+  color: #2a9d9d !important;
+  border: 1px solid #4EBBC2 !important;
+  border-radius: 14px !important;
+  padding: 3px 10px 3px 12px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  font-family: "Poppins", sans-serif !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+ 
+.msd-tag-remove {
+  background: none !important;
+  border: none !important;
+  color: #2a9d9d !important;
+  cursor: pointer !important;
+  font-size: 15px !important;
+  line-height: 1 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  width: auto !important;
+  height: auto !important;
+}
+ 
+.msd-tag-remove:hover {
+  color: #c0392b !important;
+}
+ 
+.msd-chevron {
+  font-size: 13px;
+  color: #6B7280;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+  margin-top: 5px;
+  margin-left: 6px;
+}
+ 
+.msd-chevron--up {
+  transform: rotate(180deg);
+}
+ 
+/* Dropdown list — INLINE, not absolute */
+.msd-dropdown {
+  background: #fff;
+  border: 1.5px solid #4EBBC2;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+ 
+.msd-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-family: "Poppins", sans-serif;
+  color: #374151;
+  cursor: pointer;
+  transition: background-color 0.12s;
+}
+ 
+.msd-option:hover {
+  background-color: #f0fbfb;
+}
+ 
+.msd-option--selected {
+  background-color: #e0f5f5;
+  color: #2a9d9d;
+  font-weight: 500;
+}
+ 
+.msd-option--selected:hover {
+  background-color: #cef0f0;
+}
+ 
+.msd-check {
+  width: 16px;
+  font-size: 13px;
+  color: #4EBBC2;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+ 

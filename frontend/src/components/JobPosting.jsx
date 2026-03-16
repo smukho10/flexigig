@@ -99,8 +99,14 @@ const JobPosting = () => {
         navigate(`/my-jobs/${job.job_id}/applicants`, { state: { job } });
     };
 
-    const handleEdit = (e) => {
-        setEditJob(jobs.find(job => job.job_id.toString() === e.target.value));
+    const handleEdit = async (e) => {
+        try {
+            const res = await axios.get(`/api/edit-job/${e.target.value}`, { withCredentials: true });
+            setEditJob(res.data);
+        } catch (error) {
+            console.error("Failed to fetch job for editing:", error);
+            setEditJob(jobs.find(job => job.job_id.toString() === e.target.value));
+        }
     };
 
     const handleBack = () => {

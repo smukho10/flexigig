@@ -66,12 +66,16 @@ const postJob = async ({
   jobEnd,
   location_id,
   user_id,
-  status = "open"
+  status = "open",
+  requiredSkills = [],
+  requiredExperience = [],
 }) => {
   const jobQuery = `
     INSERT INTO jobPostings (
-      jobTitle, jobType, jobDescription, hourlyRate, jobStart, jobEnd, location_id, user_id, jobfilled, status
-    ) VALUES ($1, $2, $3, $4::numeric, $5::timestamp, $6::timestamp, $7, $8, false, $9)
+      jobTitle, jobType, jobDescription, hourlyRate, jobStart, jobEnd,
+      location_id, user_id, jobfilled, status,
+      required_skills, required_experience
+    ) VALUES ($1, $2, $3, $4::numeric, $5::timestamp, $6::timestamp, $7, $8, false, $9, $10, $11)
     RETURNING *;
   `;
 
@@ -85,7 +89,9 @@ const postJob = async ({
       jobEnd || null,
       location_id,
       user_id,
-      status
+      status,
+      requiredSkills || [],
+      requiredExperience || [],
     ]);
     return jobResult.rows[0];
   } catch (err) {
@@ -199,7 +205,11 @@ const fetchJobByJobId = async (jobId) => {
 
 const updateJob = async (
   jobId,
-  { jobTitle, jobType, jobDescription, hourlyRate, jobStart, jobEnd, locationData, user_id, status }
+  {
+    jobTitle, jobType, jobDescription, hourlyRate, jobStart, jobEnd,
+    locationData, user_id, status,
+    requiredSkills = [], requiredExperience = [],
+  }
 ) => {
   try {
     let latitude = null;
@@ -224,7 +234,8 @@ const updateJob = async (
 
     const locationUpdateQuery = `
       UPDATE locations
-      SET StreetAddress = $1, city = $2, province = $3, postalCode = $4, latitude = $5, longitude = $6, geocoded_at = NOW()
+      SET StreetAddress = $1, city = $2, province = $3, postalCode = $4,
+          latitude = $5, longitude = $6, geocoded_at = NOW()
       FROM jobPostings
       WHERE locations.location_id = jobPostings.location_id AND jobPostings.job_id = $7;
     `;
@@ -241,8 +252,10 @@ const updateJob = async (
 
     const jobUpdateQuery = `
       UPDATE jobPostings
-      SET jobTitle = $1, jobType = $2, jobDescription = $3, hourlyRate = $4::numeric, jobStart = $5::timestamp, jobEnd = $6::timestamp, status = $7
-      WHERE job_id = $8 AND user_id = $9
+      SET jobTitle = $1, jobType = $2, jobDescription = $3,
+          hourlyRate = $4::numeric, jobStart = $5::timestamp, jobEnd = $6::timestamp,
+          status = $7, required_skills = $8, required_experience = $9
+      WHERE job_id = $10 AND user_id = $11
       RETURNING *;
     `;
 
@@ -254,6 +267,8 @@ const updateJob = async (
       jobStart || null,
       jobEnd || null,
       status,
+      requiredSkills || [],
+      requiredExperience || [],
       jobId,
       user_id
     ]);

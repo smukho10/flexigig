@@ -13,10 +13,10 @@ const handleApplyRequest = async (req, res) => {
     req.body.worker_profile_id ?? req.body.applicantId ?? req.body.applicant_id;
 
   if (isNaN(jobIdInt) || !worker_profile_id) {
-      return res
-        .status(400)
-        .json({ message: "jobId and worker_profile_id are required" });
-    }
+    return res
+      .status(400)
+      .json({ message: "jobId and worker_profile_id are required" });
+  }
 
   const jobState = await job_queries.fetchJobLockState(jobIdInt);
   if (!jobState) return res.status(404).json({ message: "Job not found" });
@@ -26,7 +26,6 @@ const handleApplyRequest = async (req, res) => {
   }
 
   try {
-    // 1) Get employer_id from jobPostings
     const jobRes = await job_queries.getEmployerIdForJob(jobIdInt);
     if (!jobRes) {
       return res.status(404).json({ message: "Job not found" });
@@ -34,7 +33,6 @@ const handleApplyRequest = async (req, res) => {
 
     const employerId = jobRes.employer_id;
 
-    // 2) Insert application
     const application = await job_queries.insertGigApplication({
       job_id: jobIdInt,
       employer_id: employerId,
@@ -62,9 +60,7 @@ router.get("/posted-jobs/:userId", async (req, res) => {
     res.json({ jobs });
   } catch (error) {
     console.error("Failed to fetch posted jobs:", error);
-    res
-      .status(500)
-      .json({ message: "Failed to fetch posted jobs", error: error.message });
+    res.status(500).json({ message: "Failed to fetch posted jobs", error: error.message });
   }
 });
 
@@ -75,10 +71,7 @@ router.get("/unfilled-jobs/:userId", async (req, res) => {
     res.json({ jobs });
   } catch (error) {
     console.error("Failed to fetch unfilled jobs:", error);
-    res.status(500).json({
-      message: "Failed to fetch unfilled jobs",
-      error: error.message,
-    });
+    res.status(500).json({ message: "Failed to fetch unfilled jobs", error: error.message });
   }
 });
 
@@ -89,10 +82,7 @@ router.get("/filled-jobs/:userId", async (req, res) => {
     res.json({ jobs });
   } catch (error) {
     console.error("Failed to fetch filled jobs:", error);
-    res.status(500).json({
-      message: "Failed to fetch filled jobs",
-      error: error.message,
-    });
+    res.status(500).json({ message: "Failed to fetch filled jobs", error: error.message });
   }
 });
 
@@ -106,23 +96,17 @@ router.post("/post-job", async (req, res) => {
       jobPostalCode,
       user_id,
       status,
+      requiredSkills,      // ← NEW
+      requiredExperience,  // ← NEW
       ...jobData
     } = req.body;
 
     if (!user_id) {
       console.error("Missing user_id in job post data");
-      return res.status(400).json({
-        message: "User ID is required to post a job",
-      });
+      return res.status(400).json({ message: "User ID is required to post a job" });
     }
 
-    const locationData = {
-      jobStreetAddress,
-      jobCity,
-      jobProvince,
-      jobPostalCode,
-    };
-
+    const locationData = { jobStreetAddress, jobCity, jobProvince, jobPostalCode };
     const location = await job_queries.insertLocation(locationData);
     const location_id = location.location_id;
 
@@ -131,6 +115,8 @@ router.post("/post-job", async (req, res) => {
       user_id,
       location_id,
       status: VALID_STATUSES.includes(status) ? status : "open",
+      requiredSkills:     Array.isArray(requiredSkills)     ? requiredSkills     : [],
+      requiredExperience: Array.isArray(requiredExperience) ? requiredExperience : [],
     });
 
     res.status(201).json({
@@ -140,16 +126,12 @@ router.post("/post-job", async (req, res) => {
     });
   } catch (error) {
     console.error("Failed to create job and location:", error);
-    res.status(500).json({
-      message: "Failed to create job and location",
-      error: error.message,
-    });
+    res.status(500).json({ message: "Failed to create job and location", error: error.message });
   }
 });
 
 router.get("/edit-job/:jobId", async (req, res) => {
   const { jobId } = req.params;
-  console.log("Received jobId:", jobId);
   try {
     const job = await job_queries.fetchJobByJobId(jobId);
     if (job) {
@@ -159,10 +141,7 @@ router.get("/edit-job/:jobId", async (req, res) => {
     }
   } catch (error) {
     console.error("Failed to fetch job details:", error);
-    res.status(500).send({
-      message: "Failed to fetch job details",
-      error: error.message,
-    });
+    res.status(500).send({ message: "Failed to fetch job details", error: error.message });
   }
 });
 
@@ -174,6 +153,10 @@ router.patch("/edit-job/:jobId", async (req, res) => {
     jobData.status = "open";
   }
 
+  // Normalise arrays coming from the frontend
+  jobData.requiredSkills     = Array.isArray(jobData.requiredSkills)     ? jobData.requiredSkills     : [];
+  jobData.requiredExperience = Array.isArray(jobData.requiredExperience) ? jobData.requiredExperience : [];
+
   try {
     const updatedJob = await job_queries.updateJob(parseInt(jobId, 10), jobData);
     if (updatedJob) {
@@ -183,10 +166,7 @@ router.patch("/edit-job/:jobId", async (req, res) => {
     }
   } catch (error) {
     console.error("Failed to update job:", error);
-    res.status(500).json({
-      message: "Failed to update job",
-      error: error.message,
-    });
+    res.status(500).json({ message: "Failed to update job", error: error.message });
   }
 });
 
@@ -209,10 +189,7 @@ router.patch("/job-status/:jobId", async (req, res) => {
     }
   } catch (error) {
     console.error("Failed to update job status:", error);
-    res.status(500).json({
-      message: "Failed to update job status",
-      error: error.message,
-    });
+    res.status(500).json({ message: "Failed to update job status", error: error.message });
   }
 });
 
@@ -223,10 +200,7 @@ router.delete("/delete-job/:jobId", async (req, res) => {
     res.json({ message: "Job successfully deleted" });
   } catch (error) {
     console.error("Failed to delete job:", error);
-    res.status(500).json({
-      message: "Failed to delete job",
-      error: error.message,
-    });
+    res.status(500).json({ message: "Failed to delete job", error: error.message });
   }
 });
 
@@ -244,7 +218,6 @@ router.patch("/jobs/:jobId/lock", async (req, res) => {
   try {
     const updated = await job_queries.setJobLocked(jobId, locked);
     if (!updated) return res.status(404).json({ message: "Job not found" });
-
     return res.json({ message: locked ? "Job locked" : "Job unlocked", job: updated });
   } catch (err) {
     console.error("Error toggling lock:", err);
@@ -286,31 +259,18 @@ router.get("/all-jobs", async (req, res) => {
       currentUserId: req.query.currentUserId,
       sortBy: req.query.sortBy,
       sortOrder: req.query.sortOrder,
-
-      // Distance filter support
       originLat: req.query.originLat,
       originLon: req.query.originLon,
       distanceKm: req.query.distanceKm,
     };
 
-    const { jobs, total } = await job_queries.fetchAllJobs({
-      filters,
-      page,
-      perPage,
-    });
-
+    const { jobs, total } = await job_queries.fetchAllJobs({ filters, page, perPage });
     const totalPages = Math.ceil(total / perPage);
 
-    return res.json({
-      jobs,
-      pagination: { page, perPage, total, totalPages},
-    });
+    return res.json({ jobs, pagination: { page, perPage, total, totalPages } });
   } catch (error) {
     console.error("Failed to fetch all jobs:", error);
-    return res.status(500).json({
-      message: "Failed to fetch all jobs",
-      error: error.message,
-    });
+    return res.status(500).json({ message: "Failed to fetch all jobs", error: error.message });
   }
 });
 
@@ -338,7 +298,7 @@ router.patch("/applications/:applicationId/status", async (req, res) => {
   }
 
   if (!status || !ALLOWED.includes(status)) {
-    return res.status(400).json({ message: `Invalid status. Must be one of: ${ALLOWED.join(", ")}`});
+    return res.status(400).json({ message: `Invalid status. Must be one of: ${ALLOWED.join(", ")}` });
   }
 
   try {
@@ -346,11 +306,10 @@ router.patch("/applications/:applicationId/status", async (req, res) => {
     if (!updated) {
       return res.status(404).json({ message: "Application not found" });
     }
-
-    return res.json({message: "Application status updated",application: updated});
+    return res.json({ message: "Application status updated", application: updated });
   } catch (err) {
     console.error("Error updating application status:", err);
-    return res.status(500).json({message: "Error updating application status",error: err.message});
+    return res.status(500).json({ message: "Error updating application status", error: err.message });
   }
 });
 
