@@ -21,7 +21,12 @@ CREATE TABLE locations (
     StreetAddress VARCHAR(255),
     city VARCHAR(255) NOT NULL,
     province VARCHAR(255) NOT NULL,
-    postalCode VARCHAR(20) NOT NULL
+    postalCode VARCHAR(20) NOT NULL,
+    latitude DOUBLE PRECISION,
+    longitude DOUBLE PRECISION,
+    geocoded_at TIMESTAMP,
+    geocode_source VARCHAR(50),
+    geocode_status VARCHAR(20)
 );
 
 CREATE TABLE pending_users (
@@ -87,49 +92,53 @@ CREATE TABLE schedule (
 );
 
 CREATE TABLE workers (
-  id SERIAL PRIMARY KEY,
-  user_id INT REFERENCES users(id) ON DELETE CASCADE,
-  profile_name VARCHAR(100) NOT NULL DEFAULT 'Profile 1',
-  first_name VARCHAR(255) NOT NULL,
-  last_name VARCHAR(255) NOT NULL,
-  biography TEXT,
-  desired_work_radius INT,
-  desired_pay DECIMAL(10, 2),
-  schedule_id INTEGER REFERENCES schedule(id) ON DELETE SET NULL
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE,
+    profile_name VARCHAR(100) NOT NULL DEFAULT 'Profile 1',
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
+    biography TEXT,
+    desired_work_radius INT,
+    desired_pay DECIMAL(10, 2),
+    schedule_id INTEGER REFERENCES schedule(id) ON DELETE SET NULL
 );
 
 CREATE TABLE businesses (
-  id SERIAL PRIMARY KEY,
-  user_id INT REFERENCES users(id) ON DELETE CASCADE,
-  business_name VARCHAR(100),
-  business_description TEXT,
-  business_email VARCHAR(100),
-  business_website VARCHAR(255)
+     id SERIAL PRIMARY KEY,
+     user_id INT REFERENCES users(id) ON DELETE CASCADE,
+     business_name VARCHAR(100),
+     business_description TEXT,
+     business_email VARCHAR(100),
+     business_website VARCHAR(255)
 );
 
 CREATE TABLE jobPostings (
     job_id SERIAL PRIMARY KEY,
-    jobTitle VARCHAR(255),
-    jobType VARCHAR(50),
-    jobDescription TEXT,
-    hourlyRate DECIMAL(10, 2),
-    jobStart TIMESTAMP WITHOUT TIME ZONE,
-    jobEnd TIMESTAMP WITHOUT TIME ZONE,
-    jobPostedDate TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    jobfilled BOOLEAN,
-    location_id INT,
-    user_id INT,
-    applicant_id INT DEFAULT NULL,
-    CONSTRAINT fk_job_posting_location
-        FOREIGN KEY (location_id)
-        REFERENCES locations(location_id)
-        ON DELETE SET NULL
-        ON UPDATE CASCADE,
-    CONSTRAINT fk_job_posting_user
-        FOREIGN KEY (user_id)
-        REFERENCES users(id)
-        ON DELETE SET NULL
-        ON UPDATE CASCADE
+        jobTitle VARCHAR(255),
+        jobType VARCHAR(50),
+        jobDescription TEXT,
+        hourlyRate DECIMAL(10, 2),
+        jobStart TIMESTAMP WITHOUT TIME ZONE,
+        jobEnd TIMESTAMP WITHOUT TIME ZONE,
+        jobPostedDate TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        jobfilled BOOLEAN,
+        location_id INT,
+        user_id INT,
+        applicant_id INT DEFAULT NULL,
+        CONSTRAINT fk_job_posting_location
+            FOREIGN KEY (location_id)
+            REFERENCES locations(location_id)
+            ON DELETE SET NULL
+            ON UPDATE CASCADE,
+        CONSTRAINT fk_job_posting_user
+            FOREIGN KEY (user_id)
+            REFERENCES users(id)
+            ON DELETE SET NULL
+        workers_skills_id SERIAL PRIMARY KEY,
+        workers_id INT,
+        skill_id INT,
+        CONSTRAINT fk_workers FOREIGN KEY(workers_id) REFERENCES workers(id),
+        CONSTRAINT fk_skills FOREIGN KEY(skill_id) REFERENCES skills(skill_id)
 );
 
 CREATE TABLE skills (
@@ -141,8 +150,8 @@ CREATE TABLE workers_skills (
     workers_skills_id SERIAL PRIMARY KEY,
     workers_id INT,
     skill_id INT,
-    CONSTRAINT fk_workers FOREIGN KEY(workers_id) REFERENCES workers(id),
-    CONSTRAINT fk_skills FOREIGN KEY(skill_id) REFERENCES skills(skill_id)
+    CONSTRAINT fk_workers_skills_worker FOREIGN KEY(workers_id) REFERENCES workers(id),
+    CONSTRAINT fk_workers_skills_skill FOREIGN KEY(skill_id) REFERENCES skills(skill_id)
 );
 
 CREATE TABLE experiences (
