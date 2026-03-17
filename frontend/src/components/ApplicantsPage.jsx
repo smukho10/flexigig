@@ -246,6 +246,20 @@ const ApplicantsPage = () => {
                                                 >
                                                     Reject
                                                 </button>
+                                                <button
+                                                    className="action-btn message-btn"
+                                                    onClick={() => navigate("/messages", {
+                                                        state: {
+                                                            partnerId: a.user_id,
+                                                            jobId: parseInt(jobId),
+                                                            jobTitle: jobTitle,
+                                                        }
+                                                    })}
+                                                    disabled={a.application_status !== "IN_REVIEW"}
+                                                    title={a.application_status !== "IN_REVIEW" ? "Only available when application is In Review" : ""}
+                                                >
+                                                    Message
+                                                </button>
                                             </>
                                         )}
 

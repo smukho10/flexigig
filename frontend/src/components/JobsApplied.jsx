@@ -6,7 +6,6 @@ import { useUser } from "./UserContext";
 import CalendarIcon from "../assets/images/CalendarIcon.png";
 import DollarSign from "../assets/images/DollarSign.png";
 import DefaultAvatar from "../assets/images/DefaultAvatar.png";
-import MessageBubbles from "../assets/images/MessageBubbles.png";
 
 
 const JobsApplied = () => {
@@ -30,7 +29,7 @@ const JobsApplied = () => {
         try {
           const res = await axios.get(`/api/applied-jobs/${user.id}`, { withCredentials: true });
           const sorted = [...res.data.jobs]
-            .filter(job => job.application_status === 'APPLIED')
+            .filter(job => ['APPLIED', 'IN_REVIEW'].includes(job.application_status))
             .sort((a, b) => a.jobstart.localeCompare(b.jobstart));
           setAppliedJobs(sorted);
           setCurrentPage(1);
@@ -78,10 +77,6 @@ const JobsApplied = () => {
   };
 
   const handleEmployer = () => { };
-
-  const handleMessage = (job) => {
-    navigate(`/messages`, { state: { partnerId: job.user_id } });
-  };
 
   const handleCancel = () => {
     if (withdrawing) setWithdrawing(false);
@@ -133,10 +128,6 @@ const JobsApplied = () => {
                 <button onClick={handleEmployer}>
                   <img src={DefaultAvatar} alt="employer-avatar" width="32px" height="auto" />
                   {job.business_name}
-                </button>
-                <button onClick={() => handleMessage(job)}>
-                  <img src={MessageBubbles} alt="message-bubbles" width="35px" height="auto" />
-                  Message
                 </button>
               </div>
             </div>

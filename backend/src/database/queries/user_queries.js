@@ -557,6 +557,20 @@ const getUserDetails = async (userId) => {
   }
 };
 
+const checkApplicationInReview = async (jobId, userId1, userId2) => {
+  const query = `
+    SELECT ga.application_id
+    FROM gig_applications ga
+    JOIN workers w ON ga.worker_profile_id = w.id
+    WHERE ga.job_id = $1
+      AND ga.status = 'IN_REVIEW'
+      AND (w.user_id = $2 OR w.user_id = $3)
+    LIMIT 1
+  `;
+  const result = await db.query(query, [jobId, userId1, userId2]);
+  return result.rows.length > 0;
+};
+
 module.exports = {
   addUser,
   addWorker,
@@ -583,6 +597,7 @@ module.exports = {
   markMessagesAsRead,
   getUnreadCount,
   getUserDetails,
+  checkApplicationInReview,
 
   //NEW EXPORTS
   setCurrentSession,
