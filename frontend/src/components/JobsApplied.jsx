@@ -6,7 +6,6 @@ import { useUser } from "./UserContext";
 import CalendarIcon from "../assets/images/CalendarIcon.png";
 import DollarSign from "../assets/images/DollarSign.png";
 import DefaultAvatar from "../assets/images/DefaultAvatar.png";
-import MessageBubbles from "../assets/images/MessageBubbles.png";
 
 
 const JobsApplied = () => {
@@ -79,10 +78,6 @@ const JobsApplied = () => {
 
   const handleEmployer = () => { };
 
-  const handleMessage = (job) => {
-    navigate(`/messages`, { state: { partnerId: job.user_id, jobId: job.job_id, jobTitle: job.jobtitle } });
-  };
-
   const handleCancel = () => {
     if (withdrawing) setWithdrawing(false);
   }
@@ -133,14 +128,6 @@ const JobsApplied = () => {
                 <button onClick={handleEmployer}>
                   <img src={DefaultAvatar} alt="employer-avatar" width="32px" height="auto" />
                   {job.business_name}
-                </button>
-                <button
-                  onClick={() => handleMessage(job)}
-                  disabled={job.application_status !== 'IN_REVIEW'}
-                  title={job.application_status !== 'IN_REVIEW' ? 'Messaging is only available when your application is In Review' : ''}
-                >
-                  <img src={MessageBubbles} alt="message-bubbles" width="35px" height="auto" />
-                  Message
                 </button>
               </div>
             </div>
