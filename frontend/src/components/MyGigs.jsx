@@ -196,7 +196,7 @@ const MyGigs = () => {
                       onClick={handleWithdraw}
                       value={job.job_id}
                       disabled={job.application_status === 'WITHDRAWN'|| job.status === 'completed'}
-                      className="withdraw-btn"
+                      className="remove-btn"
                     >
                       Withdraw
                     </button>
