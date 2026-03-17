@@ -477,3 +477,87 @@
     font-weight: 500;
     cursor: not-allowed;
 }
+
+.my-gigs-container .comfirm-removal-container {
+    background-color: #00000033;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+.my-gigs-container .comfirm-removal-container .prompt {
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 19px;
+    padding: 10px;
+}
+
+.my-gigs-container .comfirm-removal-container .prompt-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 0 20px 0;
+}
+
+.my-gigs-container .comfirm-removal-container .prompt-buttons {
+    display: flex;
+}
+
+.my-gigs-container .comfirm-removal-container .prompt-buttons button {
+    margin: 0 10px 0;
+    background-color: #4EBBC2;
+    color: white;
+    width: 103px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+}
+
+.my-gigs-container .comfirm-removal-container .prompt-buttons .remove-btn {
+    background-color: #C2554E;
+}
+
+.gig-item .status-badge {
+    display: inline-block;
+    padding: 2px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+}
+
+.gig-item .status-badge.status-in-review {
+    background-color: #FFF5E0;
+    color: #B07800;
+}
+
+.gig-item .status-badge.status-accepted {
+    background-color: #E6F9F0;
+    color: #1E8A4C;
+}
+
+.gig-item .status-badge.status-withdrawn {
+    background-color: #F0F0F0;
+    color: #6B6B6B;
+}
+
+.gig-item .status-badge.status-rejected {
+    background-color: #FDECEA;
+    color: #C2554E;
+}
