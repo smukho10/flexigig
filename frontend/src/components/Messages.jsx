@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import "../styles/Messages.css";
 import ChevronLeft from "../assets/images/ChevronLeft.png";
 import { useUser } from "./UserContext";
@@ -8,6 +8,8 @@ import axios from "axios";
 const Messages = () => {
     const { user } = useUser();
     const location = useLocation();
+    const navigate = useNavigate();
+    const backTo = location.state?.from || "/dashboard";
     const [search, setSearch] = useState("");
     const [conversationPartners, setConversationPartners] = useState([]);
     const [partnerDetails, setPartnerDetails] = useState({});
@@ -145,9 +147,13 @@ const Messages = () => {
     return (!user ? (<div>Loading...</div>) : (
         <div className="messages-container">
             <header className="messages-header">
-                <Link to="/dashboard">
-                    <img className="dash-back-btn" src={ChevronLeft} alt="Return to Dashboard" />
-                </Link>
+                <img
+                    className="dash-back-btn"
+                    src={ChevronLeft}
+                    alt="Go back"
+                    onClick={() => navigate(backTo)}
+                    style={{ cursor: "pointer" }}
+                />
             </header>
             <div className="chat-container">
                 <div className="person-list">

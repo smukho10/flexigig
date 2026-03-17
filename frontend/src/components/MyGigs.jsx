@@ -140,7 +140,7 @@ const MyGigs = () => {
   };
 
   const handleEmployer = () => { };
-  const handleMessage = (job) => navigate(`/messages`, { state: { partnerId: job.user_id } });
+  const handleMessage = (job) => navigate(`/messages`, { state: { partnerId: job.user_id, from: '/my-gigs' } });
 
   const STATUS_LABELS = {
     'IN_REVIEW': 'In Review',
