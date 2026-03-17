@@ -106,6 +106,8 @@ router.post("/post-job", async (req, res) => {
       jobPostalCode,
       user_id,
       status,
+      requiredSkills,      // ← NEW
+      requiredExperience,  // ← NEW
       ...jobData
     } = req.body;
 
@@ -122,7 +124,6 @@ router.post("/post-job", async (req, res) => {
       jobProvince,
       jobPostalCode,
     };
-
     const location = await job_queries.insertLocation(locationData);
     const location_id = location.location_id;
 
@@ -131,6 +132,8 @@ router.post("/post-job", async (req, res) => {
       user_id,
       location_id,
       status: VALID_STATUSES.includes(status) ? status : "open",
+      requiredSkills:     Array.isArray(requiredSkills)     ? requiredSkills     : [],
+      requiredExperience: Array.isArray(requiredExperience) ? requiredExperience : [],
     });
 
     res.status(201).json({
@@ -149,7 +152,6 @@ router.post("/post-job", async (req, res) => {
 
 router.get("/edit-job/:jobId", async (req, res) => {
   const { jobId } = req.params;
-  console.log("Received jobId:", jobId);
   try {
     const job = await job_queries.fetchJobByJobId(jobId);
     if (job) {
@@ -173,6 +175,10 @@ router.patch("/edit-job/:jobId", async (req, res) => {
   if (jobData.status && !VALID_STATUSES.includes(jobData.status)) {
     jobData.status = "open";
   }
+
+  // Normalise arrays coming from the frontend
+  jobData.requiredSkills     = Array.isArray(jobData.requiredSkills)     ? jobData.requiredSkills     : [];
+  jobData.requiredExperience = Array.isArray(jobData.requiredExperience) ? jobData.requiredExperience : [];
 
   try {
     const updatedJob = await job_queries.updateJob(parseInt(jobId, 10), jobData);
@@ -244,7 +250,6 @@ router.patch("/jobs/:jobId/lock", async (req, res) => {
   try {
     const updated = await job_queries.setJobLocked(jobId, locked);
     if (!updated) return res.status(404).json({ message: "Job not found" });
-
     return res.json({ message: locked ? "Job locked" : "Job unlocked", job: updated });
   } catch (err) {
     console.error("Error toggling lock:", err);
@@ -303,7 +308,7 @@ router.get("/all-jobs", async (req, res) => {
 
     return res.json({
       jobs,
-      pagination: { page, perPage, total, totalPages},
+      pagination: { page, perPage, total, totalPages },
     });
   } catch (error) {
     console.error("Failed to fetch all jobs:", error);
@@ -346,7 +351,6 @@ router.patch("/applications/:applicationId/status", async (req, res) => {
     if (!updated) {
       return res.status(404).json({ message: "Application not found" });
     }
-
     return res.json({message: "Application status updated",application: updated});
   } catch (err) {
     console.error("Error updating application status:", err);
