@@ -207,6 +207,9 @@
 .reject-btn  { background-color: #EF4444; color: white; }
 .reject-btn:hover:not(:disabled)  { background-color: #DC2626; }
 
+.message-btn { background-color: #3B82F6; color: white; }
+.message-btn:hover:not(:disabled) { background-color: #2563EB; }
+
 /* Pagination */
 .applicants-pagination {
     display: flex;

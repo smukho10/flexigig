@@ -30,7 +30,7 @@ const JobsApplied = () => {
         try {
           const res = await axios.get(`/api/applied-jobs/${user.id}`, { withCredentials: true });
           const sorted = [...res.data.jobs]
-            .filter(job => job.application_status === 'APPLIED')
+            .filter(job => ['APPLIED', 'IN_REVIEW'].includes(job.application_status))
             .sort((a, b) => a.jobstart.localeCompare(b.jobstart));
           setAppliedJobs(sorted);
           setCurrentPage(1);
@@ -80,7 +80,7 @@ const JobsApplied = () => {
   const handleEmployer = () => { };
 
   const handleMessage = (job) => {
-    navigate(`/messages`, { state: { partnerId: job.user_id } });
+    navigate(`/messages`, { state: { partnerId: job.user_id, jobId: job.job_id, jobTitle: job.jobtitle } });
   };
 
   const handleCancel = () => {
@@ -134,7 +134,11 @@ const JobsApplied = () => {
                   <img src={DefaultAvatar} alt="employer-avatar" width="32px" height="auto" />
                   {job.business_name}
                 </button>
-                <button onClick={() => handleMessage(job)}>
+                <button
+                  onClick={() => handleMessage(job)}
+                  disabled={job.application_status !== 'IN_REVIEW'}
+                  title={job.application_status !== 'IN_REVIEW' ? 'Messaging is only available when your application is In Review' : ''}
+                >
                   <img src={MessageBubbles} alt="message-bubbles" width="35px" height="auto" />
                   Message
                 </button>
