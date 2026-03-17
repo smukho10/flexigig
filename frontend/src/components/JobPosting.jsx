@@ -210,6 +210,13 @@ const JobPosting = () => {
                     </div>
                 </div>
 
+                <div className="middle">
+                    <div className="applicant-count">
+                        <span className="count-number">{job.applicant_count || 0}</span>
+                        <span className="count-label">Applications</span>
+                    </div>
+                </div>
+
                 <div className="right">
                     <div className="card-actions">
                         {/* View Applicants — shown for open, in-review, filled, and completed jobs */}

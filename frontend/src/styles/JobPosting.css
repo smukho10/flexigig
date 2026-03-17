@@ -639,4 +639,48 @@
     background-color: rgba(59, 130, 246, 0.22) !important;
 }
 
+/* ── Applicant Count display ─────────────────── */
+.job-posting-container ul li .middle {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    flex: 1;
+}
+
+.job-posting-container .applicant-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1.5px solid var(--status-color, #4EBBC2); /* Match border to job status */
+    background-color: white;
+    color: var(--status-color, #4EBBC2);
+    font-family: "Poppins";
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.job-posting-container .count-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 2px 8px;
+    border-radius: 10px; /* Pill shape */
+    background-color: var(--status-color, #4EBBC2);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.job-posting-container .count-label {
+    font-size: 14px;
+    color: var(--status-color, #4EBBC2);
+    font-weight: 500;
+}
+
 
