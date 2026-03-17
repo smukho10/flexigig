@@ -29,7 +29,9 @@ const JobsApplied = () => {
       if (user && user.id) {
         try {
           const res = await axios.get(`/api/applied-jobs/${user.id}`, { withCredentials: true });
-          const sorted = [...res.data.jobs].sort((a, b) => a.jobstart.localeCompare(b.jobstart));
+          const sorted = [...res.data.jobs]
+            .filter(job => job.application_status === 'APPLIED')
+            .sort((a, b) => a.jobstart.localeCompare(b.jobstart));
           setAppliedJobs(sorted);
           setCurrentPage(1);
         } catch (error) {
