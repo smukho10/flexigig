@@ -102,7 +102,10 @@ const postJob = async ({
 
 const fetchPostedJobsByUserId = async (userId) => {
   const query = `
-    SELECT jp.*, loc.StreetAddress, loc.city, loc.province, loc.postalCode, loc.latitude, loc.longitude
+    SELECT 
+      jp.*, 
+      loc.StreetAddress, loc.city, loc.province, loc.postalCode, loc.latitude, loc.longitude,
+      (SELECT COUNT(*)::int FROM gig_applications ga WHERE ga.job_id = jp.job_id) AS applicant_count
     FROM jobPostings jp
     JOIN locations loc ON jp.location_id = loc.location_id
     WHERE jp.user_id = $1;

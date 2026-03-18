@@ -65,7 +65,6 @@ const DualRangeSlider = ({ min, max, absMax, onChange }) => {
       <input
          type="range" min={0} max={absMax} defaultValue={max} ref={maxRef}
          onInput={handleMaxInput} onMouseUp={commit} onTouchEnd={commit}
-        onTouchEnd={commit}
       />
     </div>
   );
