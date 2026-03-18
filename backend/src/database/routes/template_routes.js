@@ -3,6 +3,22 @@ const express = require("express");
 const router = express.Router();
 const template_queries = require("../queries/template_queries.js");
 
+// GET /api/templates — fetch all templates for the logged-in employer
+router.get("/templates", async (req, res) => {
+  const userId = req.session?.user_id;
+  if (!userId) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+
+  try {
+    const templates = await template_queries.fetchTemplatesByUserId(userId);
+    return res.json({ templates });
+  } catch (err) {
+    console.error("Failed to fetch templates:", err);
+    return res.status(500).json({ message: "Failed to fetch templates", error: err.message });
+  }
+});
+
 // POST /api/templates — save the current form state as a named template
 router.post("/templates", async (req, res) => {
   const userId = req.session?.user_id;
@@ -20,6 +36,8 @@ router.post("/templates", async (req, res) => {
     jobCity,
     jobProvince,
     jobPostalCode,
+    requiredSkills,
+    requiredExperience,
   } = req.body;
 
   if (!template_name?.trim()) {
@@ -45,6 +63,8 @@ router.post("/templates", async (req, res) => {
       city:           jobCity,
       province:       jobProvince,
       postal_code:    jobPostalCode,
+      required_skills:    requiredSkills,
+      required_experience: requiredExperience,
     });
 
     return res.status(201).json({ message: "Template saved", template });
