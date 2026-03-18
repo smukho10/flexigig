@@ -1,6 +1,31 @@
 const express = require('express');
 const router = express.Router();
 const profile_queries = require('../queries/profile_queries.js');
+const workers_queries = require('../queries/workers_queries.js');
+
+// Employer-facing endpoint: fetch full applicant profile by worker_profile_id
+router.get("/applicant-profile/:workerId", async (req, res) => {
+  const workerId = parseInt(req.params.workerId, 10);
+  if (isNaN(workerId)) {
+    return res.status(400).json({ message: "Invalid workerId" });
+  }
+  try {
+    const [profile, skills, experiences] = await Promise.all([
+      profile_queries.getProfileByWorkerId(workerId),
+      workers_queries.getWorkerSkillsWithId(workerId),
+      workers_queries.getWorkerExperiencesWithId(workerId),
+    ]);
+
+    if (!profile) {
+      return res.status(404).json({ message: "Applicant profile not found" });
+    }
+
+    res.json({ profile, skills, experiences });
+  } catch (err) {
+    console.error("Error fetching applicant profile:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
 
 router.get("/profile/worker-profiles/:id", async (req, res) => {
   try {
