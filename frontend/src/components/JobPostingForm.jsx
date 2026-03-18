@@ -153,6 +153,23 @@ const JobPostingForm = ({ job, setDone, onBackClick }) => {
 
   useEffect(() => { fetchTemplates(); }, []);
 
+  const handleApplyTemplate = (template) => {
+    setJobPost((prev) => ({
+      ...prev,
+      jobTitle:           template.job_title        || "",
+      jobType:            template.job_type         || "",
+      jobDescription:     template.job_description  || "",
+      hourlyRate:         template.hourly_rate != null ? template.hourly_rate.toString() : "",
+      jobStreetAddress:   template.street_address   || "",
+      jobCity:            template.city             || "",
+      jobProvince:        template.province         || "",
+      jobPostalCode:      template.postal_code      || "",
+      requiredSkills:     Array.isArray(template.required_skills)     ? template.required_skills     : [],
+      requiredExperience: Array.isArray(template.required_experience) ? template.required_experience : [],
+    }));
+    setIsDirty(true);
+  };
+
 
   const formatDateTimeForInput = (dateTime) => {
     if (!dateTime) return "";
@@ -317,6 +334,7 @@ const JobPostingForm = ({ job, setDone, onBackClick }) => {
               <TemplateLoader
                 templates={templates}
                 loading={loadingTemplates}
+                onSelect={handleApplyTemplate}
               />
               <button type="button" className="template-btn" onClick={() => setShowTemplateModal(true)} disabled={submitting !== null}>Save as Template</button>
               {isDraftMode && (

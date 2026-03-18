@@ -1,51 +1,33 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState } from "react";
 import "../styles/TemplateLoader.css";
 
 const TemplateLoader = ({ templates, loading, onSelect = null }) => {
-    const [open, setOpen] = useState(false);
-    const containerRef = useRef(null);
+    const [value, setValue] = useState("");
 
-    // Close dropdown when user clicks outside
-    useEffect(() => {
-        if (!open) return;
-        const handleOutsideClick = (e) => {
-            if (containerRef.current && !containerRef.current.contains(e.target)) {
-                setOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", handleOutsideClick);
-        return () => document.removeEventListener("mousedown", handleOutsideClick);
-    }, [open]);
+    const handleChange = (e) => {
+        const id = e.target.value;
+        setValue("");   // reset to placeholder after selection
+        if (!id || !onSelect) return;
+        const template = templates.find(t => String(t.template_id) === id);
+        if (template) onSelect(template);
+    };
 
     return (
-        <div className="template-loader" ref={containerRef}>
-            <button
-                type="button"
-                className="template-load-btn"
-                onClick={() => setOpen(prev => !prev)}
-                disabled={loading}
-            >
-                {loading ? "Loading..." : `Templates ${open ? "▴" : "▾"}`}
-            </button>
-
-            {open && (
-                <ul className="template-dropdown">
-                    {templates.length === 0 ? (
-                        <li className="template-dropdown-empty">No templates saved yet</li>
-                    ) : (
-                        templates.map(t => (
-                            <li
-                                key={t.template_id}
-                                className={`template-dropdown-item${onSelect ? " template-dropdown-item--selectable" : ""}`}
-                                onClick={() => onSelect && (onSelect(t), setOpen(false))}
-                            >
-                                {t.template_name}
-                            </li>
-                        ))
-                    )}
-                </ul>
-            )}
-        </div>
+        <select
+            className="template-load-select"
+            value={value}
+            onChange={handleChange}
+            disabled={loading}
+        >
+            <option value="" disabled>
+                {loading ? "Loading..." : "Load Template"}
+            </option>
+            {templates.map(t => (
+                <option key={t.template_id} value={String(t.template_id)}>
+                    {t.template_name}
+                </option>
+            ))}
+        </select>
     );
 };
 
