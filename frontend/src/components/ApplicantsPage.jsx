@@ -213,6 +213,12 @@ const ApplicantsPage = () => {
                                     </span>
 
                                     <div className="applicant-actions">
+                                        <button
+                                            className="action-btn profile-btn"
+                                            onClick={() => navigate(`/applicant-profile/${a.worker_profile_id}`)}
+                                        >
+                                            View Profile
+                                        </button>
                                         {/* Standard status buttons — hidden for completed jobs */}
                                         {!isJobCompleted && (
                                             <>

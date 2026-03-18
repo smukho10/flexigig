@@ -198,6 +198,9 @@
     cursor: not-allowed;
 }
 
+.profile-btn { background-color: #6366F1; color: white; }
+.profile-btn:hover:not(:disabled) { background-color: #4F46E5; }
+
 .accept-btn  { background-color: #10B981; color: white; }
 .accept-btn:hover:not(:disabled)  { background-color: #059669; }
 
