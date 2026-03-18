@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useUser } from "./UserContext";
 import { JOB_STATUS } from "./JobPosting";
 import SaveTemplateModal from "./SaveTemplateModal";
+import TemplateLoader from "./TemplateLoader";
 
 // ── Options ───────────────────────────────────────────────────────────────────
 const SKILL_OPTIONS = [
@@ -118,6 +119,8 @@ const JobPostingForm = ({ job, setDone, onBackClick }) => {
   const [isDirty, setIsDirty] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [templateSavedMsg, setTemplateSavedMsg] = useState("");
+  const [templates, setTemplates] = useState([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(true);
   const [promptType, setPromptType] = useState(null);
   const [pendingNavigation, setPendingNavigation] = useState(null);
 
@@ -134,6 +137,22 @@ const JobPostingForm = ({ job, setDone, onBackClick }) => {
     if (user && user.id && !jobPost.user_id)
       setJobPost((prev) => ({ ...prev, user_id: user.id }));
   }, [user, jobPost.user_id]);
+
+  // ── Templates ──────────────────────────────────────────────────────────────
+  const fetchTemplates = async () => {
+    setLoadingTemplates(true);
+    try {
+      const res = await axios.get("/api/templates", { withCredentials: true });
+      setTemplates(res.data.templates);
+    } catch (err) {
+      console.error("Failed to fetch templates:", err);
+    } finally {
+      setLoadingTemplates(false);
+    }
+  };
+
+  useEffect(() => { fetchTemplates(); }, []);
+
 
   const formatDateTimeForInput = (dateTime) => {
     if (!dateTime) return "";
@@ -295,6 +314,10 @@ const JobPostingForm = ({ job, setDone, onBackClick }) => {
               <input type="text" id="jobType" name="jobType" value={jobPost.jobType} onChange={handleChange} />
             </div>
             <div className="top-right">
+              <TemplateLoader
+                templates={templates}
+                loading={loadingTemplates}
+              />
               <button type="button" className="template-btn" onClick={() => setShowTemplateModal(true)} disabled={submitting !== null}>Save as Template</button>
               {isDraftMode && (
                 <button type="button" className="draft-btn" onClick={handleSaveAsDraft} disabled={submitting !== null}>
@@ -396,7 +419,7 @@ const JobPostingForm = ({ job, setDone, onBackClick }) => {
       {showTemplateModal && (
         <SaveTemplateModal jobPost={jobPost}
           onClose={() => setShowTemplateModal(false)}
-          onSaved={() => { setTemplateSavedMsg("Template saved successfully!"); setTimeout(() => setTemplateSavedMsg(""), 3000); }}
+          onSaved={() => { setTemplateSavedMsg("Template saved successfully!"); setTimeout(() => setTemplateSavedMsg(""), 3000); fetchTemplates(); }}
         />
       )}
 

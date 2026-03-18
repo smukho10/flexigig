@@ -27,6 +27,8 @@ const SaveTemplateModal = ({ jobPost, onClose, onSaved }) => {
                     jobCity:          jobPost.jobCity,
                     jobProvince:      jobPost.jobProvince,
                     jobPostalCode:    jobPost.jobPostalCode,
+                    requiredSkills:     jobPost.requiredSkills     || [],
+                    requiredExperience: jobPost.requiredExperience || [],
                 },
                 { withCredentials: true }
             );
