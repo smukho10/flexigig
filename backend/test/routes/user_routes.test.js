@@ -340,7 +340,20 @@ describe("POST /api/login", () => {
 // POST /api/resend-verification
 // ══════════════════════════════════════════════════════════════════════════════
 describe("POST /api/resend-verification", () => {
-  beforeEach(() => jest.clearAllMocks());
+  let originalConsoleLog, originalConsoleError;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    originalConsoleLog   = console.log;
+    originalConsoleError = console.error;
+    console.log   = jest.fn();
+    console.error = jest.fn();
+  });
+
+  afterEach(() => {
+    console.log   = originalConsoleLog;
+    console.error = originalConsoleError;
+  });
 
   test("400 when email does not belong to any user", async () => {
     userQueries.getUserByEmail.mockResolvedValueOnce(null);
@@ -406,8 +419,19 @@ describe("POST /api/resend-verification", () => {
 // Forgot Password API
 // ══════════════════════════════════════════════════════════════════════════════
 describe("Forgot Password API", () => {
+  let originalConsoleLog, originalConsoleError;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    originalConsoleLog   = console.log;
+    originalConsoleError = console.error;
+    console.log   = jest.fn();
+    console.error = jest.fn();
+  });
+
+  afterEach(() => {
+    console.log   = originalConsoleLog;
+    console.error = originalConsoleError;
   });
 
   describe("POST /api/initiate-password-reset", () => {
@@ -588,8 +612,16 @@ describe("Forgot Password API", () => {
 // GET /api/recommended-jobs
 // ══════════════════════════════════════════════════════════════════════════════
 describe("GET /api/recommended-jobs", () => {
+  let originalConsoleError;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    originalConsoleError = console.error;
+    console.error = jest.fn();
+  });
+
+  afterEach(() => {
+    console.error = originalConsoleError;
   });
 
   test("returns 401 when user is not logged in", async () => {

@@ -113,7 +113,11 @@ describe("Google OAuth Authentication Routes", () => {
   });
 
   describe("GET /api/auth/google/callback - OAuth Callback", () => {
-    test("should redirect new user to account selection page", async () => {
+    test("should issue a pending token for a new user needing account selection", async () => {
+      // The callback now redirects to /auth/callback?token=... instead of directly
+      // to /account-selection. The frontend exchanges the token via
+      // /auth/google/exchange which sets pendingOAuth in session and returns
+      // { type: "pending" } so the frontend can show the account-type picker.
       global.__mockPassportUser = {
         needsAccountType: true,
         googleId: "google123",
@@ -123,16 +127,33 @@ describe("Google OAuth Authentication Routes", () => {
         lastName: "User"
       };
 
-      const res = await request(app)
-        .get("/api/auth/google/callback")
-        .expect(302);
+      const agent = request.agent(app);
 
-      expect(res.headers.location).toBe(
-        "http://localhost:3000/account-selection?oauth=google"
-      );
+      // Step 1: callback redirects to /auth/callback?token=... (no accountType param)
+      const callbackRes = await agent.get("/api/auth/google/callback").expect(302);
+      const location    = callbackRes.headers.location || "";
+      expect(location).toContain("/auth/callback?token=");
+      expect(location).not.toContain("accountType=");
+
+      // Step 2: exchange the token — sets pendingOAuth in session
+      const tokenMatch = location.match(/[?&]token=([^&]+)/);
+      const token      = tokenMatch ? tokenMatch[1] : null;
+      expect(token).not.toBeNull();
+
+      const res = await agent
+        .get(`/api/auth/google/exchange?token=${token}`)
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.type).toBe("pending");
+      expect(res.body.email).toBe("newuser@example.com");
+      expect(res.body.preSelectedAccountType).toBeNull();
     });
 
-    test("should redirect new user with pre-selected accountType", async () => {
+    test("should redirect new user with pre-selected accountType via token exchange", async () => {
+      // The callback now redirects to /auth/callback?token=...&accountType=Worker
+      // The frontend exchanges the token via /auth/google/exchange which returns
+      // preSelectedAccountType so the frontend can skip the account-type picker.
       global.__mockPassportUser = {
         needsAccountType: true,
         googleId: "google123",
@@ -142,18 +163,36 @@ describe("Google OAuth Authentication Routes", () => {
         lastName: "User"
       };
 
-      // First set the session with accountType (hits /auth/google)
       const agent = request.agent(app);
+
+      // Step 1: store the pre-selected account type in the session
       await agent.get("/api/auth/google?accountType=Worker");
 
-      const res = await agent.get("/api/auth/google/callback").expect(302);
+      // Step 2: callback redirects to /auth/callback?token=...&accountType=Worker
+      const callbackRes = await agent.get("/api/auth/google/callback").expect(302);
+      const location    = callbackRes.headers.location || "";
+      expect(location).toContain("/auth/callback?token=");
+      expect(location).toContain("accountType=Worker");
 
-      expect(res.headers.location).toContain(
-        "http://localhost:3000/account-selection?oauth=google&accountType=Worker"
-      );
+      // Step 3: exchange the token — response carries preSelectedAccountType
+      const tokenMatch = location.match(/[?&]token=([^&]+)/);
+      const token      = tokenMatch ? tokenMatch[1] : null;
+      expect(token).not.toBeNull();
+
+      const res = await agent
+        .get(`/api/auth/google/exchange?token=${token}`)
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.type).toBe("pending");
+      expect(res.body.preSelectedAccountType).toBe("Worker");
+      expect(res.body.email).toBe("newuser@example.com");
     });
 
-    test("should login existing Google user and redirect to dashboard", async () => {
+    test("should login existing Google user via token exchange", async () => {
+      // The callback no longer sets up the session directly — it creates a
+      // short-lived token and redirects to /auth/callback?token=...
+      // The frontend then calls /auth/google/exchange to establish the session.
       const existingUser = {
         id: 1,
         email: "existing@example.com",
@@ -161,26 +200,50 @@ describe("Google OAuth Authentication Routes", () => {
         userimage: "https://example.com/pic.jpg"
       };
 
-      user_queries.setCurrentSession.mockResolvedValueOnce(true);
       global.__mockPassportUser = existingUser;
+      user_queries.setCurrentSession.mockResolvedValueOnce(true);
+      user_queries.getUserById.mockResolvedValueOnce(existingUser);
 
-      const res = await request(app)
-        .get("/api/auth/google/callback")
-        .expect(302);
+      const agent = request.agent(app);
 
-      expect(res.headers.location).toBe("http://localhost:3000/dashboard");
+      // Step 1: callback redirects with a one-time token
+      const callbackRes = await agent.get("/api/auth/google/callback").expect(302);
+      const location    = callbackRes.headers.location || "";
+      const tokenMatch  = location.match(/[?&]token=([^&]+)/);
+      const token       = tokenMatch ? tokenMatch[1] : null;
+      expect(token).not.toBeNull();
+
+      // Step 2: exchange the token — session is created here
+      const res = await agent
+        .get(`/api/auth/google/exchange?token=${token}`)
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.type).toBe("login");
+      expect(res.body.user.id).toBe(existingUser.id);
+      expect(res.body.user.email).toBe(existingUser.email);
       expect(user_queries.setCurrentSession).toHaveBeenCalledWith(
         existingUser.id,
         expect.any(String)
       );
     });
 
-    test("should handle session regeneration error", async () => {
+    test("should handle session regeneration error during token exchange", async () => {
+      // The callback no longer calls session.regenerate — it creates a short-lived
+      // token and redirects. Regeneration happens in GET /auth/google/exchange.
       global.__mockPassportUser = {
         id: 1,
         email: "existing@example.com",
         isbusiness: false
       };
+
+      const agent = request.agent(app);
+
+      // Step 1: hit the callback to obtain the one-time token
+      const callbackRes = await agent.get("/api/auth/google/callback");
+      const location    = callbackRes.headers.location || "";
+      const tokenMatch  = location.match(/[?&]token=([^&]+)/);
+      const token       = tokenMatch ? tokenMatch[1] : null;
 
       const Session = require("express-session").Session;
       const originalRegenerate = Session.prototype.regenerate;
@@ -189,13 +252,13 @@ describe("Google OAuth Authentication Routes", () => {
           callback(new Error("Session error"));
         };
 
-        const res = await request(app)
-          .get("/api/auth/google/callback")
-          .expect(302);
+        // Step 2: exchange the token — regeneration fails here, returns 500 JSON
+        const res = await agent
+          .get(`/api/auth/google/exchange?token=${token}`)
+          .expect(500);
 
-        expect(res.headers.location).toBe(
-          "http://localhost:3000/signin?error=session_error"
-        );
+        expect(res.body.success).toBe(false);
+        expect(res.body.message).toBe("Session error");
       } finally {
         Session.prototype.regenerate = originalRegenerate;
       }
@@ -227,7 +290,12 @@ describe("Google OAuth Authentication Routes", () => {
   });
 
   describe("POST /api/auth/google/complete - Complete OAuth Registration", () => {
-    // Helper to create an agent with pending OAuth session
+    // Helper to create an agent with pending OAuth session.
+    // The callback no longer sets pendingOAuth directly — it creates a
+    // short-lived in-memory token and redirects the browser to the frontend.
+    // The frontend then calls /auth/google/exchange to set the session.
+    // We replicate that two-step flow here so pendingOAuth is in the session
+    // before any test calls POST /auth/google/complete.
     const createAgentWithPendingOAuth = async () => {
       global.__mockPassportUser = {
         needsAccountType: true,
@@ -240,7 +308,20 @@ describe("Google OAuth Authentication Routes", () => {
       global.__mockPassportBehavior = "success";
 
       const agent = request.agent(app);
-      await agent.get("/api/auth/google/callback");
+
+      // Step 1: hit the callback — receives a 302 with ?token=... in Location
+      const callbackRes = await agent.get("/api/auth/google/callback");
+
+      // Step 2: extract the one-time token from the redirect URL
+      const location = callbackRes.headers.location || "";
+      const tokenMatch = location.match(/[?&]token=([^&]+)/);
+      const token = tokenMatch ? tokenMatch[1] : null;
+
+      // Step 3: exchange the token — this sets req.session.pendingOAuth
+      if (token) {
+        await agent.get(`/api/auth/google/exchange?token=${token}`);
+      }
+
       return agent;
     };
 
