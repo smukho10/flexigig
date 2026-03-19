@@ -13,6 +13,21 @@ import { useUser } from "./UserContext";
 
 const JOB_TYPES = ["Full-time", "Part-time", "Contract", "Temporary", "Internship", "Casual"];
 const MAX_RATE = 100;
+const SKILLS = [
+  "Business Management", "Communication", "Customer Service",
+  "Food Safety Knowledge", "Public Security", "French",
+  "Mandarin", "Cantonese", "First Aid", "Inventory Management",
+  "Delivery Driving", "Basic Carpentry",
+];
+
+const EXPERIENCES = [
+  "Event Staffing", "Hospitality Services", "Retail Assistance",
+  "Delivery Services", "Maintenance and Repair", "Personal Services",
+  "Construction and Renovation", "Healthcare Assistance",
+  "Transportation Services", "Technical Support", "Cleaning Services",
+  "Fitness Instruction", "Photography and Videography",
+  "Creative Services", "Security Services",
+];
 
 const DualRangeSlider = ({ min, max, absMax, onChange }) => {
   const minRef = useRef(null);
@@ -234,6 +249,58 @@ const PayDropdown = ({ initialMin, initialMax, absMax, onClear, onApply }) => {
   );
 };
 
+const SkillMatchDropdown = ({ selected, onUpdate, onClear, onApply }) => (
+  <div className="filter-dropdown">
+    <h4>Skill Match</h4>
+    <div className="job-type-grid">
+      {SKILLS.map((skill) => (
+        <button
+          key={skill}
+          className={`job-type-pill ${selected.includes(skill) ? "selected" : ""}`}
+          onClick={() => {
+            const next = selected.includes(skill)
+              ? selected.filter((s) => s !== skill)
+              : [...selected, skill];
+            onUpdate("skills", next);
+          }}
+        >
+          {skill}
+        </button>
+      ))}
+    </div>
+    <div className="filter-actions">
+      <button className="filter-clear-btn" onClick={onClear}>Clear</button>
+      <button className="filter-apply-btn" onClick={onApply}>Apply</button>
+    </div>
+  </div>
+);
+
+const ExperienceDropdown = ({ selected, onUpdate, onClear, onApply }) => (
+  <div className="filter-dropdown">
+    <h4>Experience</h4>
+    <div className="job-type-grid">
+      {EXPERIENCES.map((exp) => (
+        <button
+          key={exp}
+          className={`job-type-pill ${selected.includes(exp) ? "selected" : ""}`}
+          onClick={() => {
+            const next = selected.includes(exp)
+              ? selected.filter((e) => e !== exp)
+              : [...selected, exp];
+            onUpdate("experience", next);
+          }}
+        >
+          {exp}
+        </button>
+      ))}
+    </div>
+    <div className="filter-actions">
+      <button className="filter-clear-btn" onClick={onClear}>Clear</button>
+      <button className="filter-apply-btn" onClick={onApply}>Apply</button>
+    </div>
+  </div>
+);
+
 const JobBoard = () => {
   const { user } = useUser();
   const location = useLocation();
@@ -267,6 +334,8 @@ const JobBoard = () => {
     startTo: "",
     endFrom: "",
     endTo: "",
+    skills: [],     
+    experience: [],
   });
 
   const [appliedFilters, setAppliedFilters] = useState({});
@@ -338,7 +407,15 @@ const JobBoard = () => {
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const params = { page, perPage, ...appliedFilters };
+        const { skills, experience, ...restFilters } = appliedFilters;
+        const params = { page, perPage, ...restFilters };
+        // REPLACE with:
+        if (Array.isArray(skills) && skills.length > 0) {
+          params.skills = skills;
+        }
+        if (Array.isArray(experience) && experience.length > 0) {
+          params.experience = experience;
+        }
 
         if (user?.id && !user?.isbusiness) {
           params.currentUserId = user.id;
@@ -358,8 +435,20 @@ const JobBoard = () => {
           params.distanceKm = effectiveDistance;
         }
 
+        // REPLACE with:
         const res = await axios.get(`/api/all-jobs`, {
           params,
+          paramsSerializer: (p) => {
+            const parts = [];
+            Object.entries(p).forEach(([key, val]) => {
+              if (Array.isArray(val)) {
+                val.forEach((v) => parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(v)}`));
+              } else if (val !== undefined && val !== null && val !== "") {
+                parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(val)}`);
+              }
+            });
+            return parts.join("&");
+          },
           withCredentials: true,
         });
 
@@ -415,7 +504,13 @@ const JobBoard = () => {
         return;
       }
 
-      if (val !== "" && val !== null && val !== undefined) {
+      if (Array.isArray(val)) {
+        if (val.length > 0) {
+          newApplied[key] = val;
+        } else {
+          delete newApplied[key];
+        }
+      } else if (val !== "" && val !== null && val !== undefined) {
         if (key === "hourlyRateMin" && val === 0) return;
         if (key === "hourlyRateMax" && val === MAX_RATE) return;
         newApplied[key] = val;
@@ -455,6 +550,7 @@ const JobBoard = () => {
       else if (key === "hourlyRateMax") resetPending[key] = MAX_RATE;
       else if (key === "useDistanceFilter") resetPending[key] = false;
       else if (key === "distanceKm") resetPending[key] = workerRadius || "";
+      else if (key === "skills" || key === "experience") resetPending[key] = [];
       else resetPending[key] = "";
     });
 
@@ -464,12 +560,11 @@ const JobBoard = () => {
   };
 
   const hasApplied = (keys) =>
-    keys.some(
-      (k) =>
-        appliedFilters[k] != null &&
-        appliedFilters[k] !== "" &&
-        appliedFilters[k] !== false
-    );
+  keys.some((k) => {
+    const v = appliedFilters[k];
+    if (Array.isArray(v)) return v.length > 0;
+    return v != null && v !== "" && v !== false;
+  });
 
   const locationKeys = [
     "city",
@@ -483,6 +578,8 @@ const JobBoard = () => {
   const jobTypeKeys = ["jobType"];
   const payKeys = ["hourlyRateMin", "hourlyRateMax"];
   const startKeys = ["startFrom", "startTo"];
+  const skillKeys = ["skills"];
+  const experienceKeys = ["experience"];
 
   const handleApply = (e) => {
     const jobId = e.target.value;
@@ -563,6 +660,24 @@ const JobBoard = () => {
           Date: {appliedFilters.startFrom || "any"} →{" "}
           {appliedFilters.startTo || "any"}
           <button onClick={() => clearFilter(startKeys)}>×</button>
+        </span>
+      );
+    }
+
+        if (hasApplied(skillKeys)) {
+      tags.push(
+        <span key="skills" className="active-filter-tag">
+          Skills: {appliedFilters.skills.join(", ")}
+          <button onClick={() => clearFilter(skillKeys)}>×</button>
+        </span>
+      );
+    }
+
+    if (hasApplied(experienceKeys)) {
+      tags.push(
+        <span key="experience" className="active-filter-tag">
+          Experience: {appliedFilters.experience.join(", ")}
+          <button onClick={() => clearFilter(experienceKeys)}>×</button>
         </span>
       );
     }
@@ -673,8 +788,18 @@ const JobBoard = () => {
               Date
             </button>
 
-            <button className="filter-btn" onClick={() => {}}>
-              Skill Match
+            <button
+              className={`filter-btn ${openFilter === "skillMatch" ? "active" : ""} ${hasApplied(skillKeys) ? "has-value" : ""}`}
+              onClick={() => toggleFilter("skillMatch")}
+            >
+              Skill Match{appliedFilters.skills?.length ? ` · ${appliedFilters.skills.length}` : ""}
+            </button>
+
+            <button
+              className={`filter-btn ${openFilter === "experience" ? "active" : ""} ${hasApplied(experienceKeys) ? "has-value" : ""}`}
+              onClick={() => toggleFilter("experience")}
+            >
+              Experience{appliedFilters.experience?.length ? ` · ${appliedFilters.experience.length}` : ""}
             </button>
 
             {openFilter === "location" && (
@@ -722,6 +847,24 @@ const JobBoard = () => {
                 onUpdate={updatePending}
                 onClear={() => clearFilter(startKeys)}
                 onApply={() => applyFilter(startKeys)}
+              />
+            )}
+
+            {openFilter === "skillMatch" && (
+              <SkillMatchDropdown
+                selected={pendingFilters.skills}
+                onUpdate={updatePending}
+                onClear={() => clearFilter(skillKeys)}
+                onApply={() => applyFilter(skillKeys)}
+              />
+            )}
+
+            {openFilter === "experience" && (
+              <ExperienceDropdown
+                selected={pendingFilters.experience}
+                onUpdate={updatePending}
+                onClear={() => clearFilter(experienceKeys)}
+                onApply={() => applyFilter(experienceKeys)}
               />
             )}
           </div>
