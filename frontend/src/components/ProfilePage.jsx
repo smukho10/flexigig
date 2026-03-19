@@ -59,6 +59,12 @@ const ProfilePage = () => {
   const [uploading, setUploading] = useState(false);
   const [photoError, setPhotoError] = useState(null);
 
+  // R2 Resume Upload States
+  const [resumeFile, setResumeFile] = useState(null);
+  const [resumeUrl, setResumeUrl] = useState(null);
+  const [uploadingResume, setUploadingResume] = useState(false);
+  const [resumeError, setResumeError] = useState(null);
+
   // Loading state for save operations
   const [isSaving, setIsSaving] = useState(false);
 
@@ -349,6 +355,81 @@ const ProfilePage = () => {
   useEffect(() => {
     fetchProfilePhoto();
   }, [user?.id]);
+
+  const handleResumeSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.type !== "application/pdf") {
+      setResumeError("Please select a PDF file");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setResumeError("File size must be less than 10MB");
+      return;
+    }
+    setResumeFile(file);
+    setResumeError(null);
+  };
+
+  const handleResumeUpload = async () => {
+    if (!resumeFile || !selectedWorkerId) return;
+    setUploadingResume(true);
+    setResumeError(null);
+    try {
+      const uploadUrlRes = await axios.post(
+        `/api/profile/upload-resume-url/${selectedWorkerId}`,
+        { contentType: resumeFile.type },
+        { withCredentials: true }
+      );
+      const { uploadUrl, key } = uploadUrlRes.data;
+      await fetch(uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": resumeFile.type },
+        body: resumeFile,
+      });
+      await axios.post(
+        `/api/profile/save-resume-key/${selectedWorkerId}`,
+        { key },
+        { withCredentials: true }
+      );
+      setResumeFile(null);
+      showAlert("Success", "Resume uploaded successfully!", "success");
+      await fetchResumeUrl();
+    } catch (error) {
+      console.error("Resume upload error:", error);
+      setResumeError("Failed to upload resume. Please try again.");
+    } finally {
+      setUploadingResume(false);
+    }
+  };
+
+  const fetchResumeUrl = async () => {
+    if (!selectedWorkerId) return;
+    try {
+      const res = await axios.get(
+        `/api/profile/view-resume-url/${selectedWorkerId}`,
+        { withCredentials: true }
+      );
+      setResumeUrl(res.data.viewUrl);
+    } catch {
+      setResumeUrl(null);
+    }
+  };
+
+  const handleDeleteResume = async () => {
+    showConfirm("Delete Resume", "Are you sure you want to delete your resume?", async () => {
+      await axios.delete(
+        `/api/profile/delete-resume/${selectedWorkerId}`,
+        { withCredentials: true }
+      );
+      setResumeUrl(null);
+      showAlert("Success", "Resume deleted.", "success");
+    });
+  };
+
+  useEffect(() => {
+    fetchResumeUrl();
+  }, [selectedWorkerId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -648,6 +729,55 @@ const ProfilePage = () => {
               </button>
             </div>
           </div>
+
+          {/* Resume Upload - Workers only */}
+          {!user.isbusiness && (
+            <div className="form-sections-container">
+              <div className="form-section">
+                <h2>Resume</h2>
+                {resumeUrl && (
+                  <div style={{ marginBottom: "10px" }}>
+                    <a
+                      href={resumeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="form-button"
+                      style={{ backgroundColor: "#2196F3", marginRight: "10px", display: "inline-block" }}
+                    >
+                      View Current Resume
+                    </a>
+                    <button
+                      type="button"
+                      onClick={handleDeleteResume}
+                      className="form-button"
+                      style={{ backgroundColor: "#e53935" }}
+                    >
+                      Delete Resume
+                    </button>
+                  </div>
+                )}
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  onChange={handleResumeSelect}
+                  style={{ marginBottom: "10px" }}
+                  disabled={uploadingResume}
+                />
+                {resumeError && (
+                  <p style={{ color: "red", marginBottom: "10px" }}>{resumeError}</p>
+                )}
+                <button
+                  type="button"
+                  onClick={handleResumeUpload}
+                  disabled={!resumeFile || uploadingResume}
+                  className="form-button"
+                  style={{ backgroundColor: uploadingResume ? "#ccc" : "#4CAF50" }}
+                >
+                  {uploadingResume ? "Uploading..." : "Upload Resume"}
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="form-sections-container">
             {user.isbusiness ? (
@@ -1105,6 +1235,28 @@ const ProfilePage = () => {
                     <span key={i} className="profile-tag">{expObj.experience_name}</span>
                   )) : <p className="profile-empty-text">No experience added yet.</p>}
                 </div>
+              </div>
+            </div>
+
+            {/* Resume Card */}
+            <div className="profile-card">
+              <div className="profile-card-header">
+                <h2>Resume</h2>
+              </div>
+              <div className="profile-card-body">
+                {resumeUrl ? (
+                  <a
+                    href={resumeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="form-button"
+                    style={{ backgroundColor: "#2196F3", display: "inline-block" }}
+                  >
+                    View Resume (PDF)
+                  </a>
+                ) : (
+                  <p className="profile-empty-text">No resume uploaded yet.</p>
+                )}
               </div>
             </div>
           </div>

@@ -386,4 +386,99 @@ router.get("/profile/view-photo-url/:userId", async (req, res) => {
   }
 });
 
+// ── Resume Upload Routes ──────────────────────────────────────────────────────
+
+// Get presigned upload URL for resume (PDF only)
+router.post("/profile/upload-resume-url/:workerId", async (req, res) => {
+  try {
+    const { workerId } = req.params;
+    const { contentType } = req.body;
+
+    if (contentType !== "application/pdf") {
+      return res.status(400).json({ message: "Only PDF files are allowed" });
+    }
+
+    const key = `workers/${workerId}/resume-${crypto.randomUUID()}.pdf`;
+
+    const command = new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET,
+      Key: key,
+      ContentType: contentType,
+    });
+
+    const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 3600 });
+    res.json({ uploadUrl, key });
+  } catch (e) {
+    console.error("Error generating resume upload URL:", e);
+    res.status(500).json({ message: "Failed to generate resume upload URL" });
+  }
+});
+
+// Save the resume key after upload
+router.post("/profile/save-resume-key/:workerId", async (req, res) => {
+  try {
+    const { workerId } = req.params;
+    const { key } = req.body;
+
+    if (!key) return res.status(400).json({ message: "Key is required" });
+
+    await connection.query(
+      `UPDATE workers SET resume_key = $1 WHERE id = $2;`,
+      [key, workerId]
+    );
+
+    res.json({ message: "Resume saved" });
+  } catch (e) {
+    console.error("Error saving resume key:", e);
+    res.status(500).json({ message: "Failed to save resume key" });
+  }
+});
+
+// Get presigned view URL for resume
+router.get("/profile/view-resume-url/:workerId", async (req, res) => {
+  try {
+    const { workerId } = req.params;
+
+    const result = await connection.query(
+      `SELECT resume_key FROM workers WHERE id = $1;`,
+      [workerId]
+    );
+
+    if (!result.rows[0]?.resume_key) {
+      return res.status(404).json({ message: "No resume found" });
+    }
+
+    const command = new GetObjectCommand({
+      Bucket: process.env.R2_BUCKET,
+      Key: result.rows[0].resume_key,
+    });
+
+    const viewUrl = await getSignedUrl(s3, command, {
+      expiresIn: parseInt(process.env.R2_SIGNED_URL_EXPIRY || 3600),
+    });
+
+    res.json({ viewUrl });
+  } catch (e) {
+    console.error("Error generating resume view URL:", e);
+    res.status(500).json({ message: "Failed to generate resume view URL" });
+  }
+});
+
+// Delete resume
+router.delete("/profile/delete-resume/:workerId", async (req, res) => {
+  try {
+    const { workerId } = req.params;
+
+    await connection.query(
+      `UPDATE workers SET resume_key = NULL WHERE id = $1;`,
+      [workerId]
+    );
+
+    res.json({ message: "Resume deleted" });
+  } catch (e) {
+    console.error("Error deleting resume:", e);
+    res.status(500).json({ message: "Failed to delete resume" });
+  }
+});
+
 module.exports = router;

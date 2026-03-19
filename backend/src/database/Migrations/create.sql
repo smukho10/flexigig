@@ -100,7 +100,8 @@ CREATE TABLE workers (
     biography TEXT,
     desired_work_radius INT,
     desired_pay DECIMAL(10, 2),
-    schedule_id INTEGER REFERENCES schedule(id) ON DELETE SET NULL
+    schedule_id INTEGER REFERENCES schedule(id) ON DELETE SET NULL,
+    resume_key VARCHAR(255)
 );
 
 CREATE TABLE businesses (
