@@ -194,9 +194,17 @@ const ApplicantsPage = () => {
                                     <span className="applicant-index">{rowNumber}</span>
 
                                     <div className="applicant-info">
-                                        <span className="applicant-name">
-                                            {a.first_name} {a.last_name}
-                                        </span>
+                                        <div className="applicant-name-row">
+                                            <span className="applicant-name">
+                                                {a.first_name} {a.last_name}
+                                            </span>
+                                            <span
+                                                className="applicant-view-profile-link"
+                                                onClick={() => navigate(`/applicant-profile/${a.worker_profile_id}`)}
+                                            >
+                                                View Profile
+                                            </span>
+                                        </div>
                                         {a.email && <span className="applicant-email">{a.email}</span>}
                                         {a.profile_name && (
                                             <span className="applicant-profile-tag">{a.profile_name}</span>
@@ -213,12 +221,6 @@ const ApplicantsPage = () => {
                                     </span>
 
                                     <div className="applicant-actions">
-                                        <button
-                                            className="action-btn profile-btn"
-                                            onClick={() => navigate(`/applicant-profile/${a.worker_profile_id}`)}
-                                        >
-                                            View Profile
-                                        </button>
                                         {/* Standard status buttons — hidden for completed jobs */}
                                         {!isJobCompleted && (
                                             <>

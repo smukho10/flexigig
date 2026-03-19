@@ -133,10 +133,28 @@
     gap: 3px;
 }
 
+.applicant-name-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .applicant-name {
     font-size: 14px;
     font-weight: 600;
     color: #111827;
+}
+
+.applicant-view-profile-link {
+    font-size: 11px;
+    color: #9CA3AF;
+    cursor: pointer;
+    text-decoration: underline;
+    white-space: nowrap;
+}
+
+.applicant-view-profile-link:hover {
+    color: #6B7280;
 }
 
 .applicant-email {
