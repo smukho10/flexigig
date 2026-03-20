@@ -355,7 +355,7 @@ const JobPostingForm = ({ job, setDone, onBackClick }) => {
               <h1>Job Details</h1>
               <div className="details">
                 <label htmlFor="hourlyRate">Hourly Rate ($)</label>
-                <input type="number" min="0" id="hourlyRate" name="hourlyRate" value={jobPost.hourlyRate} onChange={handleChange} />
+                <input type="number" min="0" id="hourlyRate" name="hourlyRate" value={jobPost.hourlyRate} onChange={handleChange} onKeyDown={(e) => ["e","E","+","-"].includes(e.key) && e.preventDefault()} />
                 <label htmlFor="jobStart">Job Start Date, Time</label>
                 <input type="datetime-local" id="jobStart" name="jobStart" value={jobPost.jobStart} onChange={handleChange} />
                 <label htmlFor="jobEnd">Job End Date, Time</label>
