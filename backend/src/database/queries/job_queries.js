@@ -571,7 +571,6 @@ const setJobLocked = async (jobId, locked) => {
   );
   return result.rows[0] || null;
 };
-
 const fetchAppliedJobs = async (userId) => {
   try {
     const result = await db.query(
@@ -589,7 +588,14 @@ const fetchAppliedJobs = async (userId) => {
         ga.applied_at,
         ga.worker_profile_id,
         w.profile_name,
-        COALESCE(bs.business_name, 'Unknown Business') AS business_name
+        COALESCE(bs.business_name, 'Unknown Business') AS business_name,
+        jp.user_id AS employer_user_id,
+        EXISTS (
+          SELECT 1 FROM reviews r
+          WHERE r.reviewer_id = $1
+            AND r.reviewee_id = jp.user_id
+            AND r.job_id = jp.job_id
+        ) AS has_reviewed_employer
       FROM gig_applications ga
       JOIN workers w ON ga.worker_profile_id = w.id AND w.user_id = $1
       JOIN jobPostings jp ON ga.job_id = jp.job_id
@@ -761,7 +767,6 @@ const fetchRecommendedJobs = async (userId) => {
     throw err;
   }
 };
-
 const fetchApplicantsForJob = async (jobId) => {
   const result = await db.query(
     `
@@ -775,10 +780,17 @@ const fetchApplicantsForJob = async (jobId) => {
       w.last_name,
       u.id              AS user_id,
       u.email,
-      u.userimage       AS user_image
+      u.userimage       AS user_image,
+      EXISTS (
+        SELECT 1 FROM reviews r
+        WHERE r.reviewer_id = jp.user_id
+          AND r.reviewee_id = u.id
+          AND r.job_id      = $1
+      ) AS has_reviewed_worker
     FROM gig_applications ga
-    JOIN workers w ON ga.worker_profile_id = w.id
-    JOIN users   u ON w.user_id = u.id
+    JOIN workers w      ON ga.worker_profile_id = w.id
+    JOIN users   u      ON w.user_id = u.id
+    JOIN jobPostings jp ON jp.job_id = ga.job_id
     WHERE ga.job_id = $1
     ORDER BY ga.applied_at ASC
     `,

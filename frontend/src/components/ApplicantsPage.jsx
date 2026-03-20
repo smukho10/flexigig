@@ -35,10 +35,6 @@ const ApplicantsPage = () => {
     const [reviewText, setReviewText] = useState("");
     const [reviewSuccess, setReviewSuccess] = useState(false);
     const [reviewError, setReviewError] = useState("");
-    const [reviewedWorkers, setReviewedWorkers] = useState(() => {
-        try { return JSON.parse(localStorage.getItem("reviewedWorkerJobs") || "{}"); }
-        catch { return {}; }
-    });
 
     const fetchApplicants = async () => {
         try {
@@ -51,7 +47,6 @@ const ApplicantsPage = () => {
         }
     };
 
-    // Always fetch fresh job status from backend
     const fetchJobStatus = async () => {
         try {
             const res = await axios.get(`/api/edit-job/${jobId}`, { withCredentials: true });
@@ -111,12 +106,11 @@ const ApplicantsPage = () => {
                 },
                 { withCredentials: true }
             );
-            // Save to localStorage so button shows "Rated" on next open
-            const updated = { ...reviewedWorkers, [`${jobId}_${currentApplicant.user_id}`]: true };
-            localStorage.setItem("reviewedWorkerJobs", JSON.stringify(updated));
-            setReviewedWorkers(updated);
             setReviewSuccess(true);
-            setTimeout(() => closeReviewModal(), 1800);
+            setTimeout(() => {
+                closeReviewModal();
+                fetchApplicants(); // re-fetch so has_reviewed_worker flips to true from DB
+            }, 1800);
         } catch (err) {
             setReviewError(err.response?.data?.message || "Failed to submit review.");
         }
@@ -186,7 +180,7 @@ const ApplicantsPage = () => {
                         {paginated.map((a, index) => {
                             const statusStyle = STATUS_COLORS[a.application_status] || STATUS_COLORS.APPLIED;
                             const rowNumber = (page - 1) * APPLICANTS_PER_PAGE + index + 1;
-                            const alreadyReviewed = !!reviewedWorkers[`${jobId}_${a.user_id}`];
+                            const alreadyReviewed = !!a.has_reviewed_worker; // from DB, no localStorage
                             const canRate = isJobCompleted && a.application_status === "ACCEPTED";
 
                             return (
@@ -221,7 +215,6 @@ const ApplicantsPage = () => {
                                     </span>
 
                                     <div className="applicant-actions">
-                                        {/* Standard status buttons — hidden for completed jobs */}
                                         {!isJobCompleted && (
                                             <>
                                                 <button
@@ -271,7 +264,6 @@ const ApplicantsPage = () => {
                                             </>
                                         )}
 
-                                        {/* Rate Worker button — only for completed jobs with ACCEPTED worker */}
                                         {canRate && (
                                             alreadyReviewed ? (
                                                 <button className="action-btn rated-btn" disabled>
@@ -292,7 +284,6 @@ const ApplicantsPage = () => {
                         })}
                     </div>
 
-                    {/* Pagination */}
                     {totalPages > 1 && (
                         <div className="applicants-pagination">
                             <button
@@ -342,13 +333,13 @@ const ApplicantsPage = () => {
                                         </span>
                                     ))}
                                 </div>
-                               <textarea
-                                   className="review-comment"
-                                   placeholder="Write a review (optional)"
-                                   value={reviewText}
-                                   onChange={(e) => setReviewText(e.target.value)}
-                                   rows={4}
-                               />
+                                <textarea
+                                    className="review-comment"
+                                    placeholder="Write a review (optional)"
+                                    value={reviewText}
+                                    onChange={(e) => setReviewText(e.target.value)}
+                                    rows={4}
+                                />
                                 {reviewError && <p className="review-error">{reviewError}</p>}
                                 <div className="modal-buttons">
                                     <button className="cancel-btn" onClick={closeReviewModal}>Cancel</button>
