@@ -335,6 +335,7 @@ const JobPostingForm = ({ job, setDone, onBackClick }) => {
                 templates={templates}
                 loading={loadingTemplates}
                 onSelect={handleApplyTemplate}
+                onTemplatesChanged={fetchTemplates}
               />
               <button type="button" className="template-btn" onClick={() => setShowTemplateModal(true)} disabled={submitting !== null}>Save as Template</button>
               {isDraftMode && (
