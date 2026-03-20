@@ -51,6 +51,64 @@ const createTemplate = async ({
   );
   return result.rows[0];
 };
+const updateTemplate = async (templateId, userId, {
+  template_name,
+  job_title,
+  job_type,
+  job_description,
+  hourly_rate,
+  street_address,
+  city,
+  province,
+  postal_code,
+  required_skills,
+  required_experience,
+}) => {
+  const result = await db.query(
+    `
+    UPDATE job_templates
+    SET
+      template_name       = $1,
+      job_title           = $2,
+      job_type            = $3,
+      job_description     = $4,
+      hourly_rate         = $5::numeric,
+      street_address      = $6,
+      city                = $7,
+      province            = $8,
+      postal_code         = $9,
+      required_skills     = $10,
+      required_experience = $11,
+      updated_at          = NOW()
+    WHERE template_id = $12 AND user_id = $13
+    RETURNING *
+    `,
+    [
+      template_name,
+      job_title       || null,
+      job_type        || null,
+      job_description || null,
+      hourly_rate     || null,
+      street_address  || null,
+      city            || null,
+      province        || null,
+      postal_code     || null,
+      JSON.stringify(Array.isArray(required_skills)     ? required_skills     : []),
+      JSON.stringify(Array.isArray(required_experience) ? required_experience : []),
+      templateId,
+      userId,
+    ]
+  );
+  return result.rows[0];
+};
+
+const deleteTemplate = async (templateId, userId) => {
+  const result = await db.query(
+    `DELETE FROM job_templates WHERE template_id = $1 AND user_id = $2 RETURNING *`,
+    [templateId, userId]
+  );
+  return result.rows[0];
+};
 
 const fetchTemplatesByUserId = async (userId) => {
   const result = await db.query(
@@ -65,4 +123,6 @@ module.exports = {
   getTemplateCountByUserId,
   createTemplate,
   fetchTemplatesByUserId,
+  updateTemplate,
+  deleteTemplate,
 };

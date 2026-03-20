@@ -111,3 +111,11 @@
     opacity: 0.6;
     cursor: not-allowed;
 }
+
+.template-modal textarea {
+  min-height: 200px !important;
+  height: 200px !important;
+  resize: vertical !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
