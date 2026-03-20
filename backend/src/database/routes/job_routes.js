@@ -2,6 +2,7 @@
 const express = require("express");
 const router = express.Router();
 const job_queries = require("../queries/job_queries.js");
+const { validateAddress } = require("../middleware/addressValidation");
 
 const VALID_STATUSES = ["draft", "open", "in-review", "filled", "completed"];
 
@@ -118,11 +119,22 @@ router.post("/post-job", async (req, res) => {
       });
     }
 
+    const addressValidation = await validateAddress({
+      streetAddress: jobStreetAddress,
+      city: jobCity,
+      province: jobProvince,
+      postalCode: jobPostalCode,
+    });
+
+    if (!addressValidation.isValid) {
+      return res.status(400).json({ message: addressValidation.message });
+    }
+
     const locationData = {
-      jobStreetAddress,
-      jobCity,
-      jobProvince,
-      jobPostalCode,
+      jobStreetAddress: addressValidation.cleaned.streetAddress,
+      jobCity: addressValidation.cleaned.city,
+      jobProvince: addressValidation.cleaned.province,
+      jobPostalCode: addressValidation.cleaned.postalCode,
     };
     const location = await job_queries.insertLocation(locationData);
     const location_id = location.location_id;
@@ -181,6 +193,24 @@ router.patch("/edit-job/:jobId", async (req, res) => {
   jobData.requiredExperience = Array.isArray(jobData.requiredExperience) ? jobData.requiredExperience : [];
 
   try {
+    const addressValidation = await validateAddress({
+      streetAddress: jobData.jobStreetAddress,
+      city: jobData.jobCity,
+      province: jobData.jobProvince,
+      postalCode: jobData.jobPostalCode,
+    });
+
+    if (!addressValidation.isValid) {
+      return res.status(400).json({ message: addressValidation.message });
+    }
+
+    if (addressValidation.shouldValidate) {
+      jobData.jobStreetAddress = addressValidation.cleaned.streetAddress;
+      jobData.jobCity = addressValidation.cleaned.city;
+      jobData.jobProvince = addressValidation.cleaned.province;
+      jobData.jobPostalCode = addressValidation.cleaned.postalCode;
+    }
+
     const updatedJob = await job_queries.updateJob(parseInt(jobId, 10), jobData);
     if (updatedJob) {
       res.json({ message: "Job successfully updated", job: updatedJob });
