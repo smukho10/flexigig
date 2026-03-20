@@ -4,23 +4,28 @@ import AccountSelection from "../../components/AccountSelection";
 import axios from "axios";
 
 // ---- mocks ----
-jest.mock("axios");
+jest.mock("axios", () => ({
+  get:  jest.fn(),
+  post: jest.fn(),
+}));
 
 const mockNavigate = jest.fn();
 let mockSearchParamsGet = jest.fn();
 
 const mockSetUser = jest.fn();
 
+// Stable reference — created once, never recreated on re-render so the
+// component's useEffect([searchParams]) doesn't fire on every render cycle.
+const mockSearchParamsObj = {
+  get: (key) => mockSearchParamsGet(key),
+};
+
 jest.mock("react-router-dom", () => {
   const actual = jest.requireActual("react-router-dom");
   return {
     ...actual,
     useNavigate: () => mockNavigate,
-    useSearchParams: () => [
-      {
-        get: (key) => mockSearchParamsGet(key),
-      },
-    ],
+    useSearchParams: () => [mockSearchParamsObj],
   };
 });
 
@@ -37,6 +42,10 @@ describe("AccountSelection", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockSearchParamsGet = jest.fn(() => null);
+
+    // Default fallback so any unexpected axios.get call returns a promise, not undefined
+    axios.get.mockResolvedValue({ data: { pending: false } });
+    axios.post.mockResolvedValue({ data: {} });
 
     // localStorage mock
     Storage.prototype.setItem = jest.fn();
@@ -273,7 +282,7 @@ describe("AccountSelection", () => {
     // wait for OAuth mode render
     await screen.findByText(/Complete Your Registration/i);
 
-    const backBtn = screen.getByRole("button");
+    const backBtn = screen.getByRole("button", { name: /back to sign in/i });
     fireEvent.click(backBtn);
 
     expect(mockNavigate).toHaveBeenCalledWith("/signin");
