@@ -466,6 +466,17 @@ const fetchAllJobs = async (input = {}) => {
     params.push(`%${filters.q}%`);
   }
 
+    // After your existing filter conditions, add:
+  if (filters.skills && filters.skills.length > 0) {
+  baseQuery += ` AND jp.required_skills && $${params.length + 1}::text[]`;
+  params.push(filters.skills);
+  }
+
+  if (filters.experience && filters.experience.length > 0) {
+    baseQuery += ` AND jp.required_experience && $${params.length + 1}::text[]`;
+    params.push(filters.experience);
+  }
+
   if (filters.currentUserId) {
     baseQuery += `
       AND jp.job_id NOT IN (

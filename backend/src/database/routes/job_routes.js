@@ -296,6 +296,14 @@ router.get("/all-jobs", async (req, res) => {
       originLat: req.query.originLat,
       originLon: req.query.originLon,
       distanceKm: req.query.distanceKm,
+
+      // REPLACE with:
+      skills: req.query.skills
+        ? (Array.isArray(req.query.skills) ? req.query.skills : [req.query.skills])
+        : undefined,
+      experience: req.query.experience
+        ? (Array.isArray(req.query.experience) ? req.query.experience : [req.query.experience])
+        : undefined,
     };
 
     const { jobs, total } = await job_queries.fetchAllJobs({
