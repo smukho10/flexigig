@@ -11,8 +11,6 @@ import MessageBubbles from "../assets/images/MessageBubbles.png";
 const MyGigs = () => {
   const { user } = useUser();
   const [approvedGigs, setApprovedGigs] = useState([]);
-  const [gigStatuses, setGigStatuses] = useState({});
-  const [ratedEmployerJobs, setRatedEmployerJobs] = useState({});
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [currentReviewGig, setCurrentReviewGig] = useState(null);
   const [rating, setRating] = useState(0);
@@ -24,16 +22,9 @@ const MyGigs = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const storedGigStatuses = JSON.parse(localStorage.getItem('gigStatuses') || '{}');
-    setGigStatuses(storedGigStatuses);
-
-    const storedRatedEmployerJobs = JSON.parse(localStorage.getItem('ratedEmployerJobs') || '{}');
-    setRatedEmployerJobs(storedRatedEmployerJobs);
-
     if (user && user.id) {
       axios.get(`/api/applied-jobs/${user.id}`, { withCredentials: true })
         .then(res => {
-          // Show everything EXCEPT APPLIED (those stay in Jobs Applied page)
           const gigs = res.data.jobs
             .filter(job => job.application_status !== 'APPLIED')
             .sort((a, b) => a.jobstart.localeCompare(b.jobstart));
@@ -48,12 +39,6 @@ const MyGigs = () => {
   const openReviewModal = (gig) => {
     setCurrentReviewGig(gig);
     setShowReviewModal(true);
-  };
-
-  const handleStatusChange = (jobId, newStatus) => {
-    const updatedGigStatuses = { ...gigStatuses, [jobId]: newStatus };
-    localStorage.setItem('gigStatuses', JSON.stringify(updatedGigStatuses));
-    setGigStatuses(updatedGigStatuses);
   };
 
   const handleWithdraw = async (e) => {
@@ -81,7 +66,7 @@ const MyGigs = () => {
     if (!currentReviewGig) return;
     try {
       const reviewer_id = user?.id;
-      const reviewee_id = currentReviewGig?.user_id;
+      const reviewee_id = currentReviewGig?.employer_user_id;
       const job_id = currentReviewGig?.job_id;
 
       if (!reviewer_id || !reviewee_id) return;
@@ -100,18 +85,16 @@ const MyGigs = () => {
         { withCredentials: true }
       );
 
-      const updatedRated = { ...ratedEmployerJobs, [job_id]: true };
-      localStorage.setItem('ratedEmployerJobs', JSON.stringify(updatedRated));
-      setRatedEmployerJobs(updatedRated);
       setShowSuccessMessage(true);
 
       setTimeout(() => {
         setShowSuccessMessage(false);
         setShowReviewModal(false);
+        setCurrentReviewGig(null);
         setRating(0);
         setHoverRating(0);
         setReviewComment("");
-        setCurrentReviewGig(null);
+        setRefresh(r => !r); // re-fetch from DB so button flips to ✓ Rated
       }, 2000);
     } catch (error) {
       console.error("Error submitting review:", error);
@@ -139,8 +122,8 @@ const MyGigs = () => {
     });
   };
 
-  const handleEmployer = () => { };
-  const handleMessage = (job) => navigate(`/messages`, { state: { partnerId: job.user_id, from: '/my-gigs' } });
+  const handleEmployer = () => {};
+  const handleMessage = (job) => navigate(`/messages`, { state: { partnerId: job.employer_user_id, from: '/my-gigs' } });
 
   const STATUS_LABELS = {
     'IN_REVIEW': 'In Review',
@@ -150,18 +133,12 @@ const MyGigs = () => {
   };
 
   const getGigStatusBadge = (job) => {
-    // For completed jobs (employer marked complete)
     if (job.status === 'completed' && job.application_status === 'ACCEPTED') {
       return <span className="completed-badge">Completed</span>;
     }
-    // For ACCEPTED jobs show worker self-tracked status
     if (job.application_status === 'ACCEPTED') {
-      const workerStatus = gigStatuses[job.job_id];
-      if (workerStatus === 'in_progress') return <span className="in-progress-badge">In Progress</span>;
-      if (workerStatus === 'completed') return <span className="completed-badge">Completed</span>;
       return <span className="approved-badge">Accepted</span>;
     }
-    // For all other statuses show actual application status
     const label = STATUS_LABELS[job.application_status] || job.application_status;
     const cssKey = job.application_status?.toLowerCase().replace('_', '-');
     return <span className={`status-badge status-${cssKey}`}>{label}</span>;
@@ -180,89 +157,84 @@ const MyGigs = () => {
         </div>
       ) : (
         <ul className="gigs-list">
-          {approvedGigs.map(job => (
-            <li key={job.job_id} className="gig-item">
-              <div className="top">
-                <div className="top-left">
-                  <div className="title-row">
-                    <h1>{job.jobtitle}</h1>
-                  </div>
-                  <div className="status-badges">
-                    {getGigStatusBadge(job)}
-                  </div>
-                  <div className="action-buttons">
-                    {/* Withdraw button — available on all statuses except already WITHDRAWN */}
-                    <button
-                      onClick={handleWithdraw}
-                      value={job.job_id}
-                      disabled={job.application_status === 'WITHDRAWN'|| job.status === 'completed'}
-                      className="remove-btn"
-                    >
-                      Withdraw
-                    </button>
+          {approvedGigs.map(job => {
+            const isAccepted = job.application_status === 'ACCEPTED';
+            const isCompleted = job.status === 'completed';
+            const isWithdrawn = job.application_status === 'WITHDRAWN';
+            const alreadyRated = !!job.has_reviewed_employer;
 
-                    {/* Status dropdown — only for ACCEPTED jobs not yet completed */}
-                    {job.application_status === 'ACCEPTED' && job.status !== 'completed' && (
-                      <select
-                        className="status-dropdown"
-                        value={gigStatuses[job.job_id] || ''}
-                        onChange={(e) => handleStatusChange(job.job_id, e.target.value)}
-                      >
-                        <option value="">Select Status</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="completed">Completed</option>
-                      </select>
-                    )}
-
-                    {/* Rate Employer — only for ACCEPTED jobs completed by employer */}
-                    {job.application_status === 'ACCEPTED' && job.status === 'completed' && (
-                      ratedEmployerJobs[job.job_id] ? (
-                        <button className="rated-employer-btn" disabled>✓ Rated</button>
-                      ) : (
-                        <button className="rate-employer-btn" onClick={() => openReviewModal(job)}>
-                          Rate Employer
+            return (
+              <li key={job.job_id} className="gig-item">
+                <div className="top">
+                  <div className="top-left">
+                    <div className="title-row">
+                      <h1>{job.jobtitle}</h1>
+                    </div>
+                    <div className="status-badges">
+                      {getGigStatusBadge(job)}
+                    </div>
+                    <div className="action-buttons">
+                      {/* Withdraw button — hidden when already withdrawn or job completed */}
+                      {!isWithdrawn && !isCompleted && (
+                        <button
+                          onClick={handleWithdraw}
+                          value={job.job_id}
+                          className="remove-btn"
+                        >
+                          Withdraw
                         </button>
-                      )
-                    )}
-                  </div>
-                </div>
-                <div className="top-right">
-                  <button onClick={handleEmployer}>
-                    <img src={DefaultAvatar} alt="employer-avatar" width="32px" height="auto" />
-                    {job.business_name}
-                  </button>
-                  <button onClick={() => handleMessage(job)}>
-                    <img src={MessageBubbles} alt="message-bubbles" width="35px" height="auto" />
-                    Message
-                  </button>
-                </div>
-              </div>
-              <div className="bottom">
-                <div className="bottom-left">
-                  <div className="details-div">
-                    <h1>Job Details</h1>
-                    <div>
-                      <img src={DollarSign} alt="dollar-sign" width="22px" height="auto" />
-                      {job.hourlyrate}/hr
-                    </div>
-                    <div>
-                      <img id="calendar-icon" src={CalendarIcon} alt="calendar-icon" width="22px" height="auto" />
-                      {formatDateForDisplay(job.jobstart)}
+                      )}
+
+                      {/* Rate Employer — only for ACCEPTED + completed jobs */}
+                      {isAccepted && isCompleted && (
+                        alreadyRated ? (
+                          <button className="rated-employer-btn" disabled>✓ Rated</button>
+                        ) : (
+                          <button className="rate-employer-btn" onClick={() => openReviewModal(job)}>
+                            Rate Employer
+                          </button>
+                        )
+                      )}
                     </div>
                   </div>
-                  <div className="location-div">
-                    <h1>Location</h1>
-                    <p>{job.streetaddress}, {job.city},</p>
-                    <p>{job.province} {job.postalcode}</p>
+                  <div className="top-right">
+                    <button onClick={handleEmployer}>
+                      <img src={DefaultAvatar} alt="employer-avatar" width="32px" height="auto" />
+                      {job.business_name}
+                    </button>
+                    <button onClick={() => handleMessage(job)}>
+                      <img src={MessageBubbles} alt="message-bubbles" width="35px" height="auto" />
+                      Message
+                    </button>
                   </div>
                 </div>
-                <div className="bottom-right">
-                  <h1>Job Description</h1>
-                  <div>{job.jobdescription}</div>
+                <div className="bottom">
+                  <div className="bottom-left">
+                    <div className="details-div">
+                      <h1>Job Details</h1>
+                      <div>
+                        <img src={DollarSign} alt="dollar-sign" width="22px" height="auto" />
+                        {job.hourlyrate}/hr
+                      </div>
+                      <div>
+                        <img id="calendar-icon" src={CalendarIcon} alt="calendar-icon" width="22px" height="auto" />
+                        {formatDateForDisplay(job.jobstart)}
+                      </div>
+                    </div>
+                    <div className="location-div">
+                      <h1>Location</h1>
+                      <p>{job.streetaddress}, {job.city},</p>
+                      <p>{job.province} {job.postalcode}</p>
+                    </div>
+                  </div>
+                  <div className="bottom-right">
+                    <h1>Job Description</h1>
+                    <div>{job.jobdescription}</div>
+                  </div>
                 </div>
-              </div>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       )}
 
