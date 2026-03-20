@@ -5,6 +5,7 @@ const job_queries = require("../queries/job_queries.js");
 const { validateAddress } = require("../middleware/addressValidation");
 
 const VALID_STATUSES = ["draft", "open", "in-review", "filled", "completed"];
+const MILES_TO_KM = 1.60934;
 
 const handleApplyRequest = async (req, res) => {
   const { jobId } = req.params;
@@ -300,6 +301,13 @@ router.get("/all-jobs", async (req, res) => {
       return res.status(400).json({ message: "perPage must be either 10 or 20" });
     }
 
+    const distanceKm =
+      req.query.distanceKm != null && req.query.distanceKm !== ""
+        ? req.query.distanceKm
+        : req.query.distanceMiles != null && req.query.distanceMiles !== ""
+          ? Number(req.query.distanceMiles) * MILES_TO_KM
+          : undefined;
+
     const filters = {
       status: req.query.status
         ? Array.isArray(req.query.status)
@@ -325,7 +333,7 @@ router.get("/all-jobs", async (req, res) => {
       // Distance filter support
       originLat: req.query.originLat,
       originLon: req.query.originLon,
-      distanceKm: req.query.distanceKm,
+      distanceKm,
 
       // REPLACE with:
       skills: req.query.skills
@@ -342,10 +350,17 @@ router.get("/all-jobs", async (req, res) => {
       perPage,
     });
 
+    const jobsWithDistanceMiles = Array.isArray(jobs)
+      ? jobs.map((job) => ({
+          ...job,
+          distance_miles: job.distance_km != null ? Number((Number(job.distance_km) / MILES_TO_KM).toFixed(2)) : null,
+        }))
+      : [];
+
     const totalPages = Math.ceil(total / perPage);
 
     return res.json({
-      jobs,
+      jobs: jobsWithDistanceMiles,
       pagination: { page, perPage, total, totalPages },
     });
   } catch (error) {

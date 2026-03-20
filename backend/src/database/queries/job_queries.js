@@ -344,33 +344,8 @@ const fetchAllJobs = async (input = {}) => {
     Number.isFinite(rawDistanceKm) &&
     rawDistanceKm > 0;
 
-  const distanceSql = useDistanceFilter
-    ? `
-      (
-        6371 * acos(
-          LEAST(
-            1,
-            GREATEST(
-              -1,
-              cos(radians(${rawOriginLat})) *
-              cos(radians(loc.latitude)) *
-              cos(radians(loc.longitude) - radians(${rawOriginLon})) +
-              sin(radians(${rawOriginLat})) *
-              sin(radians(loc.latitude))
-            )
-          )
-        )
-      )
-    `
-    : `NULL`;
-
-  const sortBy = SORT_COLUMNS[filters.sortBy] ? filters.sortBy : "jobPostedDate";
-  const sortOrder = String(filters.sortOrder || "desc").toLowerCase() === "asc" ? "ASC" : "DESC";
-
-  const orderClause =
-    sortBy === "distance" && useDistanceFilter
-      ? `ORDER BY distance_km ${sortOrder}, jp.job_id DESC`
-      : `ORDER BY ${SORT_COLUMNS[sortBy]} ${sortOrder}, jp.job_id DESC`;
+  const sortBy = SORT_COLUMNS[filters.sortBy] ? filters.sortBy : (useDistanceFilter ? "distance" : "jobPostedDate");
+  const sortOrder = String(filters.sortOrder || (useDistanceFilter ? "asc" : "desc")).toLowerCase() === "asc" ? "ASC" : "DESC";
 
   let baseQuery = `
     FROM jobPostings jp
@@ -380,6 +355,43 @@ const fetchAllJobs = async (input = {}) => {
   `;
 
   const params = [];
+  let originLatParam = null;
+  let originLonParam = null;
+  let distanceKmParam = null;
+
+  if (useDistanceFilter) {
+    originLatParam = params.length + 1;
+    params.push(rawOriginLat);
+    originLonParam = params.length + 1;
+    params.push(rawOriginLon);
+    distanceKmParam = params.length + 1;
+    params.push(rawDistanceKm);
+  }
+
+  const distanceSql = useDistanceFilter
+    ? `
+      (
+        6371 * acos(
+          LEAST(
+            1,
+            GREATEST(
+              -1,
+              cos(radians($${originLatParam})) *
+              cos(radians(loc.latitude)) *
+              cos(radians(loc.longitude) - radians($${originLonParam})) +
+              sin(radians($${originLatParam})) *
+              sin(radians(loc.latitude))
+            )
+          )
+        )
+      )
+    `
+    : `NULL`;
+
+  const orderClause =
+    sortBy === "distance" && useDistanceFilter
+      ? `ORDER BY distance_km ${sortOrder}, jp.job_id DESC`
+      : `ORDER BY ${SORT_COLUMNS[sortBy]} ${sortOrder}, jp.job_id DESC`;
 
   const statusList =
     Array.isArray(filters.status) && filters.status.length > 0
@@ -494,9 +506,8 @@ const fetchAllJobs = async (input = {}) => {
     baseQuery += `
       AND loc.latitude IS NOT NULL
       AND loc.longitude IS NOT NULL
-      AND ${distanceSql} <= $${params.length + 1}
+      AND ${distanceSql} <= $${distanceKmParam}
     `;
-    params.push(rawDistanceKm);
   }
 
   const countQuery = `
@@ -516,8 +527,10 @@ const fetchAllJobs = async (input = {}) => {
       COALESCE(bs.business_name, 'Unknown Business') AS business_name,
       ${
         useDistanceFilter
-          ? `ROUND((${distanceSql})::numeric, 2) AS distance_km`
-          : `NULL::numeric AS distance_km`
+          ? `ROUND((${distanceSql})::numeric, 2) AS distance_km,
+             ROUND(((${distanceSql}) * 0.621371)::numeric, 2) AS distance_miles`
+          : `NULL::numeric AS distance_km,
+             NULL::numeric AS distance_miles`
       }
     ${baseQuery}
     ${orderClause}

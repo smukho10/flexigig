@@ -29,6 +29,15 @@ const EXPERIENCES = [
   "Creative Services", "Security Services",
 ];
 
+const DISTANCE_OPTIONS = [
+  { label: "10 miles", valueKm: 16.09 },
+  { label: "20 miles", valueKm: 32.19 },
+  { label: "30 miles", valueKm: 48.28 },
+  { label: "50 miles", valueKm: 80.47 },
+  { label: "75 miles", valueKm: 120.70 },
+  { label: "100+ miles", valueKm: 160.93 },
+];
+
 const DualRangeSlider = ({ min, max, absMax, onChange }) => {
   const minRef = useRef(null);
   const maxRef = useRef(null);
@@ -106,6 +115,7 @@ const LocationDropdown = ({
               type="checkbox"
               checked={!!values.useDistanceFilter}
               onChange={(e) => onUpdate("useDistanceFilter", e.target.checked)}
+              disabled={!hasWorkerCoords}
             />
             <span style={{ marginLeft: "8px" }}>Use my saved address</span>
           </label>
@@ -123,15 +133,23 @@ const LocationDropdown = ({
             </p>
           )}
 
-          <label>Max Distance (km)</label>
-          <input
-            type="number"
-            min="1"
-            placeholder={workerRadius ? `e.g. ${workerRadius}` : "e.g. 25"}
-            value={values.distanceKm}
-            onChange={(e) => onUpdate("distanceKm", e.target.value)}
-            disabled={!values.useDistanceFilter}
-          />
+          <label>Distance</label>
+          <div className="job-type-grid">
+            {DISTANCE_OPTIONS.map((option) => (
+              <button
+                key={option.label}
+                type="button"
+                className={`job-type-pill ${values.distanceLabel === option.label ? "selected" : ""}`}
+                onClick={() => {
+                  onUpdate("distanceKm", option.valueKm);
+                  onUpdate("distanceLabel", option.label);
+                }}
+                disabled={!values.useDistanceFilter || !hasWorkerCoords}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         </>
       )}
 
@@ -327,6 +345,7 @@ const JobBoard = () => {
     postalCode: "",
     useDistanceFilter: false,
     distanceKm: "",
+    distanceLabel: "",
     jobType: "",
     hourlyRateMin: 0,
     hourlyRateMax: MAX_RATE,
@@ -334,7 +353,7 @@ const JobBoard = () => {
     startTo: "",
     endFrom: "",
     endTo: "",
-    skills: [],     
+    skills: [],
     experience: [],
   });
 
@@ -392,7 +411,8 @@ const JobBoard = () => {
 
         setPendingFilters((prev) => ({
           ...prev,
-          distanceKm: prev.distanceKm !== "" ? prev.distanceKm : radius || "",
+          distanceKm: prev.distanceKm !== "" ? prev.distanceKm : "",
+          distanceLabel: prev.distanceLabel !== "" ? prev.distanceLabel : "",
         }));
       } catch (error) {
         console.error("Error fetching worker profile coordinates:", error);
@@ -407,7 +427,7 @@ const JobBoard = () => {
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const { skills, experience, ...restFilters } = appliedFilters;
+        const { skills, experience, distanceLabel, ...restFilters } = appliedFilters;
         const params = { page, perPage, ...restFilters };
         // REPLACE with:
         if (Array.isArray(skills) && skills.length > 0) {
@@ -422,7 +442,7 @@ const JobBoard = () => {
         }
 
         const wantsDistanceFilter = !!appliedFilters.useDistanceFilter;
-        const effectiveDistance = appliedFilters.distanceKm || workerRadius || "";
+        const effectiveDistance = appliedFilters.distanceKm || "";
 
         if (
           wantsDistanceFilter &&
@@ -486,6 +506,11 @@ const JobBoard = () => {
     });
   };
 
+  const formatDistanceForDisplay = (distanceKm) => {
+    if (distanceKm == null || distanceKm === "") return "";
+    return (Number(distanceKm) * 0.621371).toFixed(1);
+  };
+
   const toggleFilter = (name) =>
     setOpenFilter((prev) => (prev === name ? null : name));
 
@@ -523,15 +548,27 @@ const JobBoard = () => {
       const effectiveDistance =
         overrides.distanceKm !== undefined
           ? overrides.distanceKm
-          : pendingFilters.distanceKm || workerRadius || "";
+          : pendingFilters.distanceKm || "";
+
+      const effectiveDistanceLabel =
+        overrides.distanceLabel !== undefined
+          ? overrides.distanceLabel
+          : pendingFilters.distanceLabel || "";
 
       if (effectiveDistance !== "") {
         newApplied.distanceKm = effectiveDistance;
       } else {
         delete newApplied.distanceKm;
       }
+
+      if (effectiveDistanceLabel !== "") {
+        newApplied.distanceLabel = effectiveDistanceLabel;
+      } else {
+        delete newApplied.distanceLabel;
+      }
     } else {
       delete newApplied.distanceKm;
+      delete newApplied.distanceLabel;
     }
 
     setAppliedFilters(newApplied);
@@ -549,7 +586,8 @@ const JobBoard = () => {
       if (key === "hourlyRateMin") resetPending[key] = 0;
       else if (key === "hourlyRateMax") resetPending[key] = MAX_RATE;
       else if (key === "useDistanceFilter") resetPending[key] = false;
-      else if (key === "distanceKm") resetPending[key] = workerRadius || "";
+      else if (key === "distanceKm") resetPending[key] = "";
+      else if (key === "distanceLabel") resetPending[key] = "";
       else if (key === "skills" || key === "experience") resetPending[key] = [];
       else resetPending[key] = "";
     });
@@ -572,9 +610,10 @@ const JobBoard = () => {
     "postalCode",
     "useDistanceFilter",
     "distanceKm",
+    "distanceLabel",
   ];
   const manualLocationKeys = ["city", "province", "postalCode"];
-  const distanceKeys = ["useDistanceFilter", "distanceKm"];
+  const distanceKeys = ["useDistanceFilter", "distanceKm", "distanceLabel"];
   const jobTypeKeys = ["jobType"];
   const payKeys = ["hourlyRateMin", "hourlyRateMax"];
   const startKeys = ["startFrom", "startTo"];
@@ -628,7 +667,7 @@ const JobBoard = () => {
     if (hasDistance) {
       tags.push(
         <span key="distance" className="active-filter-tag">
-          Distance: within {appliedFilters.distanceKm || workerRadius} km
+          Distance: within {appliedFilters.distanceLabel || `${formatDistanceForDisplay(appliedFilters.distanceKm)} miles`}
           <button onClick={() => clearFilter(distanceKeys)}>×</button>
         </span>
       );
@@ -714,7 +753,7 @@ const JobBoard = () => {
               {job.distance_km != null && (
                 <div className="distance-row">
                   <span className="distance-dot" />
-                  {Number(job.distance_km).toFixed(1)} km away
+                  {formatDistanceForDisplay(job.distance_km)} miles away
                 </div>
               )}
             </div>
@@ -758,7 +797,7 @@ const JobBoard = () => {
               } ${hasApplied(locationKeys) ? "has-value" : ""}`}
               onClick={() => toggleFilter("location")}
             >
-              Location
+              Location{appliedFilters.distanceLabel ? ` · ${appliedFilters.distanceLabel}` : ""}
             </button>
 
             <button
