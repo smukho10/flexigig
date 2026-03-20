@@ -207,6 +207,9 @@ const JobPostingForm = ({ job, setDone, onBackClick }) => {
     const { name, value } = e.target;
     setIsDirty(true);
     setJobPost((prev) => ({ ...prev, [name]: value }));
+    if (["jobStreetAddress", "jobCity", "jobProvince", "jobPostalCode"].includes(name) && errorMessage === "The address is invalid. Please enter a valid address.") {
+      setErrorMessage("");
+    }
   };
 
   const handleSkillsChange     = (v) => { setIsDirty(true); setJobPost((p) => ({ ...p, requiredSkills: v })); };
@@ -275,7 +278,15 @@ const JobPostingForm = ({ job, setDone, onBackClick }) => {
       setIsDirty(false); setDone();
     } catch (error) {
       console.error("Failed to process job:", error.message);
-      setErrorMessage("Something went wrong. Please check your inputs and try again.");
+      const backendMessage = error.response?.data?.message;
+      if (
+        backendMessage === "Street address, city, province, and postal code are required." ||
+        backendMessage === "Address could not be validated. Please enter a complete, real address."
+      ) {
+        setErrorMessage("The address is invalid. Please enter a valid address.");
+      } else {
+        setErrorMessage("Something went wrong. Please check your inputs and try again.");
+      }
     } finally { setSubmitting(null); }
   };
 

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const profile_queries = require('../queries/profile_queries.js');
 const workers_queries = require('../queries/workers_queries.js');
+const { validateAddress } = require("../middleware/addressValidation");
 
 // Employer-facing endpoint: fetch full applicant profile by worker_profile_id
 router.get("/applicant-profile/:workerId", async (req, res) => {
@@ -183,6 +184,24 @@ router.put("/profile/update-worker-profile/:workerId", async (req, res) => {
       postal_code: req.body.worker_postal_code
     };
 
+    const addressValidation = await validateAddress({
+      streetAddress: worker.street_address,
+      city: worker.city,
+      province: worker.province,
+      postalCode: worker.postal_code,
+    });
+
+    if (!addressValidation.isValid) {
+      return res.status(400).json({ message: addressValidation.message });
+    }
+
+    if (addressValidation.shouldValidate) {
+      worker.street_address = addressValidation.cleaned.streetAddress;
+      worker.city = addressValidation.cleaned.city;
+      worker.province = addressValidation.cleaned.province;
+      worker.postal_code = addressValidation.cleaned.postalCode;
+    }
+
     const updatedProfile = await profile_queries.updateWorkerProfileById(workerId, worker);
 
     if (!updatedProfile) {
@@ -227,6 +246,42 @@ router.post("/profile/update/:id", async (req, res) => {
     description: req.body.business_description,
     website: req.body.business_website
   };
+
+  const workerAddressValidation = await validateAddress({
+    streetAddress: worker.street_address,
+    city: worker.city,
+    province: worker.province,
+    postalCode: worker.postal_code,
+  });
+
+  if (!workerAddressValidation.isValid) {
+    return res.status(400).json({ message: workerAddressValidation.message });
+  }
+
+  if (workerAddressValidation.shouldValidate) {
+    worker.street_address = workerAddressValidation.cleaned.streetAddress;
+    worker.city = workerAddressValidation.cleaned.city;
+    worker.province = workerAddressValidation.cleaned.province;
+    worker.postal_code = workerAddressValidation.cleaned.postalCode;
+  }
+
+  const businessAddressValidation = await validateAddress({
+    streetAddress: business.street_address,
+    city: business.city,
+    province: business.province,
+    postalCode: business.postal_code,
+  });
+
+  if (!businessAddressValidation.isValid) {
+    return res.status(400).json({ message: businessAddressValidation.message });
+  }
+
+  if (businessAddressValidation.shouldValidate) {
+    business.street_address = businessAddressValidation.cleaned.streetAddress;
+    business.city = businessAddressValidation.cleaned.city;
+    business.province = businessAddressValidation.cleaned.province;
+    business.postal_code = businessAddressValidation.cleaned.postalCode;
+  }
 
   const businessReq = (
     business.name != undefined ||

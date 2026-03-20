@@ -471,7 +471,15 @@ const ProfilePage = () => {
       showAlert("Success", "Profile updated successfully!", "success");
     } catch (error) {
       console.error("Update failed:", error.response || error);
-      showAlert("Error", "Failed to update profile. Please try again.", "danger");
+      const backendMessage = error.response?.data?.message;
+      if (
+        backendMessage === "Street address, city, province, and postal code are required." ||
+        backendMessage === "Address could not be validated. Please enter a complete, real address."
+      ) {
+        showAlert("Error", "The address is invalid. Please enter a valid address.", "danger");
+      } else {
+        showAlert("Error", "Failed to update profile. Please try again.", "danger");
+      }
     }
   };
 
