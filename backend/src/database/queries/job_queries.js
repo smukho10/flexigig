@@ -496,7 +496,6 @@ const fetchAllJobs = async (input = {}) => {
         FROM gig_applications ga
         JOIN workers w ON ga.worker_profile_id = w.id
         WHERE w.user_id = $${params.length + 1}
-          AND ga.status IN ('APPLIED', 'IN_REVIEW', 'ACCEPTED')
       )
     `;
     params.push(filters.currentUserId);
