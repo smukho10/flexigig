@@ -14,7 +14,6 @@ export const JOB_STATUS = {
     DRAFT: "draft",
     OPEN: "open",
     IN_REVIEW: "in-review",
-    FILLED: "filled",
     COMPLETED: "completed",
 };
 
@@ -22,7 +21,6 @@ const TAB_CONFIG = [
     { key: JOB_STATUS.DRAFT,     label: "Drafts",    color: "#6B7280" },
     { key: JOB_STATUS.OPEN,      label: "Open",      color: "#4EBBC2" },
     { key: JOB_STATUS.IN_REVIEW, label: "In Review", color: "#F59E0B" },
-    { key: JOB_STATUS.FILLED,    label: "Filled",    color: "#3B82F6" },
     { key: JOB_STATUS.COMPLETED, label: "Completed", color: "#10B981" },
 ];
 
@@ -30,15 +28,13 @@ const TAB_CONFIG = [
 const NEXT_STATUS = {
     [JOB_STATUS.DRAFT]:     JOB_STATUS.OPEN,
     [JOB_STATUS.OPEN]:      JOB_STATUS.IN_REVIEW,
-    [JOB_STATUS.IN_REVIEW]: JOB_STATUS.FILLED,
-    [JOB_STATUS.FILLED]:    JOB_STATUS.COMPLETED,
+    [JOB_STATUS.IN_REVIEW]: JOB_STATUS.COMPLETED,
 };
 
 const NEXT_STATUS_LABEL = {
     [JOB_STATUS.DRAFT]:     "Publish",
     [JOB_STATUS.OPEN]:      "Mark In Review",
-    [JOB_STATUS.IN_REVIEW]: "Mark Filled",
-    [JOB_STATUS.FILLED]:    "Mark Completed",
+    [JOB_STATUS.IN_REVIEW]: "Mark Completed",
 };
 
 const JobPosting = () => {
@@ -149,11 +145,48 @@ const JobPosting = () => {
                 { status: newStatus },
                 { withCredentials: true }
             );
+
+            // Lock the job when moving to in-review to prevent further applications
+            if (newStatus === JOB_STATUS.IN_REVIEW) {
+                await axios.patch(
+                    `/api/jobs/${job.job_id}/lock`,
+                    { locked: true },
+                    { withCredentials: true }
+                );
+            }
+
             setJobs(prev =>
                 prev.map(j => j.job_id === job.job_id ? { ...j, status: newStatus } : j)
             );
         } catch (error) {
             console.warn("Status API not ready yet — status tracked locally only:", error.message);
+        } finally {
+            setStatusLoading(null);
+        }
+    };
+
+    // ── Reopen (in-review → open, remove lock) ────────────────────────────────
+    const handleReopenJob = async (job) => {
+        setStatusLoading(job.job_id);
+        setLocalStatusOverrides(prev => ({ ...prev, [job.job_id]: JOB_STATUS.OPEN }));
+        setActiveTab(JOB_STATUS.OPEN);
+
+        try {
+            await axios.patch(
+                `/api/job-status/${job.job_id}`,
+                { status: JOB_STATUS.OPEN },
+                { withCredentials: true }
+            );
+            await axios.patch(
+                `/api/jobs/${job.job_id}/lock`,
+                { locked: false },
+                { withCredentials: true }
+            );
+            setJobs(prev =>
+                prev.map(j => j.job_id === job.job_id ? { ...j, status: JOB_STATUS.OPEN, locked: false } : j)
+            );
+        } catch (error) {
+            console.warn("Reopen failed — status tracked locally only:", error.message);
         } finally {
             setStatusLoading(null);
         }
@@ -219,13 +252,25 @@ const JobPosting = () => {
 
                 <div className="right">
                     <div className="card-actions">
-                        {/* View Applicants — shown for open, in-review, filled, and completed jobs */}
-                        {[JOB_STATUS.OPEN, JOB_STATUS.IN_REVIEW, JOB_STATUS.FILLED, JOB_STATUS.COMPLETED].includes(status) && (
+                        {/* View Applicants — shown for open, in-review, and completed jobs */}
+                        {[JOB_STATUS.OPEN, JOB_STATUS.IN_REVIEW, JOB_STATUS.COMPLETED].includes(status) && (
                             <button
                                 className="view-applicants-btn"
                                 onClick={() => handleViewApplicants(job)}
                             >
                                 {status === JOB_STATUS.COMPLETED ? "View Applicants / Rate" : "View Applicants"}
+                            </button>
+                        )}
+
+                        {/* Reopen — shown for in-review jobs */}
+                        {status === JOB_STATUS.IN_REVIEW && (
+                            <button
+                                className="advance-btn"
+                                style={{ backgroundColor: TAB_CONFIG.find(t => t.key === JOB_STATUS.OPEN)?.color }}
+                                disabled={isLoading}
+                                onClick={() => handleReopenJob(job)}
+                            >
+                                {isLoading ? "..." : "Reopen"}
                             </button>
                         )}
 
@@ -251,20 +296,6 @@ const JobPosting = () => {
                         {/* Remove — always available */}
                         <button id="remove-btn" value={job.job_id} onClick={handleRemove}>
                             Remove
-                        </button>
-                        <button
-                          className="lock-btn"
-                          onClick={async () => {
-                            const newLocked = !job.locked;
-                            await axios.patch(
-                              `/api/jobs/${job.job_id}/lock`,
-                              { locked: newLocked },
-                              { withCredentials: true }
-                            );
-                            fetchJobs(); // refresh list
-                          }}
-                        >
-                          {job.locked ? "Unlock" : "Lock"}
                         </button>
                     </div>
                 </div>

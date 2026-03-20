@@ -20,6 +20,25 @@ jest.mock("../../components/JobPosting", () => ({
 // Keep SaveTemplateModal out of the picture — it's not under test here
 jest.mock("../../components/SaveTemplateModal", () => () => null);
 
+// Render TemplateLoader as a plain native select so tests can use getByRole("option")
+// — this file tests JobPostingForm's autofill logic, not the TemplateLoader UI
+jest.mock("../../components/TemplateLoader", () => ({ templates, loading, onSelect }) => (
+  <select
+    defaultValue=""
+    onChange={(e) => {
+      const t = templates.find((tmpl) => tmpl.template_id === Number(e.target.value));
+      if (t && onSelect) onSelect(t);
+    }}
+  >
+    <option value="" disabled>Load Template</option>
+    {templates.map((t) => (
+      <option key={t.template_id} value={t.template_id}>
+        {t.template_name}
+      </option>
+    ))}
+  </select>
+));
+
 import JobPostingForm from "../../components/JobPostingForm";
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
