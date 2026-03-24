@@ -731,6 +731,9 @@ const JobBoard = () => {
           <li key={job.job_id}>
             <div className="left">
               <h2>{job.jobtitle}</h2>
+              {job.business_name && (
+                <p className="job-business-name">{job.business_name}</p>
+              )}
               <div>
                 <img
                   src={DollarSign}
