@@ -114,6 +114,36 @@
   border-radius: 8px;
 }
 
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper input {
+  margin: 0 0 20px 0;
+  padding-right: 60px;
+}
+
+.toggle-password-btn {
+  position: absolute;
+  right: 12px;
+  bottom: 28px;
+  background: none !important;
+  border: none !important;
+  color: #667085 !important;
+  padding: 0 !important;
+  width: auto !important;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.toggle-password-btn:hover {
+  color: #344054 !important;
+  background: none !important;
+}
+
 .form-group button {
   margin: 0;
   width: 100%;
