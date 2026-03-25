@@ -37,6 +37,13 @@
   justify-content: space-between;
 }
 
+.job-board-container ul li .left .job-business-name {
+  margin: -35px 0 20px 0;
+  font-size: 14px;
+  color: #667085;
+  font-weight: 400;
+}
+
 .job-board-container ul li .left div {
   margin: 0 0 16px 0;
   display: flex;
