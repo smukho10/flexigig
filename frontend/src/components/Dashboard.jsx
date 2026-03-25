@@ -162,11 +162,11 @@ const Dashboard = memo(() => {
       setGigsCompleted(jobs.filter((j) => j.status === "completed" && j.application_status === "ACCEPTED").length);
       setAppliedJobs(jobs);
       setRecentApplications(
-        jobs
-          .filter((j) => ["APPLIED", "IN_REVIEW", "ACCEPTED"].includes(j.application_status))
-          .sort((a, b) => new Date(b.jobstart) - new Date(a.jobstart))
-          .slice(0, 4)
-      );
+      jobs
+        .filter((j) => j.application_status === "ACCEPTED")
+        .sort((a, b) => new Date(a.jobstart) - new Date(b.jobstart))
+        .slice(0, 4)
+    );
       setLoadingStats(false);
       setRatingSummary(ratingRes.data);
       setUnreadCount(unreadRes.data.unreadCount || 0);
@@ -405,14 +405,14 @@ const Dashboard = memo(() => {
           ) : (
             <>
               <div className="dash-card-header">
-                <span className="dash-card-title">My Applications</span>
-                <Link to="/jobs-applied" className="dash-card-link">Manage →</Link>
+                <span className="dash-card-title">Upcoming Gigs</span>
+                <Link to="/my-gigs" className="dash-card-link">See all →</Link>
               </div>
               <div className="dash-card-body">
                 {loadingStats ? <div className="dash-loading">Loading…</div>
                   : recentApplications.length === 0 ? (
                     <div className="dash-empty">
-                      <p>No applications yet.</p>
+                      <p>No upcoming gigs yet.</p>
                       <Link to="/find-gigs" className="dash-empty-link">Find your first gig →</Link>
                     </div>
                   ) : (
