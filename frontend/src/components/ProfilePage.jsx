@@ -68,6 +68,8 @@ const ProfilePage = () => {
   // Loading state for save operations
   const [isSaving, setIsSaving] = useState(false);
 
+  const [ratingSummary, setRatingSummary] = useState(null);
+
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -227,6 +229,14 @@ const ProfilePage = () => {
         console.error("Error fetching experiences:", error);
       });
   }, []);
+
+  useEffect(() => {
+    if (user?.id) {
+      axios.get(`/api/reviews/${user.id}/summary`, { withCredentials: true })
+        .then(res => setRatingSummary(res.data))
+        .catch(err => console.error("Error fetching rating summary:", err));
+    }
+  }, [user?.id]);
 
   const handleChange = (event) => {
     const { name, value, options } = event.target;
@@ -1110,6 +1120,16 @@ const ProfilePage = () => {
                     {user.city}{user.city && user.province ? ", " : ""}{user.province}
                   </p>
                 )}
+
+            {ratingSummary && ratingSummary.ratings_count > 0 && (
+              <div className="profile-header-rating">
+                <span className="profile-rating-stars">
+                  {"★".repeat(Math.round(ratingSummary.avg_rating))}{"☆".repeat(5 - Math.round(ratingSummary.avg_rating))}
+                </span>
+                <span className="profile-rating-value">{Number(ratingSummary.avg_rating).toFixed(1)}</span>
+                <span className="profile-rating-count">({ratingSummary.ratings_count} rating{ratingSummary.ratings_count !== 1 ? "s" : ""})</span>
+              </div>
+            )}
               </div>
             </div>
 

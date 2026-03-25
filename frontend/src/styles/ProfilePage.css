@@ -515,3 +515,26 @@
     flex-basis: calc(50% - 10px);
   }
 }
+.profile-header-rating {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.profile-rating-stars {
+  color: #f59e0b;
+  font-size: 18px;
+  letter-spacing: 1px;
+}
+
+.profile-rating-value {
+  font-weight: 700;
+  font-size: 15px;
+  color: #fff;
+}
+
+.profile-rating-count {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+}
