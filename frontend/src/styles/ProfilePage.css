@@ -538,3 +538,26 @@
   font-size: 13px;
   color: rgba(255, 255, 255, 0.8);
 }
+.business-rating {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.business-rating-stars {
+  color: #f59e0b;
+  font-size: 22px;
+  letter-spacing: 2px;
+}
+
+.business-rating-value {
+  font-weight: 700;
+  font-size: 18px;
+  color: #2c3e50;
+}
+
+.business-rating-count {
+  font-size: 14px;
+  color: #6b7280;
+}
