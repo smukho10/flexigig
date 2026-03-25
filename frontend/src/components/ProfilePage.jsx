@@ -1093,6 +1093,18 @@ const ProfilePage = () => {
               <p><strong>Address:</strong> {user.street_address} {user.city} {user.province} {user.postal_code}</p>
               <p><strong>Website:</strong> {user.business_website}</p>
             </div>
+            {ratingSummary && ratingSummary.ratings_count > 0 && (
+              <div className="profile-section">
+                <h2>Rating</h2>
+                <div className="business-rating">
+                  <span className="business-rating-stars">
+                    {"★".repeat(Math.round(ratingSummary.avg_rating))}{"☆".repeat(5 - Math.round(ratingSummary.avg_rating))}
+                  </span>
+                  <span className="business-rating-value">{Number(ratingSummary.avg_rating).toFixed(1)}</span>
+                  <span className="business-rating-count">({ratingSummary.ratings_count} rating{ratingSummary.ratings_count !== 1 ? "s" : ""})</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       ) : (
