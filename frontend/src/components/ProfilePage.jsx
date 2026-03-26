@@ -751,48 +751,59 @@ const ProfilePage = () => {
           {/* Resume Upload - Workers only */}
           {!user.isbusiness && (
             <div className="form-sections-container">
-              <div className="form-section">
+              <div className="form-section resume-section">
                 <h2>Resume</h2>
-                {resumeUrl && (
-                  <div style={{ marginBottom: "10px" }}>
-                    <a
-                      href={resumeUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="form-button"
-                      style={{ backgroundColor: "#2196F3", marginRight: "10px", display: "inline-block" }}
-                    >
-                      View Current Resume
-                    </a>
+
+                {resumeUrl ? (
+                  <div className="resume-current">
+                    <span className="resume-status-text">Resume on file</span>
+                    <div className="resume-action-row">
+                      <a
+                        href={resumeUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-resume-view"
+                      >
+                        View Resume
+                      </a>
+                      <button
+                        type="button"
+                        onClick={handleDeleteResume}
+                        className="btn-resume-delete"
+                      >
+                        Delete Resume
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="resume-empty-text">No resume uploaded yet.</p>
+                )}
+
+                <div className="resume-upload-area">
+                  <label className="form-label">
+                    {resumeUrl ? "Replace Resume" : "Upload Resume"} (PDF, max 10MB)
+                  </label>
+                  <div className="resume-upload-row">
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      onChange={handleResumeSelect}
+                      disabled={uploadingResume}
+                      className="resume-file-input"
+                    />
                     <button
                       type="button"
-                      onClick={handleDeleteResume}
-                      className="form-button"
-                      style={{ backgroundColor: "#e53935" }}
+                      onClick={handleResumeUpload}
+                      disabled={!resumeFile || uploadingResume}
+                      className="btn-resume-upload"
                     >
-                      Delete Resume
+                      {uploadingResume ? "Uploading..." : "Upload"}
                     </button>
                   </div>
-                )}
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  onChange={handleResumeSelect}
-                  style={{ marginBottom: "10px" }}
-                  disabled={uploadingResume}
-                />
-                {resumeError && (
-                  <p style={{ color: "red", marginBottom: "10px" }}>{resumeError}</p>
-                )}
-                <button
-                  type="button"
-                  onClick={handleResumeUpload}
-                  disabled={!resumeFile || uploadingResume}
-                  className="form-button"
-                  style={{ backgroundColor: uploadingResume ? "#ccc" : "#4CAF50" }}
-                >
-                  {uploadingResume ? "Uploading..." : "Upload Resume"}
-                </button>
+                  {resumeError && (
+                    <p className="resume-error">{resumeError}</p>
+                  )}
+                </div>
               </div>
             </div>
           )}

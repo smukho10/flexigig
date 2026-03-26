@@ -354,7 +354,7 @@ router.post("/profile/update/:id", async (req, res) => {
 });
 
 // R2 Photo Upload Routes
-const { PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
+const { PutObjectCommand, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const s3 = require("../../config/r2");
 const crypto = require("crypto");
@@ -524,9 +524,29 @@ router.get("/profile/view-resume-url/:workerId", async (req, res) => {
       return res.status(404).json({ message: "No resume found" });
     }
 
+    const resumeKey = result.rows[0].resume_key;
+
+    // Verify the file still exists in R2 before generating a presigned URL
+    try {
+      await s3.send(new HeadObjectCommand({
+        Bucket: process.env.R2_BUCKET,
+        Key: resumeKey,
+      }));
+    } catch (headErr) {
+      if (headErr.name === "NotFound" || headErr.$metadata?.httpStatusCode === 404) {
+        // File was deleted directly from R2 — clear the stale key from the DB
+        await connection.query(
+          `UPDATE workers SET resume_key = NULL WHERE id = $1;`,
+          [workerId]
+        );
+        return res.status(404).json({ message: "Resume file no longer exists" });
+      }
+      throw headErr;
+    }
+
     const command = new GetObjectCommand({
       Bucket: process.env.R2_BUCKET,
-      Key: result.rows[0].resume_key,
+      Key: resumeKey,
     });
 
     const viewUrl = await getSignedUrl(s3, command, {

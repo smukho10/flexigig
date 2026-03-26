@@ -465,6 +465,125 @@
   border-color: #4EBBC2;
 }
 
+/* ============ RESUME SECTION ============ */
+.resume-section h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 14px;
+}
+
+.resume-current {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #f0fbfc;
+  border: 1px solid #c5eef0;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.resume-status-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2a8f96;
+}
+
+.resume-action-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-resume-view {
+  display: inline-block;
+  padding: 8px 18px;
+  background-color: #2196F3;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+.btn-resume-view:hover {
+  background-color: #1976D2;
+}
+
+.btn-resume-delete {
+  padding: 8px 18px;
+  background-color: #e53935;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-resume-delete:hover {
+  background-color: #c62828;
+}
+
+.resume-empty-text {
+  font-size: 14px;
+  color: #999;
+  font-style: italic;
+  margin-bottom: 16px;
+}
+
+.resume-upload-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.resume-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.resume-file-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+}
+
+.btn-resume-upload {
+  padding: 8px 20px;
+  background-color: #4CAF50;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.2s ease;
+}
+
+.btn-resume-upload:hover:not(:disabled) {
+  background-color: #388E3C;
+}
+
+.btn-resume-upload:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.resume-error {
+  font-size: 13px;
+  color: #e53935;
+  margin: 0;
+}
+
 /* ============ RESPONSIVE ============ */
 @media (max-width: 768px) {
   .profile-page {
