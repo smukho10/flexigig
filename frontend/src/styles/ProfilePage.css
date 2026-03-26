@@ -197,15 +197,16 @@
 
 .profile-card {
   background-color: #fff;
-  border-radius: 12px;
-  box-shadow: 0 0 12px rgba(0, 0, 0, 0.25);
+  border-radius: 15px;
+  border: 2px solid #007bff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  transition: box-shadow 0.2s ease;
+  transition: box-shadow 0.3s ease;
   min-width: 0;
 }
 
 .profile-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
 .profile-card-full {
@@ -278,8 +279,9 @@
   width: 100%;
   background-color: #fff;
   padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 0 12px rgba(0, 0, 0, 0.25);
+  border-radius: 15px;
+  border: 2px solid #007bff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .business-profile .profile-section {
@@ -304,8 +306,9 @@
 .user-profile-form {
   background-color: #fff;
   padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 0 12px rgba(0, 0, 0, 0.25);
+  border-radius: 15px;
+  border: 2px solid #007bff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin-top: 20px;
 }
 
@@ -326,18 +329,18 @@
 
 .input-text {
   width: 100%;
-  padding: 10px 14px;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 15px;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
   background-color: #fff;
   transition: border-color 0.2s ease;
   box-sizing: border-box;
 }
 
 .input-text:focus {
-  border-color: #4EBBC2;
-  box-shadow: 0 0 0 3px rgba(78, 187, 194, 0.15);
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
   outline: none;
 }
 
@@ -361,12 +364,12 @@
 }
 
 .form-button[type="submit"] {
-  background-color: #4EBBC2;
+  background-color: #007bff;
   color: #fff;
 }
 
 .form-button[type="submit"]:hover {
-  background-color: #3ca8af;
+  background-color: #0056b3;
 }
 
 .form-button[type="button"] {
@@ -463,6 +466,125 @@
   background-color: #4EBBC2;
   color: white;
   border-color: #4EBBC2;
+}
+
+/* ============ RESUME SECTION ============ */
+.resume-section h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 14px;
+}
+
+.resume-current {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #f0fbfc;
+  border: 1px solid #c5eef0;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.resume-status-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2a8f96;
+}
+
+.resume-action-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-resume-view {
+  display: inline-block;
+  padding: 8px 18px;
+  background-color: #2196F3;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+.btn-resume-view:hover {
+  background-color: #1976D2;
+}
+
+.btn-resume-delete {
+  padding: 8px 18px;
+  background-color: #e53935;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-resume-delete:hover {
+  background-color: #c62828;
+}
+
+.resume-empty-text {
+  font-size: 14px;
+  color: #999;
+  font-style: italic;
+  margin-bottom: 16px;
+}
+
+.resume-upload-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.resume-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.resume-file-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+}
+
+.btn-resume-upload {
+  padding: 8px 20px;
+  background-color: #4CAF50;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.2s ease;
+}
+
+.btn-resume-upload:hover:not(:disabled) {
+  background-color: #388E3C;
+}
+
+.btn-resume-upload:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.resume-error {
+  font-size: 13px;
+  color: #e53935;
+  margin: 0;
 }
 
 /* ============ RESPONSIVE ============ */

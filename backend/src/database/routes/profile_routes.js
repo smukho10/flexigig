@@ -354,7 +354,7 @@ router.post("/profile/update/:id", async (req, res) => {
 });
 
 // R2 Photo Upload Routes
-const { PutObjectCommand, GetObjectCommand } = require("@aws-sdk/client-s3");
+const { PutObjectCommand, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const s3 = require("../../config/r2");
 const crypto = require("crypto");
@@ -453,7 +453,7 @@ router.post("/profile/upload-resume-url/:workerId", async (req, res) => {
       return res.status(400).json({ message: "Only PDF files are allowed" });
     }
 
-    const key = `workers/${workerId}/resume-${crypto.randomUUID()}.pdf`;
+    const key = `workers/${workerId}/resume.pdf`;
 
     const command = new PutObjectCommand({
       Bucket: process.env.R2_BUCKET,
@@ -477,10 +477,31 @@ router.post("/profile/save-resume-key/:workerId", async (req, res) => {
 
     if (!key) return res.status(400).json({ message: "Key is required" });
 
+    // Fetch the existing resume key before overwriting it
+    const existing = await connection.query(
+      `SELECT resume_key FROM workers WHERE id = $1;`,
+      [workerId]
+    );
+    const oldKey = existing.rows[0]?.resume_key;
+
     await connection.query(
       `UPDATE workers SET resume_key = $1 WHERE id = $2;`,
       [key, workerId]
     );
+
+    // If the old key is different (e.g. a legacy random UUID key), delete the
+    // orphaned object from Cloudflare R2 to avoid wasting storage
+    if (oldKey && oldKey !== key) {
+      try {
+        await s3.send(new DeleteObjectCommand({
+          Bucket: process.env.R2_BUCKET,
+          Key: oldKey,
+        }));
+      } catch (deleteErr) {
+        // Log but do not fail the request — the DB update already succeeded
+        console.error("Warning: failed to delete old resume from R2:", deleteErr);
+      }
+    }
 
     res.json({ message: "Resume saved" });
   } catch (e) {
@@ -503,9 +524,29 @@ router.get("/profile/view-resume-url/:workerId", async (req, res) => {
       return res.status(404).json({ message: "No resume found" });
     }
 
+    const resumeKey = result.rows[0].resume_key;
+
+    // Verify the file still exists in R2 before generating a presigned URL
+    try {
+      await s3.send(new HeadObjectCommand({
+        Bucket: process.env.R2_BUCKET,
+        Key: resumeKey,
+      }));
+    } catch (headErr) {
+      if (headErr.name === "NotFound" || headErr.$metadata?.httpStatusCode === 404) {
+        // File was deleted directly from R2 — clear the stale key from the DB
+        await connection.query(
+          `UPDATE workers SET resume_key = NULL WHERE id = $1;`,
+          [workerId]
+        );
+        return res.status(404).json({ message: "Resume file no longer exists" });
+      }
+      throw headErr;
+    }
+
     const command = new GetObjectCommand({
       Bucket: process.env.R2_BUCKET,
-      Key: result.rows[0].resume_key,
+      Key: resumeKey,
     });
 
     const viewUrl = await getSignedUrl(s3, command, {
