@@ -707,34 +707,78 @@ const markJobAsFilled = async (jobId) => {
 const fetchRecommendedJobs = async (userId) => {
   try {
     const query = `
-      WITH worker_data AS (
-        SELECT
-          w.id AS profile_id,
-          w.profile_name,
-          w.desired_pay,
-          w.biography,
-          NULLIF(trim(both '|' from regexp_replace(lower(regexp_replace(lower(w.biography), '\\y[a-z0-9]{1,2}\\y', '', 'g')), '[^a-z0-9]+', '|', 'g')), '') as bio_regex
+      WITH worker_skill_list AS (
+        SELECT DISTINCT lower(s.skill_name) AS val
         FROM workers w
+        JOIN workers_skills ws ON w.id = ws.workers_id
+        JOIN skills s ON ws.skill_id = s.skill_id
         WHERE w.user_id = $1
       ),
-      scored_matches AS (
+      worker_exp_list AS (
+        SELECT DISTINCT lower(e.experience_name) AS val
+        FROM workers w
+        JOIN workers_experiences we ON w.id = we.workers_id
+        JOIN experiences e ON we.experience_id = e.experience_id
+        WHERE w.user_id = $1
+      ),
+      worker_location AS (
+        SELECT
+          loc.latitude  AS lat,
+          loc.longitude AS lng,
+          COALESCE(MAX(w.desired_work_radius), 50) AS radius_km
+        FROM users u
+        LEFT JOIN locations loc ON u.user_address = loc.location_id
+        LEFT JOIN workers w ON w.user_id = u.id
+        WHERE u.id = $1
+        GROUP BY loc.latitude, loc.longitude
+      ),
+      scored_jobs AS (
         SELECT
           jp.job_id,
-          wd.profile_name,
-          wd.profile_id,
           (
-            (CASE WHEN jp.jobtitle ILIKE '%' || wd.profile_name || '%' THEN 20 ELSE 0 END) +
-            (CASE WHEN jp.jobdescription ILIKE '%' || wd.profile_name || '%' THEN 10 ELSE 0 END) +
-            (CASE WHEN wd.desired_pay IS NOT NULL AND jp.hourlyRate >= wd.desired_pay THEN 2
-                  WHEN wd.desired_pay IS NOT NULL AND jp.hourlyRate >= (wd.desired_pay * 0.8) THEN 1 ELSE 0 END) +
-            (CASE WHEN wd.bio_regex IS NOT NULL AND jp.jobtitle ~* ('\\\m(' || wd.bio_regex || ')') AND jp.jobdescription ~* ('\\\m(' || wd.bio_regex || ')') THEN 6
-                  WHEN wd.bio_regex IS NOT NULL AND (jp.jobtitle ~* ('\\\m(' || wd.bio_regex || ')') OR jp.jobdescription ~* ('\\\m(' || wd.bio_regex || ')')) THEN 2 ELSE 0 END)
-          ) AS match_score
+            SELECT COUNT(*)
+            FROM unnest(COALESCE(jp.required_skills, '{}')) AS rs(v)
+            WHERE lower(rs.v) IN (SELECT val FROM worker_skill_list)
+          )::int AS matched_skills_count,
+          (
+            SELECT COUNT(*)
+            FROM unnest(COALESCE(jp.required_experience, '{}')) AS re(v)
+            WHERE lower(re.v) IN (SELECT val FROM worker_exp_list)
+          )::int AS matched_exp_count,
+          COALESCE(array_length(jp.required_skills, 1), 0) AS total_required_skills,
+          COALESCE(array_length(jp.required_experience, 1), 0) AS total_required_exp,
+          (
+            SELECT ARRAY_AGG(rs.v)
+            FROM unnest(COALESCE(jp.required_skills, '{}')) AS rs(v)
+            WHERE lower(rs.v) IN (SELECT val FROM worker_skill_list)
+          ) AS matched_skills,
+          (
+            SELECT ARRAY_AGG(re.v)
+            FROM unnest(COALESCE(jp.required_experience, '{}')) AS re(v)
+            WHERE lower(re.v) IN (SELECT val FROM worker_exp_list)
+          ) AS matched_experiences,
+          CASE
+            WHEN wl.lat IS NOT NULL AND wl.lng IS NOT NULL
+                 AND jl.latitude IS NOT NULL AND jl.longitude IS NOT NULL
+            THEN ROUND((6371 * acos(
+              LEAST(1.0, GREATEST(-1.0,
+                cos(radians(wl.lat)) * cos(radians(jl.latitude)) *
+                cos(radians(jl.longitude) - radians(wl.lng)) +
+                sin(radians(wl.lat)) * sin(radians(jl.latitude))
+              ))
+            ))::numeric, 1)
+            ELSE NULL
+          END AS distance_km
         FROM jobPostings jp
-        CROSS JOIN worker_data wd
+        JOIN locations jl ON jp.location_id = jl.location_id
+        CROSS JOIN worker_location wl
         WHERE jp.jobfilled = false
           AND jp.status ILIKE 'open'
-          AND jp.locked = false
+          AND jp.locked IS NOT TRUE
+          AND (
+            COALESCE(array_length(jp.required_skills, 1), 0) > 0
+            OR COALESCE(array_length(jp.required_experience, 1), 0) > 0
+          )
           AND NOT EXISTS (
             SELECT 1 FROM gig_applications ga
             JOIN workers w ON ga.worker_profile_id = w.id
@@ -742,14 +786,16 @@ const fetchRecommendedJobs = async (userId) => {
               AND w.user_id = $1
               AND ga.status IN ('APPLIED', 'IN_REVIEW', 'ACCEPTED')
           )
-          AND (
-            jp.jobtitle ILIKE '%' || wd.profile_name || '%'
-            OR jp.jobdescription ILIKE '%' || wd.profile_name || '%'
-            OR (wd.bio_regex IS NOT NULL AND jp.jobtitle ~* ('\\\m(' || wd.bio_regex || ')') AND jp.jobdescription ~* ('\\\m(' || wd.bio_regex || ')'))
-          )
       ),
-      filtered_matches AS (
-        SELECT * FROM scored_matches WHERE match_score > 0
+      filtered_jobs AS (
+        SELECT *,
+          (matched_skills_count + matched_exp_count) AS match_score
+        FROM scored_jobs
+        WHERE (matched_skills_count + matched_exp_count) > 0
+          AND (
+            distance_km IS NULL
+            OR distance_km <= (SELECT radius_km FROM worker_location)
+          )
       )
       SELECT
         jp.*,
@@ -760,14 +806,19 @@ const fetchRecommendedJobs = async (userId) => {
         loc.latitude,
         loc.longitude,
         COALESCE(bs.business_name, 'Unknown Business') AS business_name,
-        string_agg(DISTINCT m.profile_name, ', ') AS recommended_for_profiles,
-        MAX(m.match_score) as max_score
-      FROM jobPostings jp
-      JOIN filtered_matches m ON jp.job_id = m.job_id
+        fj.matched_skills,
+        fj.matched_experiences,
+        fj.matched_skills_count,
+        fj.matched_exp_count,
+        fj.total_required_skills,
+        fj.total_required_exp,
+        fj.match_score,
+        fj.distance_km
+      FROM filtered_jobs fj
+      JOIN jobPostings jp ON fj.job_id = jp.job_id
       JOIN locations loc ON jp.location_id = loc.location_id
       LEFT JOIN businesses bs ON jp.user_id = bs.user_id
-      GROUP BY jp.job_id, loc.location_id, bs.business_name
-      ORDER BY max_score DESC
+      ORDER BY fj.match_score DESC, fj.distance_km ASC NULLS LAST, jp.jobposteddate DESC
       LIMIT 3;
     `;
 
@@ -779,6 +830,7 @@ const fetchRecommendedJobs = async (userId) => {
     throw err;
   }
 };
+
 const fetchApplicantsForJob = async (jobId) => {
   const result = await db.query(
     `

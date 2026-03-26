@@ -11,7 +11,6 @@ import ApplyModal from "./ApplyModal";
 import axios from "axios";
 import { useUser } from "./UserContext";
 
-const JOB_TYPES = ["Full-time", "Part-time", "Contract", "Temporary", "Internship", "Casual"];
 const MAX_RATE = 100;
 const SKILLS = [
   "Business Management", "Communication", "Customer Service",
@@ -188,26 +187,7 @@ const LocationDropdown = ({
   </div>
 );
 
-const JobTypeDropdown = ({ selected, onUpdate, onClear, onApply }) => (
-  <div className="filter-dropdown">
-    <h4>Job Type</h4>
-    <div className="job-type-grid">
-      {JOB_TYPES.map((type) => (
-        <button
-          key={type}
-          className={`job-type-pill ${selected === type ? "selected" : ""}`}
-          onClick={() => onUpdate("jobType", selected === type ? "" : type)}
-        >
-          {type}
-        </button>
-      ))}
-    </div>
-    <div className="filter-actions">
-      <button className="filter-clear-btn" onClick={onClear}>Clear</button>
-      <button className="filter-apply-btn" onClick={onApply}>Apply</button>
-    </div>
-  </div>
-);
+
 
 const DateDropdown = ({ values, onUpdate, onClear, onApply }) => (
   <div className="filter-dropdown">
@@ -614,7 +594,6 @@ const JobBoard = () => {
   ];
   const manualLocationKeys = ["city", "province", "postalCode"];
   const distanceKeys = ["useDistanceFilter", "distanceKm", "distanceLabel"];
-  const jobTypeKeys = ["jobType"];
   const payKeys = ["hourlyRateMin", "hourlyRateMax"];
   const startKeys = ["startFrom", "startTo"];
   const skillKeys = ["skills"];
@@ -673,14 +652,7 @@ const JobBoard = () => {
       );
     }
 
-    if (hasApplied(jobTypeKeys)) {
-      tags.push(
-        <span key="jt" className="active-filter-tag">
-          Job Type: {appliedFilters.jobType}
-          <button onClick={() => clearFilter(jobTypeKeys)}>×</button>
-        </span>
-      );
-    }
+
 
     if (hasApplied(payKeys)) {
       const min = appliedFilters.hourlyRateMin ?? 0;
@@ -803,14 +775,7 @@ const JobBoard = () => {
               Location{appliedFilters.distanceLabel ? ` · ${appliedFilters.distanceLabel}` : ""}
             </button>
 
-            <button
-              className={`filter-btn ${
-                openFilter === "jobType" ? "active" : ""
-              } ${hasApplied(jobTypeKeys) ? "has-value" : ""}`}
-              onClick={() => toggleFilter("jobType")}
-            >
-              Job Type{appliedFilters.jobType ? ` · ${appliedFilters.jobType}` : ""}
-            </button>
+
 
             <button
               className={`filter-btn ${
@@ -857,14 +822,7 @@ const JobBoard = () => {
               />
             )}
 
-            {openFilter === "jobType" && (
-              <JobTypeDropdown
-                selected={pendingFilters.jobType}
-                onUpdate={updatePending}
-                onClear={() => clearFilter(jobTypeKeys)}
-                onApply={() => applyFilter(jobTypeKeys)}
-              />
-            )}
+
 
             {openFilter === "pay" && (
               <PayDropdown
