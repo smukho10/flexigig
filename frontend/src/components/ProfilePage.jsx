@@ -446,6 +446,9 @@ const ProfilePage = () => {
 
     setSubmit(true);
 
+    // FIX 2: only the PUT is in the outer try so address validation errors are caught.
+    // The GET refresh and resume upload are in their own inner try/catch blocks so
+    // a failure there can never keep the user stuck in edit mode.
     try {
       await axios.put(
         `/api/profile/update-worker-profile/${selectedWorkerId}`,
@@ -464,21 +467,6 @@ const ProfilePage = () => {
         },
         { withCredentials: true }
       );
-
-      const profileRes = await axios.get(
-        `/api/profile/${user.id}?workerId=${selectedWorkerId}`,
-        { withCredentials: true }
-      );
-
-      setUser((prevUser) => ({
-        ...prevUser,
-        ...profileRes.data.profileData,
-      }));
-
-      setIsEditing(false);
-      const scrollContainer = document.querySelector('.content-area');
-      if (scrollContainer) scrollContainer.scrollTop = 0;
-      showAlert("Success", "Profile updated successfully!", "success");
     } catch (error) {
       console.error("Update failed:", error.response || error);
       const backendMessage = error.response?.data?.message;
@@ -490,7 +478,59 @@ const ProfilePage = () => {
       } else {
         showAlert("Error", "Failed to update profile. Please try again.", "danger");
       }
+      return;
     }
+
+    // FIX 1: upload resume as part of save if a file was selected,
+    // so the user only needs to click Save Changes once.
+    if (!user.isbusiness && resumeFile) {
+      setUploadingResume(true);
+      try {
+        const uploadUrlRes = await axios.post(
+          `/api/profile/upload-resume-url/${selectedWorkerId}`,
+          { contentType: resumeFile.type },
+          { withCredentials: true }
+        );
+        const { uploadUrl, key } = uploadUrlRes.data;
+        await fetch(uploadUrl, {
+          method: "PUT",
+          headers: { "Content-Type": resumeFile.type },
+          body: resumeFile,
+        });
+        await axios.post(
+          `/api/profile/save-resume-key/${selectedWorkerId}`,
+          { key },
+          { withCredentials: true }
+        );
+        setResumeFile(null);
+        await fetchResumeUrl();
+      } catch (resumeErr) {
+        console.error("Resume upload error:", resumeErr);
+        setResumeError("Resume upload failed. You can retry from edit.");
+      } finally {
+        setUploadingResume(false);
+      }
+    }
+
+    // Refresh profile data — wrapped so a network hiccup never blocks exit.
+    try {
+      const profileRes = await axios.get(
+        `/api/profile/${user.id}?workerId=${selectedWorkerId}`,
+        { withCredentials: true }
+      );
+      setUser((prevUser) => ({
+        ...prevUser,
+        ...profileRes.data.profileData,
+      }));
+    } catch (refreshErr) {
+      console.warn("Could not refresh profile data:", refreshErr);
+    }
+
+    // FIX 2: always reached as long as the PUT succeeded.
+    setIsEditing(false);
+    const scrollContainer = document.querySelector('.content-area');
+    if (scrollContainer) scrollContainer.scrollTop = 0;
+    showAlert("Success", "Profile updated successfully!", "success");
   };
 
   const handleSubmitSkills = async (e) => {
@@ -1289,7 +1329,7 @@ const ProfilePage = () => {
               </div>
             </div>
 
-            {/* Resume Card */}
+            {/* Resume Card — only show View button when a resume actually exists (FIX 3) */}
             <div className="profile-card">
               <div className="profile-card-header">
                 <h2>Resume</h2>
@@ -1300,8 +1340,7 @@ const ProfilePage = () => {
                     href={resumeUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="form-button"
-                    style={{ backgroundColor: "#2196F3", display: "inline-block" }}
+                    className="btn-resume-view"
                   >
                     View Resume (PDF)
                   </a>

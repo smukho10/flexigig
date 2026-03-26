@@ -197,15 +197,16 @@
 
 .profile-card {
   background-color: #fff;
-  border-radius: 12px;
-  box-shadow: 0 0 12px rgba(0, 0, 0, 0.25);
+  border-radius: 15px;
+  border: 2px solid #007bff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  transition: box-shadow 0.2s ease;
+  transition: box-shadow 0.3s ease;
   min-width: 0;
 }
 
 .profile-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
 .profile-card-full {
@@ -278,8 +279,9 @@
   width: 100%;
   background-color: #fff;
   padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 0 12px rgba(0, 0, 0, 0.25);
+  border-radius: 15px;
+  border: 2px solid #007bff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .business-profile .profile-section {
@@ -304,8 +306,9 @@
 .user-profile-form {
   background-color: #fff;
   padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 0 12px rgba(0, 0, 0, 0.25);
+  border-radius: 15px;
+  border: 2px solid #007bff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin-top: 20px;
 }
 
@@ -326,18 +329,18 @@
 
 .input-text {
   width: 100%;
-  padding: 10px 14px;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 15px;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
   background-color: #fff;
   transition: border-color 0.2s ease;
   box-sizing: border-box;
 }
 
 .input-text:focus {
-  border-color: #4EBBC2;
-  box-shadow: 0 0 0 3px rgba(78, 187, 194, 0.15);
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
   outline: none;
 }
 
@@ -361,12 +364,12 @@
 }
 
 .form-button[type="submit"] {
-  background-color: #4EBBC2;
+  background-color: #007bff;
   color: #fff;
 }
 
 .form-button[type="submit"]:hover {
-  background-color: #3ca8af;
+  background-color: #0056b3;
 }
 
 .form-button[type="button"] {
