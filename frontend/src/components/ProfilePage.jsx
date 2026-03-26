@@ -1,6 +1,6 @@
 import axios from "axios";
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import "../styles/ProfilePage.css";
 import { useUser } from "./UserContext";
 import ProfileScheduler from "./ProfileScheduler";
@@ -60,7 +60,6 @@ const ProfilePage = () => {
   const [photoError, setPhotoError] = useState(null);
 
   // R2 Resume Upload States
-  const [resumeFile, setResumeFile] = useState(null);
   const [resumeUrl, setResumeUrl] = useState(null);
   const [uploadingResume, setUploadingResume] = useState(false);
   const [resumeError, setResumeError] = useState(null);
@@ -71,6 +70,17 @@ const ProfilePage = () => {
   const [ratingSummary, setRatingSummary] = useState(null);
 
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // FIX 3: When "View Profile" is clicked from the dropdown while already on /profile
+  // with isEditing=true, React Router doesn't remount the component so isEditing stays
+  // true. location.key changes on every navigation even to the same path, so watching
+  // it here resets all editing states whenever the user navigates back to this page.
+  useEffect(() => {
+    setIsEditing(false);
+    setIsEditingSkills(false);
+    setIsEditingExp(false);
+  }, [location.key]);
 
   const handleSignOut = async () => {
     await logout();
@@ -366,8 +376,11 @@ const ProfilePage = () => {
     fetchProfilePhoto();
   }, [user?.id]);
 
-  const handleResumeSelect = (e) => {
+  // FIX 1: Auto-upload immediately on file select — no separate Upload button needed.
+  // File is passed directly so we don't depend on async state from setResumeFile.
+  const handleResumeSelectAndUpload = async (e) => {
     const file = e.target.files[0];
+    e.target.value = ""; // allow re-selecting same file
     if (!file) return;
     if (file.type !== "application/pdf") {
       setResumeError("Please select a PDF file");
@@ -377,34 +390,27 @@ const ProfilePage = () => {
       setResumeError("File size must be less than 10MB");
       return;
     }
-    setResumeFile(file);
     setResumeError(null);
-  };
-
-  const handleResumeUpload = async () => {
-    if (!resumeFile || !selectedWorkerId) return;
     setUploadingResume(true);
-    setResumeError(null);
     try {
       const uploadUrlRes = await axios.post(
         `/api/profile/upload-resume-url/${selectedWorkerId}`,
-        { contentType: resumeFile.type },
+        { contentType: file.type },
         { withCredentials: true }
       );
       const { uploadUrl, key } = uploadUrlRes.data;
       await fetch(uploadUrl, {
         method: "PUT",
-        headers: { "Content-Type": resumeFile.type },
-        body: resumeFile,
+        headers: { "Content-Type": file.type },
+        body: file,
       });
       await axios.post(
         `/api/profile/save-resume-key/${selectedWorkerId}`,
         { key },
         { withCredentials: true }
       );
-      setResumeFile(null);
-      showAlert("Success", "Resume uploaded successfully!", "success");
       await fetchResumeUrl();
+      showAlert("Success", "Resume uploaded successfully!", "success");
     } catch (error) {
       console.error("Resume upload error:", error);
       setResumeError("Failed to upload resume. Please try again.");
@@ -446,27 +452,48 @@ const ProfilePage = () => {
 
     setSubmit(true);
 
-    // FIX 2: only the PUT is in the outer try so address validation errors are caught.
-    // The GET refresh and resume upload are in their own inner try/catch blocks so
-    // a failure there can never keep the user stuck in edit mode.
+    // FIX 2 root cause: the old code always called update-worker-profile even for
+    // business users (where selectedWorkerId is null), causing a guaranteed failure
+    // that kept the form stuck. Now we route to the correct endpoint per user type.
+    // The API call is isolated in its own try/catch so only a real failure keeps
+    // the user in edit mode — a successful save always exits.
     try {
-      await axios.put(
-        `/api/profile/update-worker-profile/${selectedWorkerId}`,
-        {
-          biography: editedUser.biography,
-          firstname: editedUser.firstname,
-          lastname: editedUser.lastname,
-          profile_name: editedUser.profile_name || "Profile 1",
-          desired_work_radius: editedUser.desired_work_radius,
-          desired_pay: editedUser.desired_pay,
-          worker_phone_number: editedUser.worker_phone_number,
-          worker_street_address: editedUser.worker_street_address,
-          worker_city: editedUser.worker_city,
-          worker_province: editedUser.worker_province,
-          worker_postal_code: editedUser.worker_postal_code,
-        },
-        { withCredentials: true }
-      );
+      if (user.isbusiness) {
+        await axios.post(
+          `/api/profile/update/${user.id}`,
+          {
+            business_id: editedUser.business_id,
+            business_name: editedUser.business_name,
+            business_phone_number: editedUser.business_phone_number,
+            business_email: editedUser.business_email,
+            business_street_address: editedUser.business_street_address,
+            business_city: editedUser.business_city,
+            business_province: editedUser.business_province,
+            business_postal_code: editedUser.business_postal_code,
+            business_description: editedUser.business_description,
+            business_website: editedUser.business_website,
+          },
+          { withCredentials: true }
+        );
+      } else {
+        await axios.put(
+          `/api/profile/update-worker-profile/${selectedWorkerId}`,
+          {
+            biography: editedUser.biography,
+            firstname: editedUser.firstname,
+            lastname: editedUser.lastname,
+            profile_name: editedUser.profile_name || "Profile 1",
+            desired_work_radius: editedUser.desired_work_radius,
+            desired_pay: editedUser.desired_pay,
+            worker_phone_number: editedUser.worker_phone_number,
+            worker_street_address: editedUser.worker_street_address,
+            worker_city: editedUser.worker_city,
+            worker_province: editedUser.worker_province,
+            worker_postal_code: editedUser.worker_postal_code,
+          },
+          { withCredentials: true }
+        );
+      }
     } catch (error) {
       console.error("Update failed:", error.response || error);
       const backendMessage = error.response?.data?.message;
@@ -481,37 +508,6 @@ const ProfilePage = () => {
       return;
     }
 
-    // FIX 1: upload resume as part of save if a file was selected,
-    // so the user only needs to click Save Changes once.
-    if (!user.isbusiness && resumeFile) {
-      setUploadingResume(true);
-      try {
-        const uploadUrlRes = await axios.post(
-          `/api/profile/upload-resume-url/${selectedWorkerId}`,
-          { contentType: resumeFile.type },
-          { withCredentials: true }
-        );
-        const { uploadUrl, key } = uploadUrlRes.data;
-        await fetch(uploadUrl, {
-          method: "PUT",
-          headers: { "Content-Type": resumeFile.type },
-          body: resumeFile,
-        });
-        await axios.post(
-          `/api/profile/save-resume-key/${selectedWorkerId}`,
-          { key },
-          { withCredentials: true }
-        );
-        setResumeFile(null);
-        await fetchResumeUrl();
-      } catch (resumeErr) {
-        console.error("Resume upload error:", resumeErr);
-        setResumeError("Resume upload failed. You can retry from edit.");
-      } finally {
-        setUploadingResume(false);
-      }
-    }
-
     // Refresh profile data — wrapped so a network hiccup never blocks exit.
     try {
       const profileRes = await axios.get(
@@ -521,12 +517,13 @@ const ProfilePage = () => {
       setUser((prevUser) => ({
         ...prevUser,
         ...profileRes.data.profileData,
+        ...profileRes.data.businessData,
       }));
     } catch (refreshErr) {
       console.warn("Could not refresh profile data:", refreshErr);
     }
 
-    // FIX 2: always reached as long as the PUT succeeded.
+    // Always reached after a successful save — exits edit mode.
     setIsEditing(false);
     const scrollContainer = document.querySelector('.content-area');
     if (scrollContainer) scrollContainer.scrollTop = 0;
@@ -787,66 +784,6 @@ const ProfilePage = () => {
               </button>
             </div>
           </div>
-
-          {/* Resume Upload - Workers only */}
-          {!user.isbusiness && (
-            <div className="form-sections-container">
-              <div className="form-section resume-section">
-                <h2>Resume</h2>
-
-                {resumeUrl ? (
-                  <div className="resume-current">
-                    <span className="resume-status-text">Resume on file</span>
-                    <div className="resume-action-row">
-                      <a
-                        href={resumeUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn-resume-view"
-                      >
-                        View Resume
-                      </a>
-                      <button
-                        type="button"
-                        onClick={handleDeleteResume}
-                        className="btn-resume-delete"
-                      >
-                        Delete Resume
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="resume-empty-text">No resume uploaded yet.</p>
-                )}
-
-                <div className="resume-upload-area">
-                  <label className="form-label">
-                    {resumeUrl ? "Replace Resume" : "Upload Resume"} (PDF, max 10MB)
-                  </label>
-                  <div className="resume-upload-row">
-                    <input
-                      type="file"
-                      accept="application/pdf"
-                      onChange={handleResumeSelect}
-                      disabled={uploadingResume}
-                      className="resume-file-input"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleResumeUpload}
-                      disabled={!resumeFile || uploadingResume}
-                      className="btn-resume-upload"
-                    >
-                      {uploadingResume ? "Uploading..." : "Upload"}
-                    </button>
-                  </div>
-                  {resumeError && (
-                    <p className="resume-error">{resumeError}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
 
           <div className="form-sections-container">
             {user.isbusiness ? (
@@ -1329,24 +1266,55 @@ const ProfilePage = () => {
               </div>
             </div>
 
-            {/* Resume Card — only show View button when a resume actually exists (FIX 3) */}
+            {/* Resume Card — upload/view/delete live here on the profile view page (FIX 1).
+                View and Delete are only shown when a resume actually exists (no XML error). */}
             <div className="profile-card">
               <div className="profile-card-header">
                 <h2>Resume</h2>
               </div>
               <div className="profile-card-body">
                 {resumeUrl ? (
-                  <a
-                    href={resumeUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn-resume-view"
-                  >
-                    View Resume (PDF)
-                  </a>
+                  <div className="resume-current">
+                    <span className="resume-status-text">Resume on file</span>
+                    <div className="resume-action-row">
+                      <a
+                        href={resumeUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-resume-view"
+                      >
+                        View Resume (PDF)
+                      </a>
+                      <button
+                        type="button"
+                        onClick={handleDeleteResume}
+                        className="btn-resume-delete"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
                 ) : (
-                  <p className="profile-empty-text">No resume uploaded yet.</p>
+                  <p className="resume-empty-text">No resume uploaded yet.</p>
                 )}
+                <div className="resume-upload-area" style={{ marginTop: "12px" }}>
+                  <label className="form-label">
+                    {resumeUrl ? "Replace Resume" : "Upload Resume"} (PDF, max 10MB)
+                  </label>
+                  <div className="resume-upload-row">
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      onChange={handleResumeSelectAndUpload}
+                      disabled={uploadingResume}
+                      className="resume-file-input"
+                    />
+                    {uploadingResume && (
+                      <span style={{ fontSize: "14px", color: "#2a8f96" }}>Uploading...</span>
+                    )}
+                  </div>
+                  {resumeError && <p className="resume-error">{resumeError}</p>}
+                </div>
               </div>
             </div>
           </div>
