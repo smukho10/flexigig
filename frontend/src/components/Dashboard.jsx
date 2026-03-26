@@ -99,21 +99,58 @@ const QuickApplyModal = ({ job, workerProfiles, onConfirm, onClose, applying }) 
 
 // ── Recommended Gig Card ───────────────────────────────────────────────────
 const RecommendedGigCard = memo(({ job, onQuickApply }) => {
-  const miles =
-    job.distance_miles != null ? Number(job.distance_miles).toFixed(1) : null;
+  const distance =
+    job.distance_km != null ? Number(job.distance_km).toFixed(1) : null;
 
   const startDate = job.jobstart
     ? new Date(job.jobstart).toLocaleDateString("en-US", { month: "short", day: "numeric" })
     : null;
 
+  // New calculation for match info based on the new query output
+  const matchScore = job.match_score || 0;
+  const skillsMatch = job.matched_skills_count || 0;
+  const expMatch = job.matched_exp_count || 0;
+  const totalSkills = job.total_required_skills || 0;
+  const totalExp = job.total_required_exp || 0;
+
+  // Combine matched info for labels
+  const matchedTags = [];
+  if (job.matched_skills) matchedTags.push(...job.matched_skills);
+  if (job.matched_experiences) matchedTags.push(...job.matched_experiences);
+
+  // We show up to 3 tags max to avoid clutter
+  const displayTags = matchedTags.slice(0, 3);
+  const remainingTags = matchedTags.length - displayTags.length;
+
   return (
     <div className="rec-card">
-      {miles != null && (
-        <span className="rec-distance">{miles} mi away</span>
+      {distance != null && (
+        <span className="rec-distance">{distance} km away</span>
       )}
       <p className="rec-job-title">{job.jobtitle}</p>
       <p className="rec-business">{job.business_name}</p>
       {startDate && <p className="rec-start">Starts {startDate}</p>}
+      
+      {/* New Match Info Section */}
+      {matchScore > 0 && (
+        <div className="rec-match-info">
+          <span className="rec-match-text">
+            {skillsMatch > 0 && `${skillsMatch}/${totalSkills} skills `}
+            {expMatch > 0 && skillsMatch > 0 && "· "}
+            {expMatch > 0 && `${expMatch}/${totalExp} exp `}
+            matched
+          </span>
+          {displayTags.length > 0 && (
+            <div className="rec-skill-tags">
+              {displayTags.map((tag, i) => (
+                <span key={i} className="rec-skill-tag">{tag}</span>
+              ))}
+              {remainingTags > 0 && <span className="rec-skill-tag">+{remainingTags}</span>}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="rec-footer">
         <span className="rec-rate">${Number(job.hourlyrate).toFixed(2)}/hr</span>
         <button className="rec-apply-btn" onClick={() => onQuickApply(job)}>
@@ -209,34 +246,12 @@ const Dashboard = memo(() => {
       })
       .catch(() => []);
 
-    const geoPromise = axios
-      .get(`/api/profile/${user.id}`, { withCredentials: true })
-      .then((r) => r.data)
-      .catch(() => null);
-
-    Promise.all([profilesPromise, geoPromise]).then(([profiles, profileData]) => {
+    Promise.all([profilesPromise]).then(([profiles]) => {
       setWorkerProfiles(profiles);
 
-      const lat = profileData?.latitude ?? profileData?.profile?.latitude ?? profileData?.worker?.latitude ?? null;
-      const lon = profileData?.longitude ?? profileData?.profile?.longitude ?? profileData?.worker?.longitude ?? null;
-
-      const params = new URLSearchParams({
-        currentUserId: user.id,
-        sortBy: lat != null && lon != null ? "distance" : "jobPostedDate",
-        sortOrder: lat != null && lon != null ? "asc" : "desc",
-        perPage: 10,
-        page: 1,
-      });
-
-      if (lat != null && lon != null) {
-        params.set("originLat", lat);
-        params.set("originLon", lon);
-        params.set("distanceMiles", 50);
-      }
-
       return axios
-        .get(`/api/all-jobs?${params.toString()}`, { withCredentials: true })
-        .then((res) => setRecommendedJobs((res.data?.jobs || []).slice(0, 3)))
+        .get(`/api/recommended-jobs`, { withCredentials: true })
+        .then((res) => setRecommendedJobs((res.data?.jobs || []).slice(0, 6)))
         .catch(() => setRecommendedJobs([]));
     }).finally(() => setLoadingRec(false));
   }, [user?.id, user?.isbusiness]);
@@ -442,8 +457,8 @@ const Dashboard = memo(() => {
         <div className="dash-rec-section">
           <div className="dash-rec-header">
             <div>
-              <h2 className="dash-rec-title">Recommended Gigs Near You</h2>
-              <p className="dash-rec-sub">Based on your saved address · within 50 miles</p>
+              <h2 className="dash-rec-title">Recommended For You</h2>
+              <p className="dash-rec-sub">Based on your skills & experience</p>
             </div>
             <Link to="/find-gigs" className="dash-card-link">Browse all →</Link>
           </div>
@@ -462,7 +477,7 @@ const Dashboard = memo(() => {
           ) : recommendedJobs.length === 0 ? (
             <div className="dash-rec-empty">
               <span className="dash-rec-empty-icon">📍</span>
-              <p>No nearby gigs found. Make sure your profile address is up to date.</p>
+              <p>No recommendations found yet. Make sure your profile has skills and experience listed.</p>
               <Link to="/find-gigs" className="dash-empty-link">Browse all gigs →</Link>
             </div>
           ) : (

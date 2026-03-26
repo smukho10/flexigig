@@ -586,6 +586,39 @@
   margin: 0 0 6px;
 }
 
+.rec-match-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #fdfdfd;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px dashed #e5e7eb;
+  margin-top: 4px;
+}
+
+.rec-match-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.rec-skill-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.rec-skill-tag {
+  background: #e6f0fb;
+  color: #185FA5;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 12px;
+  letter-spacing: 0.2px;
+}
+
 .rec-footer {
   display: flex;
   align-items: center;
