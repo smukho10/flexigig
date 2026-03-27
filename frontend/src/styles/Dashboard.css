@@ -1032,6 +1032,8 @@
 
 /* ============ EMPLOYER DASHBOARD ============ */
 .emp-dash {
+  font-family: 'Quicksand', 'Poppins', sans-serif;
+  background: #f5f7fa;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -1085,6 +1087,7 @@
 }
 
 .emp-dash-stat-card {
+  border: 1px solid #e8ecf0;
   background: #fff;
   border-radius: 14px;
   padding: 18px 20px;
@@ -1144,6 +1147,7 @@
 }
 
 .emp-dash-card {
+  border: 1px solid #e8ecf0;
   background: #fff;
   border-radius: 14px;
   padding: 20px;
