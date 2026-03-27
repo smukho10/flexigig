@@ -47,7 +47,7 @@ const EmployerDashboard = () => {
     // Fetch posted jobs
     axios.get(`/api/posted-jobs/${user.id}`, { withCredentials: true })
       .then(res => {
-        const jobs = Array.isArray(res.data) ? res.data : [];
+        const jobs = res.data.jobs || [];
         setPostedJobs(jobs);
         setLoadingJobs(false);
       })
