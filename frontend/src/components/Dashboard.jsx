@@ -4,6 +4,7 @@ import axios from "axios";
 import { useUser } from "./UserContext";
 import ApplicationsWidget from "./ApplicationsWidget";
 import DefaultAvatar from "../assets/images/DefaultAvatar.png";
+import EmployerDashboard from "./EmployerDashboard";
 import "../styles/Dashboard.css";
 
 // ── Quick Apply Modal ──────────────────────────────────────────────────────
@@ -165,6 +166,7 @@ const RecommendedGigCard = memo(({ job, onQuickApply }) => {
 const Dashboard = memo(() => {
   const { user } = useUser();
   const navigate = useNavigate();
+  if (user?.isbusiness) return <EmployerDashboard />;
 
   const [appliedJobs, setAppliedJobs]               = useState([]);
   const [recentApplications, setRecentApplications] = useState([]);
