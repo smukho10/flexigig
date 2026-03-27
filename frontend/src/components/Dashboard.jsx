@@ -166,7 +166,6 @@ const RecommendedGigCard = memo(({ job, onQuickApply }) => {
 const Dashboard = memo(() => {
   const { user } = useUser();
   const navigate = useNavigate();
-  if (user?.isbusiness) return <EmployerDashboard />;
 
   const [appliedJobs, setAppliedJobs]               = useState([]);
   const [recentApplications, setRecentApplications] = useState([]);
@@ -299,7 +298,7 @@ const Dashboard = memo(() => {
   const avgRating    = ratingSummary?.avg_rating ? Number(ratingSummary.avg_rating).toFixed(1) : null;
   const reviewCount  = ratingSummary?.ratings_count || 0;
   const renderStars  = (r) => [1,2,3,4,5].map((s) => <span key={s} className={`dash-star ${s <= Math.round(r) ? "filled" : ""}`}>★</span>);
-
+  if (user?.isbusiness) return <EmployerDashboard />;
   return (
     <div className="dash-root">
       {qaJob && (
