@@ -190,7 +190,7 @@ const EmployerDashboard = () => {
                   <div
                     key={job.job_id}
                     className="emp-dash-job-row"
-                    onClick={() => navigate("/my-jobs")}
+                    onClick={() => navigate(job.applicant_count > 0 ? `/my-jobs/${job.job_id}/applicants` : "/my-jobs")}
                   >
                     <div className="emp-dash-job-info">
                       <p className="emp-dash-job-title">{job.jobtitle}</p>
