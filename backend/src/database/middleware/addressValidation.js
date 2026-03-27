@@ -28,7 +28,7 @@ const buildFullAddress = ({ streetAddress, city, province, postalCode }) => {
     .join(", ");
 };
 
-async function validateAddress(address) {
+async function validateAddress(address = {}) {
   const cleaned = {
     streetAddress: clean(address.streetAddress),
     city: clean(address.city),
@@ -43,6 +43,9 @@ async function validateAddress(address) {
       shouldValidate: false,
       isValid: true,
       cleaned,
+      latitude: null,
+      longitude: null,
+      geocodingStatus: "not_requested",
     };
   }
 
@@ -52,28 +55,53 @@ async function validateAddress(address) {
       isValid: false,
       message: "Street address, city, province, and postal code are required.",
       cleaned,
+      latitude: null,
+      longitude: null,
+      geocodingStatus: "skipped_incomplete_address",
     };
   }
 
   const fullAddress = buildFullAddress(cleaned);
-  const geocoded = await geocodeAddress(fullAddress);
 
-  if (!geocoded || geocoded.latitude == null || geocoded.longitude == null) {
+  try {
+    const geocoded = await geocodeAddress(fullAddress);
+
+    if (geocoded && geocoded.latitude != null && geocoded.longitude != null) {
+      return {
+        shouldValidate: true,
+        isValid: true,
+        cleaned,
+        latitude: geocoded.latitude,
+        longitude: geocoded.longitude,
+        geocodingStatus: "success",
+      };
+    }
+
+    // Geocoding returned no result, but do not block the request
     return {
       shouldValidate: true,
-      isValid: false,
-      message: "Address could not be validated. Please enter a complete, real address.",
+      isValid: true,
       cleaned,
+      latitude: null,
+      longitude: null,
+      geocodingStatus: "no_result",
+    };
+  } catch (error) {
+    console.error("Geocoding failed during address validation:", {
+      address: fullAddress,
+      error: error.message,
+    });
+
+    // Allow submission even if geocoding fails
+    return {
+      shouldValidate: true,
+      isValid: true,
+      cleaned,
+      latitude: null,
+      longitude: null,
+      geocodingStatus: "failed",
     };
   }
-
-  return {
-    shouldValidate: true,
-    isValid: true,
-    cleaned,
-    latitude: geocoded.latitude,
-    longitude: geocoded.longitude,
-  };
 }
 
 module.exports = {
