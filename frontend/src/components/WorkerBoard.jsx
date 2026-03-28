@@ -175,7 +175,7 @@ const WorkerBoard = () => {
       <div id='workerboard-worker'>
           <div id='workerboard-worker-header'>
             <h2 id='workerboard-worker-name'>{getWorkerName(worker)}</h2>
-            <Link to={`/worker/${worker.id}`}>
+            <Link to={`/applicant-profile/${worker.id}`}>
               <img id="workerboard-arrow" src={Arrow} alt="View worker"/>
             </Link>
           </div>
@@ -198,7 +198,7 @@ const WorkerBoard = () => {
             </div>
             <div id='workerboard-worker-actions'>
               <img id="workerboard-bookmark" src={Bookmark} alt="Save worker"/>
-              <Link to={`/worker/${worker.id}`}>
+              <Link to={`/applicant-profile/${worker.id}`}>
                 <div id='workerboard-actions-button'></div>
               </Link>
             </div>
