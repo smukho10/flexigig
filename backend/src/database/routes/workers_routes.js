@@ -16,10 +16,10 @@ router.get('/gig-workers', async (req, res) => {
 });
 
 router.get('/worker/:id', async (req, res) => {
-  const userId = parseInt(req.params.id, 10);
+  const workerId = parseInt(req.params.id, 10);
 
-  if (isNaN(userId)) {
-    return res.status(400).json({ message: "Invalid user ID" });
+  if (isNaN(workerId)) {
+    return res.status(400).json({ message: "Invalid worker ID" });
   }
 
   try {
@@ -58,9 +58,9 @@ router.get('/worker/:id', async (req, res) => {
           ARRAY[]::text[]
         ) AS traits
       FROM workers w
-      WHERE w.user_id = $1
+      WHERE w.id = $1
       `,
-      [userId]
+      [workerId]
     );
 
     if (result.rows.length === 0) {
