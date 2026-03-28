@@ -1,8 +1,17 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { Calendar, dateFnsLocalizer } from "react-big-calendar";
+import format from "date-fns/format";
+import parse from "date-fns/parse";
+import startOfWeek from "date-fns/startOfWeek";
+import getDay from "date-fns/getDay";
+import "react-big-calendar/lib/css/react-big-calendar.css";
 import ChevronLeft from "../assets/images/ChevronLeft.png";
 import "../styles/ApplicantProfileView.css";
+
+const locales = { "en-CA": require("date-fns/locale/en-CA") };
+const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
 
 const ApplicantProfileView = () => {
     const { workerId } = useParams();
@@ -11,6 +20,7 @@ const ApplicantProfileView = () => {
     const [profile, setProfile] = useState(null);
     const [skills, setSkills] = useState([]);
     const [experiences, setExperiences] = useState([]);
+    const [calendarEvents, setCalendarEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
 
@@ -24,6 +34,19 @@ const ApplicantProfileView = () => {
             })
             .catch(() => setError(true))
             .finally(() => setLoading(false));
+
+        axios
+            .get(`/api/my-calendar/worker/${workerId}`, { withCredentials: true })
+            .then((res) => {
+                const formatted = res.data.map((event) => ({
+                    id: event.id,
+                    title: event.title,
+                    start: new Date(`${event.startdate} ${event.starttime}`),
+                    end: new Date(`${event.enddate} ${event.endtime}`),
+                }));
+                setCalendarEvents(formatted);
+            })
+            .catch(() => {});
     }, [workerId]);
 
     if (loading) {
@@ -135,6 +158,24 @@ const ApplicantProfileView = () => {
                     </div>
                 </div>
             )}
+
+            {/* Availability Calendar */}
+            <div className="apv-card">
+                <h3 className="apv-section-title">Availability</h3>
+                {calendarEvents.length === 0 ? (
+                    <p className="apv-no-availability">No availability set by this applicant.</p>
+                ) : (
+                    <div className="apv-calendar-wrapper">
+                        <Calendar
+                            localizer={localizer}
+                            events={calendarEvents}
+                            startAccessor={(e) => new Date(e.start)}
+                            endAccessor={(e) => new Date(e.end)}
+                            style={{ height: 500 }}
+                        />
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
