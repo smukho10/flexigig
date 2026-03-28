@@ -153,6 +153,18 @@
     color: #7E22CE;
 }
 
+/* Availability calendar */
+.apv-calendar-wrapper {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.apv-no-availability {
+    margin: 0;
+    font-size: 14px;
+    color: #9CA3AF;
+}
+
 /* Loading / error */
 .apv-loading,
 .apv-error {
