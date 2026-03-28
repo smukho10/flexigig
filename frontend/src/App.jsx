@@ -1,8 +1,6 @@
 import './App.css';
 import React, { useEffect } from "react";
 import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
-
-import Calendar from "./components/Calendar";
 import GigWorkersPage from "./components/GigWorkersPage";
 //import Header from "./components/Header";
 //import HomePage from "./components/HomePage";
@@ -80,7 +78,6 @@ const App = () => {
                 <Route path="/my-gigs" element={<ProtectedRoute> <MyGigs /> </ProtectedRoute>} />
                 <Route path="/my-jobs" element={<ProtectedRoute> <JobPosting /> </ProtectedRoute>} />
                 <Route path="/gig-workers" element={<ProtectedRoute> <GigWorkersPage /> </ProtectedRoute>} />
-                <Route path="/my-calendar" element={<ProtectedRoute> <Calendar /> </ProtectedRoute>} />
                 <Route path="/notifications" element={<ProtectedRoute> <Notifications /> </ProtectedRoute>} />
                 <Route path="/find-gigs" element={<ProtectedRoute> <JobBoard /> </ProtectedRoute>} />
                 <Route path="/messages" element={<ProtectedRoute> <Messages /> </ProtectedRoute>} />
