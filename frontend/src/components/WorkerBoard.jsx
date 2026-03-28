@@ -174,32 +174,36 @@ const WorkerBoard = () => {
     return (
       <div id='workerboard-worker'>
           <div id='workerboard-worker-header'>
-            <h2 id='workerboard-worker-name'>{getWorkerName(worker)}</h2>
-            <Link to={`/worker/${worker.user_id || worker.id}`}>
-              <img id="workerboard-arrow" src={Arrow} alt="View worker"/>
-            </Link>
+            <div id='workerboard-worker-title-wrap'>
+              <h2 id='workerboard-worker-name'>{getWorkerName(worker)}</h2>
+              <Link to={`/applicant-profile/${worker.id}`}>
+                <img id="workerboard-arrow" src={Arrow} alt="View worker"/>
+              </Link>
+            </div>
           </div>
           <div id='workerboard-worker-details'>
-            <div id='workerboard-worker-item'>
-              <img id="workerboard-icons" src={Money} alt="Pay"/>
-              {getPayDisplay(worker)}
-            </div>
-            <div id='workerboard-worker-item'>
-              <img id="workerboard-icons" src={Star} alt="Skills"/>
-              {getSkillsDisplay(worker)}
-            </div>
-            <div id='workerboard-worker-item'>
-              <img id="workerboard-icons" src={Calendar} alt="Experience"/>
-              {getAvailabilityDisplay(worker)}
-            </div>
-            <div id='workerboard-worker-item'>
-              <img id="workerboard-icons" src={Grid} alt="Location"/>
-              {getLocationDisplay(worker)}
+            <div id='workerboard-worker-info'>
+              <div id='workerboard-worker-item'>
+                <img id="workerboard-icons" src={Money} alt="Pay"/>
+                {getPayDisplay(worker)}
+              </div>
+              <div id='workerboard-worker-item'>
+                <img id="workerboard-icons" src={Star} alt="Skills"/>
+                {getSkillsDisplay(worker)}
+              </div>
+              <div id='workerboard-worker-item'>
+                <img id="workerboard-icons" src={Calendar} alt="Experience"/>
+                {getAvailabilityDisplay(worker)}
+              </div>
+              <div id='workerboard-worker-item'>
+                <img id="workerboard-icons" src={Grid} alt="Location"/>
+                {getLocationDisplay(worker)}
+              </div>
             </div>
             <div id='workerboard-worker-actions'>
               <img id="workerboard-bookmark" src={Bookmark} alt="Save worker"/>
-              <Link to={`/worker/${worker.user_id || worker.id}`}>
-                <div id='workerboard-actions-button'></div>
+              <Link to={`/applicant-profile/${worker.id}`} id='workerboard-actions-link'>
+                <div id='workerboard-actions-button'>View Profile</div>
               </Link>
             </div>
           </div>
