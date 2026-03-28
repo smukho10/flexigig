@@ -20,6 +20,8 @@ const WorkerBoard = () => {
   const [workers, setWorkers] = useState([]);
   const [skills, setSkills] = useState([]);
   const [selectedSkill, setSelectedSkill] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState("");
+  const [selectedRating, setSelectedRating] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -46,16 +48,6 @@ const WorkerBoard = () => {
 
     fetchWorkerBoardData();
   }, []);
-
-  const filteredWorkers = useMemo(() => {
-    if (!selectedSkill) {
-      return workers;
-    }
-
-    return workers.filter((worker) => {
-      return Array.isArray(worker.skills) && worker.skills.includes(selectedSkill);
-    });
-  }, [workers, selectedSkill]);
 
   const getWorkerName = (worker) => {
     return [
@@ -115,12 +107,68 @@ const WorkerBoard = () => {
       return province;
     }
 
-    if (Array.isArray(worker.traits) && worker.traits.length > 0) {
-      return worker.traits.slice(0, 2).join(", ");
-    }
-
     return "No location listed";
   };
+
+  const getWorkerLocationValue = (worker) => {
+    const city = worker.worker_city || worker.city || "";
+    const province = worker.worker_province || worker.province || "";
+
+    if (city && province) {
+      return `${city}, ${province}`;
+    }
+
+    if (city) {
+      return city;
+    }
+
+    if (province) {
+      return province;
+    }
+
+    return "";
+  };
+
+  const getWorkerRating = (worker) => {
+    const rating =
+      worker.rating ??
+      worker.worker_rating ??
+      worker.average_rating ??
+      worker.avg_rating;
+
+    if (rating == null || rating === "") {
+      return null;
+    }
+
+    return Number(rating);
+  };
+
+  const filteredWorkers = useMemo(() => {
+    return workers.filter((worker) => {
+      const matchesSkill =
+        !selectedSkill ||
+        (Array.isArray(worker.skills) && worker.skills.includes(selectedSkill));
+
+      const workerLocation = getWorkerLocationValue(worker);
+      const matchesLocation =
+        !selectedLocation || workerLocation === selectedLocation;
+
+      const workerRating = getWorkerRating(worker);
+      const matchesRating =
+        !selectedRating ||
+        (workerRating !== null && workerRating >= Number(selectedRating));
+
+      return matchesSkill && matchesLocation && matchesRating;
+    });
+  }, [workers, selectedSkill, selectedLocation, selectedRating]);
+
+  const locationOptions = useMemo(() => {
+    return [...new Set(
+      workers
+        .map((worker) => getWorkerLocationValue(worker))
+        .filter((location) => location && location.trim() !== "")
+    )].sort((a, b) => a.localeCompare(b));
+  }, [workers]);
 
   const WorkerItem = ({ worker }) => {
     return (
@@ -169,6 +217,7 @@ const WorkerBoard = () => {
         <img id="workerboard-filter-icon" src={SearchFilter} alt=""/>
         <div
           id='workerboard-skill-item'
+          className={!selectedSkill ? "workerboard-skill-active" : ""}
           onClick={() => setSelectedSkill("")}
           style={{ cursor: "pointer" }}
         >
@@ -178,12 +227,53 @@ const WorkerBoard = () => {
           <div
             key={skill.skill_id}
             id='workerboard-skill-item'
+            className={selectedSkill === skill.skill_name ? "workerboard-skill-active" : ""}
             onClick={() => setSelectedSkill(skill.skill_name)}
             style={{ cursor: "pointer" }}
           >
             {skill.skill_name}
           </div>
         ))}
+      </div>
+
+      <div id='workerboard-extra-filters'>
+        <select
+          id='workerboard-filter-select'
+          value={selectedLocation}
+          onChange={(e) => setSelectedLocation(e.target.value)}
+        >
+          <option value="">All Locations</option>
+          {locationOptions.map((location) => (
+            <option key={location} value={location}>
+              {location}
+            </option>
+          ))}
+        </select>
+
+        <select
+          id='workerboard-filter-select'
+          value={selectedRating}
+          onChange={(e) => setSelectedRating(e.target.value)}
+        >
+          <option value="">All Ratings</option>
+          <option value="5">5+ Stars</option>
+          <option value="4">4+ Stars</option>
+          <option value="3">3+ Stars</option>
+          <option value="2">2+ Stars</option>
+          <option value="1">1+ Stars</option>
+        </select>
+
+        <div
+          id='workerboard-clear-filters'
+          onClick={() => {
+            setSelectedSkill("");
+            setSelectedLocation("");
+            setSelectedRating("");
+          }}
+          style={{ cursor: "pointer" }}
+        >
+          Clear Filters
+        </div>
       </div>
 
       <div id='workerboard-items'>

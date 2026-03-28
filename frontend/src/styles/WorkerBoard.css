@@ -53,6 +53,59 @@
     color: white;
 }
 
+#workerboard-extra-filters {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0 0 20px 48px;
+}
+
+#workerboard-filter-select {
+    border-color: #4EBBC2;
+    border-width: 1px;
+    border-radius: 8px;
+    border-style: solid;
+    min-width: 180px;
+    height: 38px;
+    padding: 6px 12px;
+    box-sizing: border-box;
+    font-size: 14px;
+    line-height: 1.2;
+    color: #273240;
+    background-color: #ffffff;
+    cursor: pointer;
+    outline: none;
+}
+
+#workerboard-clear-filters {
+    border-color: #4EBBC2;
+    border-width: 1px;
+    border-radius: 8px;
+    border-style: solid;
+    min-width: 130px;
+    width: auto;
+    min-height: 38px;
+    padding: 6px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    box-sizing: border-box;
+    font-size: 14px;
+    line-height: 1.2;
+    color: #273240;
+    transition: all 0.2s ease;
+    white-space: normal;
+    word-break: keep-all;
+}
+
+#workerboard-clear-filters:hover {
+    background-color: #4EBBC2;
+    color: white;
+}
+
 #workerboard-items {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -210,5 +263,14 @@
 
     #workerboard-skill-item {
         min-width: 120px;
+    }
+
+    #workerboard-extra-filters {
+        align-items: flex-start;
+        margin: 0 0 20px 20px;
+    }
+
+    #workerboard-filter-select {
+        min-width: 140px;
     }
 }
