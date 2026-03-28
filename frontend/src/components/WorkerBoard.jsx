@@ -22,8 +22,6 @@ const WorkerBoard = () => {
   const [selectedSkill, setSelectedSkill] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [savedWorkers, setSavedWorkers] = useState(new Set());
 
   useEffect(() => {
     const fetchWorkerBoardData = async () => {
@@ -50,17 +48,14 @@ const WorkerBoard = () => {
   }, []);
 
   const filteredWorkers = useMemo(() => {
+    if (!selectedSkill) {
+      return workers;
+    }
+
     return workers.filter((worker) => {
-      const name = getWorkerName(worker).toLowerCase();
-      const matchesSearch = name.includes(searchTerm.toLowerCase());
-
-      const matchesSkill =
-        !selectedSkill ||
-        (Array.isArray(worker.skills) && worker.skills.includes(selectedSkill));
-
-      return matchesSearch && matchesSkill;
+      return Array.isArray(worker.skills) && worker.skills.includes(selectedSkill);
     });
-  }, [workers, selectedSkill, searchTerm]);
+  }, [workers, selectedSkill]);
 
   const getWorkerName = (worker) => {
     return [
@@ -97,11 +92,11 @@ const WorkerBoard = () => {
   };
 
   const getAvailabilityDisplay = (worker) => {
-    if (worker.availability) {
-      return "Available";
+    if (Array.isArray(worker.experiences) && worker.experiences.length > 0) {
+      return worker.experiences.slice(0, 2).join(", ");
     }
 
-    return "Availability not set";
+    return "No experience listed";
   };
 
   const getLocationDisplay = (worker) => {
@@ -125,18 +120,6 @@ const WorkerBoard = () => {
     }
 
     return "No location listed";
-  };
-
-  const toggleSaveWorker = (workerId) => {
-    setSavedWorkers((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(workerId)) {
-        newSet.delete(workerId);
-      } else {
-        newSet.add(workerId);
-      }
-      return newSet;
-    });
   };
 
   const WorkerItem = ({ worker }) => {
@@ -166,15 +149,9 @@ const WorkerBoard = () => {
               {getLocationDisplay(worker)}
             </div>
             <div id='workerboard-worker-actions'>
-              <img
-                id="workerboard-bookmark"
-                src={Bookmark}
-                alt="Save worker"
-                onClick={() => toggleSaveWorker(worker.id)}
-                style={{ opacity: savedWorkers.has(worker.id) ? 1 : 0.4 }}
-              />
+              <img id="workerboard-bookmark" src={Bookmark} alt="Save worker"/>
               <Link to={`/worker/${worker.user_id || worker.id}`}>
-                <div id='workerboard-actions-button'>View Profile</div>
+                <div id='workerboard-actions-button'></div>
               </Link>
             </div>
           </div>
@@ -190,16 +167,8 @@ const WorkerBoard = () => {
       </div>
       <div id='workerboard-skill-search'>
         <img id="workerboard-filter-icon" src={SearchFilter} alt=""/>
-        <input
-          type="text"
-          placeholder="Search workers..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          id="workerboard-search-input"
-        />
         <div
           id='workerboard-skill-item'
-          className={selectedSkill === "" ? "workerboard-skill-active" : ""}
           onClick={() => setSelectedSkill("")}
           style={{ cursor: "pointer" }}
         >
@@ -209,16 +178,7 @@ const WorkerBoard = () => {
           <div
             key={skill.skill_id}
             id='workerboard-skill-item'
-            className={
-              selectedSkill === skill.skill_name
-                ? "workerboard-skill-active"
-                : ""
-            }
-            onClick={() =>
-              setSelectedSkill(
-                selectedSkill === skill.skill_name ? "" : skill.skill_name
-              )
-            }
+            onClick={() => setSelectedSkill(skill.skill_name)}
             style={{ cursor: "pointer" }}
           >
             {skill.skill_name}

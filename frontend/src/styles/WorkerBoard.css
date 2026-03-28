@@ -16,23 +16,6 @@
     flex-wrap: wrap;
 }
 
-#workerboard-search-input {
-    height: 36px;
-    width: 220px;
-    border: 1px solid #D0D5DD;
-    border-radius: 8px;
-    padding: 0 12px;
-    margin: 0 10px 10px 0;
-    font-size: 14px;
-    color: #273240;
-    outline: none;
-    box-sizing: border-box;
-}
-
-#workerboard-search-input:focus {
-    border-color: #4EBBC2;
-}
-
 #workerboard-skill-item {
     border-color: #4EBBC2;
     border-width: 1px;
@@ -145,13 +128,6 @@
     margin: auto 0 5px 8px;
     cursor: pointer;
     transition: background-color 0.2s ease;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-    font-size: 14px;
-    font-weight: 500;
 }
 
 /* NEW: button hover */
@@ -182,7 +158,7 @@
 #workerboard-filter-icon {
     height: 28px;
     width: 28px;
-    margin: 0 30px 10px 20px;
+    margin: 0 30px 0 20px;
     align-self: center;
 }
 
@@ -217,9 +193,5 @@
         grid-column: 1 / -1;
         grid-row: auto;
         justify-content: flex-end;
-    }
-
-    #workerboard-search-input {
-        width: 180px;
     }
 }
