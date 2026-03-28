@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import { useUser } from "./UserContext";
-import MessageWidget from "./MessageWidget";
+import React, { useEffect, useState, useRef } from "react";
+import DefaultAvatar from "../assets/images/DefaultAvatar.png";
 import "../styles/Dashboard.css";
+
+
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -36,8 +38,43 @@ const EmployerDashboard = () => {
   const [loadingJobs, setLoadingJobs]       = useState(true);
   const [businessName, setBusinessName]     = useState("");
 
+  const [conversations, setConversations]   = useState([]);
+  const [partnerDetails, setPartnerDetails] = useState({});
+  const [unreadCount, setUnreadCount]       = useState(0);
+  const [loadingMsgs, setLoadingMsgs]       = useState(true);
+  const partnerCache = useRef({});
+
   useEffect(() => {
     if (!user?.id) return;
+
+    axios.get(`/api/conversation-partners/${user.id}`, { withCredentials: true })
+      .then(res => {
+        const partners = res.data.partners || [];
+        const seen = new Set();
+        const unique = partners.filter(p => { if (seen.has(p.partner_id)) return false; seen.add(p.partner_id); return true; });
+        setConversations(unique);
+        setLoadingMsgs(false);
+
+        Promise.all(
+          unique.filter(p => !partnerCache.current[p.partner_id]).map(p =>
+            axios.get(`/api/user-details/${p.partner_id}`, { withCredentials: true })
+              .then(r => {
+                const { type, firstName, lastName, businessName, userImage } = r.data.userDetails;
+                const detail = { name: type === "worker" ? `${firstName} ${lastName}` : businessName, userImage: userImage || null };
+                partnerCache.current[p.partner_id] = detail;
+                return { id: p.partner_id, detail };
+              }).catch(() => null)
+          )
+        ).then(results => {
+          const newDetails = {};
+          results.forEach(r => { if (r) newDetails[r.id] = r.detail; });
+          setPartnerDetails(prev => ({ ...prev, ...newDetails }));
+        });
+      }).catch(() => setLoadingMsgs(false));
+
+    axios.get(`/api/unread-count/${user.id}`, { withCredentials: true })
+      .then(res => setUnreadCount(res.data.unreadCount || 0))
+      .catch(() => {});
 
     // Fetch rating summary
     axios.get(`/api/reviews/${user.id}/summary`, { withCredentials: true })
@@ -160,11 +197,37 @@ const EmployerDashboard = () => {
       {/* Main Grid */}
       <div className="emp-dash-grid">
         {/* Messages */}
-        <div className="emp-dash-card">
-          <Link to="/messages" style={{ textDecoration: "none", color: "inherit" }}>
-            <MessageWidget />
-          </Link>
-        </div>
+     {/* Messages */}
+     <div className="emp-dash-card">
+       <div className="dash-card-header">
+         <span className="dash-card-title">
+           Messages{unreadCount > 0 && <span className="dash-unread-badge">{unreadCount}</span>}
+         </span>
+         <Link to="/messages" className="dash-card-link">See all →</Link>
+       </div>
+       <div className="dash-card-body">
+         {loadingMsgs ? <div className="dash-loading">Loading messages…</div>
+           : conversations.length === 0 ? <div className="dash-empty"><p>No messages yet.</p></div>
+           : (
+             <ul className="dash-msg-list">
+               {conversations.map((conv, i) => {
+                 const partner = partnerDetails[conv.partner_id];
+                 return (
+                   <li key={`${conv.partner_id}-${i}`} className="dash-msg-item"
+                     onClick={() => navigate("/messages", { state: { partnerId: conv.partner_id, jobId: conv.job_id || null } })}>
+                     <img className="dash-msg-avatar" src={partner?.userImage || DefaultAvatar} alt="avatar" />
+                     <div className="dash-msg-body">
+                       <div className="dash-msg-name">{partner?.name || "Loading…"}</div>
+                       {conv.job_title && <div className="dash-msg-jobtitle">{conv.job_title}</div>}
+                       <div className="dash-msg-text">Tap to open chat →</div>
+                     </div>
+                   </li>
+                 );
+               })}
+             </ul>
+           )}
+       </div>
+     </div>
 
         {/* Recent Job Postings */}
         <div className="emp-dash-card">

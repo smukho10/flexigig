@@ -1032,6 +1032,8 @@
 
 /* ============ EMPLOYER DASHBOARD ============ */
 .emp-dash {
+  font-family: 'Quicksand', 'Poppins', sans-serif;
+  background: #f5f7fa;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -1045,10 +1047,10 @@
 }
 
 .emp-dash-greeting {
-  font-size: 24px;
+  font-size: 1.35rem;
   font-weight: 600;
   margin: 0;
-  color: #1a1a1a;
+  color: #1a1a2e;
 }
 
 .emp-dash-greeting-name {
@@ -1056,25 +1058,25 @@
 }
 
 .emp-dash-subtext {
-  font-size: 14px;
+  font-size: 0.85rem;
   color: #6b7280;
   margin: 4px 0 0 0;
 }
 
 .emp-dash-post-btn {
-  background-color: #4EBBC2;
+  background-color: #1D9E75;
   color: #fff;
   border: none;
   padding: 10px 20px;
   border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 0.875rem;
+  font-weight: 700;
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .emp-dash-post-btn:hover {
-  background-color: #3ca8af;
+  background-color: #0F6E56;
 }
 
 /* Stats */
@@ -1085,6 +1087,7 @@
 }
 
 .emp-dash-stat-card {
+  border: 1px solid #e8ecf0;
   background: #fff;
   border-radius: 14px;
   padding: 18px 20px;
@@ -1110,30 +1113,31 @@
 .emp-dash-stat-icon--yellow { background: #FFFBEB; color: #F59E0B; }
 
 .emp-dash-stat-value {
-  font-size: 26px;
+  font-size: 1.5rem;
   font-weight: 700;
   margin: 0;
-  color: #111827;
+  color: #1a1a2e;
   line-height: 1.2;
 }
 
 .emp-dash-stat-label {
-  font-size: 11px;
+  font-size: 0.75rem;
   font-weight: 600;
-  color: #9CA3AF;
+  color: #6b7280;
   margin: 2px 0 0 0;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
 }
 
 .emp-dash-stat-sub {
-  font-size: 12px;
+  font-size: 0.775rem;
   color: #6b7280;
   margin: 4px 0 0 0;
 }
 
 .emp-dash-stars {
-  color: #F59E0B;
-  font-size: 13px;
+  color: #f59e0b;
+  font-size: 0.9rem;
 }
 
 /* Main Grid */
@@ -1144,6 +1148,7 @@
 }
 
 .emp-dash-card {
+  border: 1px solid #e8ecf0;
   background: #fff;
   border-radius: 14px;
   padding: 20px;
@@ -1159,15 +1164,16 @@
 }
 
 .emp-dash-card-title {
-  font-size: 16px;
+  font-size: 0.95rem;
   font-weight: 700;
-  color: #111827;
+  color: #1a1a2e;
+  letter-spacing: -0.1px;
   margin: 0;
 }
 
 .emp-dash-see-all {
-  font-size: 13px;
-  color: #4EBBC2;
+  font-size: 0.8rem;
+  color: #1D9E75;
   font-weight: 600;
   text-decoration: none;
 }
@@ -1205,20 +1211,20 @@
 }
 
 .emp-dash-job-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: #111827;
+  font-size: 0.825rem;
+  font-weight: 700;
+  color: #1a1a2e;
   margin: 0;
 }
 
 .emp-dash-job-meta {
-  font-size: 13px;
+  font-size: 0.775rem;
   color: #6b7280;
   margin: 0;
 }
 
 .emp-dash-job-date {
-  font-size: 12px;
+  font-size: 0.72rem;
   color: #9ca3af;
   margin: 0;
 }
@@ -1231,34 +1237,34 @@
 }
 
 .emp-dash-job-status {
-  font-size: 12px;
+  font-size: 0.72rem;
   font-weight: 600;
   padding: 3px 10px;
   border-radius: 20px;
 }
 
 .emp-dash-job-applicants {
-  font-size: 12px;
+  font-size: 0.72rem;
   color: #9ca3af;
   margin: 0;
 }
 
 .emp-dash-empty {
   color: #9ca3af;
-  font-size: 14px;
+  font-size: 0.825rem;
   text-align: center;
   padding: 40px 0;
 }
 
 .emp-dash-post-btn-sm {
   margin-top: 12px;
-  background-color: #4EBBC2;
+  background-color: #1D9E75;
   color: #fff;
   border: none;
   padding: 8px 16px;
   border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 0.8rem;
+  font-weight: 700;
   cursor: pointer;
 }
 
