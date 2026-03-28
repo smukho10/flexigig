@@ -2,7 +2,7 @@
     width: 100%;
     max-width: 1400px;
     margin: 0 auto;
-    padding: 30px 40px 40px 40px;
+    padding: 24px 32px 32px 32px;
     box-sizing: border-box;
 }
 
@@ -10,8 +10,8 @@
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 16px;
-    margin-bottom: 16px;
+    gap: 14px;
+    margin-bottom: 14px;
 }
 
 #workerboard-header > h1 {
@@ -27,7 +27,7 @@
     align-items: center;
     flex-wrap: wrap;
     gap: 10px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
 }
 
 #workerboard-skill-item {
@@ -43,7 +43,7 @@
     align-items: center;
     justify-content: center;
     text-align: center;
-    margin: 0 0 10px 0;
+    margin: 0 0 8px 0;
     box-sizing: border-box;
 
     font-size: 14px;
@@ -72,7 +72,7 @@
     align-items: center;
     flex-wrap: wrap;
     gap: 10px;
-    margin: 0 0 24px 38px;
+    margin: 0 0 18px 36px;
 }
 
 #workerboard-filter-select {
@@ -123,7 +123,7 @@
 #workerboard-items {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 18px;
     width: 100%;
     box-sizing: border-box;
 }
@@ -138,8 +138,8 @@
 
 #workerboard-worker {
     width: 100%;
-    min-height: 180px;
-    padding: 28px 28px 24px 28px;
+    min-height: 150px;
+    padding: 20px 22px;
     margin-top: 0;
     border-radius: 20px;
     box-sizing: border-box;
@@ -157,14 +157,14 @@
 #workerboard-worker-header {
     display: flex;
     flex-direction: row;
-    padding-bottom: 20px;
+    padding-bottom: 14px;
 }
 
 #workerboard-worker-title-wrap {
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     width: 100%;
 }
 
@@ -173,21 +173,22 @@
     font-size: 18pt;
     font-weight: 500;
     margin: 0;
+    line-height: 1.1;
 }
 
 #workerboard-worker-details {
     color: #273240;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 220px;
-    gap: 20px;
-    align-items: end;
+    grid-template-columns: minmax(0, 1fr) 210px;
+    gap: 16px;
+    align-items: center;
     width: 100%;
 }
 
 #workerboard-worker-info {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px 32px;
+    gap: 12px 28px;
     min-width: 0;
 }
 
@@ -197,12 +198,13 @@
     align-items: center;
     min-width: 0;
     word-break: break-word;
+    line-height: 1.3;
 }
 
 #workerboard-worker-actions {
     display: flex;
     flex-direction: row;
-    align-items: flex-end;
+    align-items: center;
     justify-content: flex-end;
     gap: 12px;
     background-color: transparent;
@@ -242,8 +244,8 @@
 }
 
 #workerboard-arrow-back {
-    height: 36px;
-    width: 36px;
+    height: 34px;
+    width: 34px;
     margin: 0;
     cursor: pointer;
 }
@@ -258,7 +260,7 @@
 #workerboard-filter-icon {
     height: 28px;
     width: 28px;
-    margin: 0 20px 10px 0;
+    margin: 0 14px 8px 0;
     align-self: center;
 }
 
@@ -283,6 +285,7 @@
 
     #workerboard-worker-actions {
         justify-content: flex-start;
+        margin-top: 4px;
     }
 }
 
@@ -293,7 +296,7 @@
 
     #workerboard-worker {
         min-height: auto;
-        padding: 22px 20px;
+        padding: 18px 18px;
     }
 
     #workerboard-worker-info {
@@ -310,7 +313,7 @@
 
     #workerboard-extra-filters {
         align-items: flex-start;
-        margin: 0 0 20px 0;
+        margin: 0 0 18px 0;
     }
 
     #workerboard-filter-select {
