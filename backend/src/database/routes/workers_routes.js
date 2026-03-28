@@ -3,25 +3,63 @@ const router = express.Router();
 const workers_queries = require("../queries/workers_queries.js");
 const db = require('../connection.js');
 
-router.get('/gig-workers', (req, res) => {
-  workers_queries.fetchWorkers()
-    .then((workers) => {
-      console.log(workers);
-      res.json(workers);
-      return;
-    });
+router.get('/gig-workers', async (req, res) => {
+  try {
+    const workers = await workers_queries.fetchWorkers();
+    console.log(workers);
+    res.json(workers);
+    return;
+  } catch (err) {
+    console.error("Error in /api/gig-workers", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 router.get('/worker/:id', async (req, res) => {
   const userId = parseInt(req.params.id, 10);
 
   if (isNaN(userId)) {
-    return res.status(400).json({ message: "Invalid user ID" }); // Early return if bad input
+    return res.status(400).json({ message: "Invalid user ID" });
   }
 
   try {
     const result = await db.query(
-      `SELECT id, first_name, last_name FROM workers WHERE user_id = $1`,
+      `
+      SELECT
+        w.*,
+        COALESCE(
+          ARRAY(
+            SELECT DISTINCT s.skill_name
+            FROM workers_skills ws
+            INNER JOIN skills s ON ws.skill_id = s.skill_id
+            WHERE ws.workers_id = w.id
+            ORDER BY s.skill_name
+          ),
+          ARRAY[]::text[]
+        ) AS skills,
+        COALESCE(
+          ARRAY(
+            SELECT DISTINCT e.experience_name
+            FROM workers_experiences we
+            INNER JOIN experiences e ON we.experience_id = e.experience_id
+            WHERE we.workers_id = w.id
+            ORDER BY e.experience_name
+          ),
+          ARRAY[]::text[]
+        ) AS experiences,
+        COALESCE(
+          ARRAY(
+            SELECT DISTINCT t.trait_name
+            FROM workers_traits wt
+            INNER JOIN traits t ON wt.trait_id = t.trait_id
+            WHERE wt.workers_id = w.id
+            ORDER BY t.trait_name
+          ),
+          ARRAY[]::text[]
+        ) AS traits
+      FROM workers w
+      WHERE w.user_id = $1
+      `,
       [userId]
     );
 
@@ -93,72 +131,90 @@ router.post("/add-worker-skill-ids/:workid/:skillid", async (req, res) => {
 router.post("/clear-worker-skills/:id", async (req, res) => {
   const workersId = req.params.id;
 
-  workers_queries.clearWorkerSkills(workersId)
-    .then((conf) => {
-      res.json(conf);
-      return;
-    });
+  try {
+    const conf = await workers_queries.clearWorkerSkills(workersId);
+    res.json(conf);
+    return;
+  } catch (err) {
+    console.error("Error in /api/clear-worker-skills/:id", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 router.post("/clear-worker-traits/:id", async (req, res) => {
   const workersId = req.params.id;
 
-  workers_queries.clearWorkerTraits(workersId)
-    .then((conf) => {
-      res.json(conf);
-      return;
-    });
+  try {
+    const conf = await workers_queries.clearWorkerTraits(workersId);
+    res.json(conf);
+    return;
+  } catch (err) {
+    console.error("Error in /api/clear-worker-traits/:id", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 router.post("/clear-worker-experiences/:id", async (req, res) => {
   const workersId = req.params.id;
 
-  workers_queries.clearWorkerExperiences(workersId)
-    .then((conf) => {
-      res.json(conf);
-      return;
-    });
+  try {
+    const conf = await workers_queries.clearWorkerExperiences(workersId);
+    res.json(conf);
+    return;
+  } catch (err) {
+    console.error("Error in /api/clear-worker-experiences/:id", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 router.get("/get-worker-skills", async (req, res) => {
   try {
     const workersId = req.session.workers_id;
-    const { rows } = await workers_queries.getWorkerSkills(workersId);
-    res.json(rows[0]);
+    const workerSkills = await workers_queries.getWorkerSkills(workersId);
+    res.json(workerSkills);
   } catch (err) {
     console.error("Error in /api/get-worker-skills", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
-router.get("/get-worker-skills-id/:id", (req, res) => {
+router.get("/get-worker-skills-id/:id", async (req, res) => {
   const workerId = req.params.id;
 
-  workers_queries.getWorkerSkillsWithId(workerId)
-    .then((workerSkills) => {
-      res.json(workerSkills);
-      return;
-    });
+  try {
+    const workerSkills = await workers_queries.getWorkerSkillsWithId(workerId);
+    res.json(workerSkills);
+    return;
+  } catch (err) {
+    console.error("Error in /api/get-worker-skills-id/:id", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
-router.get("/get-worker-traits-id/:id", (req, res) => {
+router.get("/get-worker-traits-id/:id", async (req, res) => {
   const workerId = req.params.id;
 
-  workers_queries.getWorkerTraitsWithId(workerId)
-    .then((workerTraits) => {
-      res.json(workerTraits);
-      return;
-    });
+  try {
+    const workerTraits = await workers_queries.getWorkerTraitsWithId(workerId);
+    res.json(workerTraits);
+    return;
+  } catch (err) {
+    console.error("Error in /api/get-worker-traits-id/:id", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
-router.get("/get-worker-experiences-id/:id", (req, res) => {
+router.get("/get-worker-experiences-id/:id", async (req, res) => {
   const workerId = req.params.id;
 
-  workers_queries.getWorkerExperiencesWithId(workerId)
-    .then((workerExp) => {
-      res.json(workerExp);
-      return;
-    });
+  try {
+    const workerExp = await workers_queries.getWorkerExperiencesWithId(workerId);
+    res.json(workerExp);
+    return;
+  } catch (err) {
+    console.error("Error in /api/get-worker-experiences-id/:id", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 router.post("/add-worker-experience", async (req, res) => {
@@ -188,8 +244,8 @@ router.post("/add-worker-experience-ids/:workid/:expid", async (req, res) => {
 router.get("/get-worker-experiences", async (req, res) => {
   try {
     const workersId = req.session.workers_id;
-    const { rows } = await workers_queries.getWorkerExperiences(workersId);
-    res.json(rows[0]);
+    const workerExperiences = await workers_queries.getWorkerExperiences(workersId);
+    res.json(workerExperiences);
   } catch (err) {
     console.error("Error in /api/get-worker-experiences", err);
     res.status(500).json({ error: "Internal server error" });
@@ -223,8 +279,8 @@ router.post("/add-worker-trait-ids/:workid/:traitid", async (req, res) => {
 router.get("/get-worker-traits", async (req, res) => {
   try {
     const workersId = req.session.workers_id;
-    const { rows } = await workers_queries.getWorkerTraits(workersId);
-    res.json(rows[0]);
+    const workerTraits = await workers_queries.getWorkerTraits(workersId);
+    res.json(workerTraits);
   } catch (err) {
     console.error("Error in /api/get-worker-traits", err);
     res.status(500).json({ error: "Internal server error" });
