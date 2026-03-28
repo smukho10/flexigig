@@ -99,6 +99,8 @@ const ProfilePage = () => {
         worker_city: user.city,
         worker_province: user.province,
         worker_postal_code: user.postal_code,
+        desired_work_radius: user.desired_work_radius >= 0 ? user.desired_work_radius : "",
+        desired_pay: user.desired_pay >= 0 ? user.desired_pay : "",
       });
     }
   }, [user]);
@@ -179,6 +181,8 @@ const ProfilePage = () => {
           worker_city: merge.city,
           worker_province: merge.province,
           worker_postal_code: merge.postal_code,
+          desired_work_radius: merge.desired_work_radius >= 0 ? merge.desired_work_radius : "",
+          desired_pay: merge.desired_pay >= 0 ? merge.desired_pay : "",
         });
       })
       .catch((error) => {
@@ -257,13 +261,14 @@ const ProfilePage = () => {
       setEditedUser((prev) => ({ ...prev, [name]: values }));
     } else {
       if (name === "desired_work_radius") {
-        if (!isNaN(parseInt(value))) {
+        // Allow digits and at most one decimal point, max value 10000
+        if (value === "" || (/^\d*\.?\d*$/.test(value) && parseFloat(value) <= 10000)) {
           setEditedUser((prev) => ({ ...prev, [name]: value }));
         }
       } else if (name === "desired_pay") {
-        if (!isNaN(parseFloat(value))) {
-          var rounded = Math.round(value * 100) / 100;
-          setEditedUser((prev) => ({ ...prev, [name]: rounded }));
+        // Allow digits and at most two decimal places, max value 1000
+        if (value === "" || (/^\d*\.?\d{0,2}$/.test(value) && parseFloat(value) <= 1000)) {
+          setEditedUser((prev) => ({ ...prev, [name]: value }));
         }
       } else {
         setEditedUser((prev) => ({ ...prev, [name]: value }));
@@ -1023,27 +1028,31 @@ const ProfilePage = () => {
                     Work Radius (km):
                   </label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="decimal"
                     id="desired_work_radius"
                     name="desired_work_radius"
-                    value={editedUser.desired_work_radius || ""}
+                    value={editedUser.desired_work_radius ?? ""}
                     onChange={handleChange}
                     className="input-text"
+                    placeholder="0 – 10000"
                     required
                   />
 
                   <label htmlFor="desired_pay" className="form-label">
                     Desired Pay ($/hr):
                   </label>
-                  <input
-                    type="number"
-                    id="desired_pay"
-                    name="desired_pay"
-                    value={editedUser.desired_pay || ""}
-                    onChange={handleChange}
-                    className="input-text"
-                    required
-                  />
+                 <input
+                  type="text"
+                  inputMode="decimal"
+                  id="desired_pay"
+                  name="desired_pay"
+                  value={editedUser.desired_pay ?? ""}
+                  onChange={handleChange}
+                  className="input-text"
+                  placeholder="0.00 – 1000.00"
+                  required
+                />
                 </>
               </div>
             )}
