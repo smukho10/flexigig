@@ -14,6 +14,7 @@
     flex-direction: row;
     align-items: center;
     flex-wrap: wrap;
+    gap: 10px;
 }
 
 #workerboard-skill-item {
@@ -21,16 +22,24 @@
     border-width: 1px;
     border-radius: 8px;
     border-style: solid;
-    width: 100px;
-    height: 30px;
-    align-content: center;
+    min-width: 100px;
+    width: auto;
+    min-height: 38px;
+    padding: 6px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     text-align: center;
-    margin: 0 10px 10px 10px;
+    margin: 0 0 10px 0;
+    box-sizing: border-box;
 
     font-size: 14px;
+    line-height: 1.2;
     color: #273240;
     cursor: pointer;
     transition: all 0.2s ease;
+    white-space: normal;
+    word-break: keep-all;
 }
 
 #workerboard-skill-item:hover {
@@ -158,7 +167,7 @@
 #workerboard-filter-icon {
     height: 28px;
     width: 28px;
-    margin: 0 30px 0 20px;
+    margin: 0 20px 10px 20px;
     align-self: center;
 }
 
@@ -193,5 +202,13 @@
         grid-column: 1 / -1;
         grid-row: auto;
         justify-content: flex-end;
+    }
+
+    #workerboard-skill-search {
+        align-items: flex-start;
+    }
+
+    #workerboard-skill-item {
+        min-width: 120px;
     }
 }
