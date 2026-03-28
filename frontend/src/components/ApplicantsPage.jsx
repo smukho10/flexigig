@@ -26,6 +26,7 @@ const ApplicantsPage = () => {
     const [jobStatus, setJobStatus] = useState(state?.job?.status || null);
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(true);
+    const [activeFilter, setActiveFilter] = useState("ALL");
 
     // Review modal state
     const [reviewModal, setReviewModal] = useState(false);
@@ -124,8 +125,26 @@ const ApplicantsPage = () => {
         });
     };
 
-    const totalPages = Math.ceil(applicants.length / APPLICANTS_PER_PAGE);
-    const paginated = applicants.slice((page - 1) * APPLICANTS_PER_PAGE, page * APPLICANTS_PER_PAGE);
+    const filteredApplicants = activeFilter === "ALL"
+        ? applicants
+        : applicants.filter((a) => a.application_status === activeFilter);
+
+    const totalPages = Math.ceil(filteredApplicants.length / APPLICANTS_PER_PAGE);
+    const paginated = filteredApplicants.slice((page - 1) * APPLICANTS_PER_PAGE, page * APPLICANTS_PER_PAGE);
+
+    const handleFilterChange = (filter) => {
+        setActiveFilter(filter);
+        setPage(1);
+    };
+
+    const STATUS_FILTER_OPTIONS = [
+        { label: "All", value: "ALL" },
+        { label: "Applied", value: "APPLIED" },
+        { label: "In Review", value: "IN_REVIEW" },
+        { label: "Accepted", value: "ACCEPTED" },
+        { label: "Rejected", value: "REJECTED" },
+        { label: "Withdrawn", value: "WITHDRAWN" },
+    ];
 
     const isJobCompleted = jobStatus === "completed";
 
@@ -158,12 +177,37 @@ const ApplicantsPage = () => {
                 </div>
             )}
 
+            {/* Filter bar */}
+            {!loading && applicants.length > 0 && (
+                <div className="applicants-filter-bar">
+                    {STATUS_FILTER_OPTIONS.map((opt) => {
+                        const count = opt.value === "ALL"
+                            ? applicants.length
+                            : applicants.filter((a) => a.application_status === opt.value).length;
+                        return (
+                            <button
+                                key={opt.value}
+                                className={`filter-btn ${activeFilter === opt.value ? "filter-btn-active" : ""}`}
+                                onClick={() => handleFilterChange(opt.value)}
+                            >
+                                {opt.label}
+                                <span className="filter-count">{count}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+
             {loading ? (
                 <p className="applicants-loading">Loading applicants...</p>
             ) : applicants.length === 0 ? (
                 <div className="applicants-empty">
                     <p>No applicants yet.</p>
                     <span>Share your job posting to attract candidates.</span>
+                </div>
+            ) : filteredApplicants.length === 0 ? (
+                <div className="applicants-empty">
+                    <p>No applicants with status "{activeFilter.replace("_", " ")}".</p>
                 </div>
             ) : (
                 <>
