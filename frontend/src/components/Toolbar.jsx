@@ -39,10 +39,6 @@ const Toolbar = () => {
           <img src={EnvelopeIcon} alt="Notifications" className="toolbar-icon" />
           <p>Notifications</p>
         </Link>
-        <Link to="/my-calendar" className={isActive("/my-calendar") ? "active" : ""}>
-          <img src={CalendarIcon} alt="Calendar" className="toolbar-icon" />
-          <p>Calendar</p>
-        </Link>
         <Link to="/messages" className={isActive("/messages") ? "active" : ""}>
           <img src={MessagesIcon} alt="Messages" className="toolbar-icon" />
           <p>Messages</p>
