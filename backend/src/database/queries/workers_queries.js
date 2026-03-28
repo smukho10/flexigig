@@ -1,7 +1,42 @@
 const db = require('../connection.js');
 
 const fetchWorkers = () => {
-  const query = "SELECT * FROM workers"
+  const query = `
+    SELECT
+      w.*,
+      COALESCE(
+        ARRAY(
+          SELECT DISTINCT s.skill_name
+          FROM workers_skills ws
+          INNER JOIN skills s ON ws.skill_id = s.skill_id
+          WHERE ws.workers_id = w.id
+          ORDER BY s.skill_name
+        ),
+        ARRAY[]::text[]
+      ) AS skills,
+      COALESCE(
+        ARRAY(
+          SELECT DISTINCT e.experience_name
+          FROM workers_experiences we
+          INNER JOIN experiences e ON we.experience_id = e.experience_id
+          WHERE we.workers_id = w.id
+          ORDER BY e.experience_name
+        ),
+        ARRAY[]::text[]
+      ) AS experiences,
+      COALESCE(
+        ARRAY(
+          SELECT DISTINCT t.trait_name
+          FROM workers_traits wt
+          INNER JOIN traits t ON wt.trait_id = t.trait_id
+          WHERE wt.workers_id = w.id
+          ORDER BY t.trait_name
+        ),
+        ARRAY[]::text[]
+      ) AS traits
+    FROM workers w
+    ORDER BY w.id;
+  `
 
   return db
     .query(query)
@@ -10,6 +45,7 @@ const fetchWorkers = () => {
     })
     .catch((err) => {
       console.error("Error fetching workers:", err);
+      throw err;
     });
 }
 
@@ -23,6 +59,7 @@ const getAllSkills = () => {
     })
     .catch((err) => {
       console.error("Error getting all skills:", err);
+      throw err;
     });
 }
 
@@ -36,6 +73,7 @@ const getAllExperiences = () => {
     })
     .catch((err) => {
       console.error("Error getting all experiences:", err);
+      throw err;
     });
 }
 
@@ -49,6 +87,7 @@ const getAllTraits = () => {
     })
     .catch((err) => {
       console.error("Error getting all traits:", err);
+      throw err;
     });
 }
 
@@ -64,6 +103,7 @@ const addWorkerSkill = (workersId, skillId) => {
     })
     .catch((err) => {
       console.error("Error adding worker skill:", err);
+      throw err;
     });
 };
 
@@ -79,6 +119,7 @@ const clearWorkerSkills = (workersId) => {
     })
     .catch((err) => {
       console.error("Error clearing worker skills:", err);
+      throw err;
     });
 };
 
@@ -94,6 +135,7 @@ const clearWorkerTraits = (workersId) => {
     })
     .catch((err) => {
       console.error("Error clearing worker traits:", err);
+      throw err;
     });
 };
 
@@ -109,6 +151,7 @@ const clearWorkerExperiences = (workersId) => {
     })
     .catch((err) => {
       console.error("Error clearing worker experiences:", err);
+      throw err;
     });
 };
 
@@ -124,6 +167,7 @@ const getWorkerSkills = (workersId) => {
     })
     .catch((err) => {
       console.error("Error getting worker skills:", err);
+      throw err;
     });
 }
 
@@ -139,6 +183,7 @@ const getWorkerSkillsWithId = (workersId) => {
     })
     .catch((err) => {
       console.error("Error getting worker skills:", err);
+      throw err;
     });
 }
 
@@ -154,6 +199,7 @@ const addWorkerExperience = (workersId, experienceId) => {
     })
     .catch((err) => {
       console.error("Error adding worker experience:", err);
+      throw err;
     });
 };
 
@@ -165,10 +211,11 @@ const getWorkerExperiences = (workersId) => {
   return db
     .query(query, [workersId])
     .then((result) => {
-      return result.rows[0];
+      return result.rows;
     })
     .catch((err) => {
       console.error("Error getting worker experiences:", err);
+      throw err;
     });
 }
 
@@ -184,6 +231,7 @@ const getWorkerExperiencesWithId = (workersId) => {
     })
     .catch((err) => {
       console.error("Error getting worker experiences:", err);
+      throw err;
     });
 }
 
@@ -199,6 +247,7 @@ const addWorkerTrait = (workersId, traitId) => {
     })
     .catch((err) => {
       console.error("Error adding worker trait:", err);
+      throw err;
     });
 };
 
@@ -210,10 +259,11 @@ const getWorkerTraits = (workersId) => {
   return db
     .query(query, [workersId])
     .then((result) => {
-      return result.rows[0];
+      return result.rows;
     })
     .catch((err) => {
       console.error("Error getting worker traits:", err);
+      throw err;
     });
 }
 
@@ -229,6 +279,7 @@ const getWorkerTraitsWithId = (workersId) => {
     })
     .catch((err) => {
       console.error("Error getting worker skills:", err);
+      throw err;
     });
 }
 
