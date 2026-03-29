@@ -21,23 +21,6 @@ router.get("/applicant-profile/:workerId", async (req, res) => {
       return res.status(404).json({ message: "Applicant profile not found" });
     }
 
-    // Attach signed R2 photo URL if available
-    try {
-      const photoResult = await connection.query(
-        `SELECT profile_photo_key FROM users WHERE id = $1;`,
-        [profile.id]
-      );
-      const key = photoResult.rows[0]?.profile_photo_key;
-      if (key) {
-        const command = new GetObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key });
-        profile.profilePhotoUrl = await getSignedUrl(s3, command, {
-          expiresIn: parseInt(process.env.R2_SIGNED_URL_EXPIRY || 3600),
-        });
-      }
-    } catch (_) {
-      // Photo lookup failure is non-fatal; profile still returned without photo
-    }
-
     res.json({ profile, skills, experiences });
   } catch (err) {
     console.error("Error fetching applicant profile:", err);
