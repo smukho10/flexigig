@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import ChevronLeft from "../assets/images/ChevronLeft.png";
+import DefaultAvatar from "../assets/images/DefaultAvatar.png";
 import "../styles/ApplicantsPage.css";
 import { useUser } from "./UserContext";
 
@@ -27,6 +28,7 @@ const ApplicantsPage = () => {
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState("ALL");
+    const [applicantPhotoUrls, setApplicantPhotoUrls] = useState({});
 
     // Review modal state
     const [reviewModal, setReviewModal] = useState(false);
@@ -40,7 +42,22 @@ const ApplicantsPage = () => {
     const fetchApplicants = async () => {
         try {
             const res = await axios.get(`/api/job-applicants/${jobId}`, { withCredentials: true });
-            setApplicants(res.data.applicants);
+            const list = res.data.applicants;
+            setApplicants(list);
+            // Fetch profile photo URLs for all applicants
+            const photoMap = {};
+            await Promise.all(
+                list.map(async (a) => {
+                    if (!a.user_id) return;
+                    try {
+                        const photoRes = await axios.get(`/api/profile/view-photo-url/${a.user_id}`, { withCredentials: true });
+                        if (photoRes.data.viewUrl) photoMap[a.user_id] = photoRes.data.viewUrl;
+                    } catch (_) {
+                        // No photo for this applicant — fallback will show initials
+                    }
+                })
+            );
+            setApplicantPhotoUrls(photoMap);
         } catch (error) {
             console.error("Error fetching applicants:", error);
         } finally {
@@ -233,6 +250,17 @@ const ApplicantsPage = () => {
 
                                     <div className="applicant-info">
                                         <div className="applicant-name-row">
+                                            {applicantPhotoUrls[a.user_id] ? (
+                                                <img
+                                                    src={applicantPhotoUrls[a.user_id]}
+                                                    alt="avatar"
+                                                    className="applicant-avatar"
+                                                />
+                                            ) : (
+                                                <div className="applicant-avatar applicant-avatar--initials">
+                                                    {(a.first_name?.[0] || "").toUpperCase()}{(a.last_name?.[0] || "").toUpperCase()}
+                                                </div>
+                                            )}
                                             <span className="applicant-name">
                                                 {a.first_name} {a.last_name}
                                             </span>

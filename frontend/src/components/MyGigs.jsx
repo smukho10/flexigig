@@ -11,6 +11,7 @@ import MessageBubbles from "../assets/images/MessageBubbles.png";
 const MyGigs = () => {
   const { user } = useUser();
   const [approvedGigs, setApprovedGigs] = useState([]);
+  const [employerPhotoUrls, setEmployerPhotoUrls] = useState({});
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [currentReviewGig, setCurrentReviewGig] = useState(null);
   const [rating, setRating] = useState(0);
@@ -24,11 +25,25 @@ const MyGigs = () => {
   useEffect(() => {
     if (user && user.id) {
       axios.get(`/api/applied-jobs/${user.id}`, { withCredentials: true })
-        .then(res => {
+        .then(async res => {
           const gigs = res.data.jobs
             .filter(job => job.application_status !== 'APPLIED')
             .sort((a, b) => a.jobstart.localeCompare(b.jobstart));
           setApprovedGigs(gigs);
+          // Fetch employer profile photos
+          const uniqueEmployerIds = [...new Set(gigs.map(g => g.employer_user_id).filter(Boolean))];
+          const photoMap = {};
+          await Promise.all(
+            uniqueEmployerIds.map(async (employerId) => {
+              try {
+                const res = await axios.get(`/api/profile/view-photo-url/${employerId}`, { withCredentials: true });
+                if (res.data.viewUrl) photoMap[employerId] = res.data.viewUrl;
+              } catch (_) {
+                // No photo — DefaultAvatar fallback used
+              }
+            })
+          );
+          setEmployerPhotoUrls(photoMap);
         })
         .catch(error => {
           console.error("Error fetching gigs:", error);
@@ -199,7 +214,7 @@ const MyGigs = () => {
                   </div>
                   <div className="top-right">
                     <button onClick={handleEmployer}>
-                      <img src={DefaultAvatar} alt="employer-avatar" width="32px" height="auto" />
+                      <img src={employerPhotoUrls[job.employer_user_id] || DefaultAvatar} alt="employer-avatar" width="32px" height="auto" />
                       {job.business_name}
                     </button>
                     <button onClick={() => handleMessage(job)}>

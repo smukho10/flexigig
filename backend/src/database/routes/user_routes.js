@@ -760,6 +760,26 @@ router.get('/user-details/:userId', async (req, res) => {
       return res.status(404).json({ success: false, message: userDetails.message });
     }
 
+    // Attempt to get a signed R2 photo URL; override userImage if a key exists
+    try {
+      const { GetObjectCommand } = require('@aws-sdk/client-s3');
+      const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+      const s3 = require('../../config/r2');
+      const photoResult = await db.query(
+        `SELECT profile_photo_key FROM users WHERE id = $1;`,
+        [userId]
+      );
+      const key = photoResult.rows[0]?.profile_photo_key;
+      if (key) {
+        const command = new GetObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key });
+        userDetails.userImage = await getSignedUrl(s3, command, {
+          expiresIn: parseInt(process.env.R2_SIGNED_URL_EXPIRY || 3600),
+        });
+      }
+    } catch (_) {
+      // If photo lookup fails, leave userImage as-is (legacy userimage column value)
+    }
+
     res.status(200).json({ success: true, userDetails });
   } catch (error) {
     console.error('Error fetching user details:', error);

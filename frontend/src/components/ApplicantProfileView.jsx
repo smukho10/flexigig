@@ -82,7 +82,15 @@ const ApplicantProfileView = () => {
             <div className="apv-card apv-card-main">
                 <div className="apv-name-row">
                     <div className="apv-avatar">
-                        {profile.firstname?.[0]}{profile.lastname?.[0]}
+                        {profile.profilePhotoUrl ? (
+                            <img
+                                src={profile.profilePhotoUrl}
+                                alt="profile"
+                                style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }}
+                            />
+                        ) : (
+                            <>{profile.firstname?.[0]}{profile.lastname?.[0]}</>
+                        )}
                     </div>
                     <div>
                         <h2 className="apv-name">{profile.firstname} {profile.lastname}</h2>

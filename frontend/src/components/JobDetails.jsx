@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react";
+import axios from "axios";
 import "../styles/JobDetails.css";
 import CalendarIcon from "../assets/images/CalendarIcon.png";
 import DefaultAvatar from "../assets/images/DefaultAvatar.png";
@@ -19,6 +21,14 @@ const TagList = ({ items }) => {
 
 const JobDetails = ({ jobDetails, handleApply }) => {
     const navigate = useNavigate();
+    const [employerPhotoUrl, setEmployerPhotoUrl] = useState(null);
+
+    useEffect(() => {
+        if (!jobDetails?.user_id) return;
+        axios.get(`/api/profile/view-photo-url/${jobDetails.user_id}`, { withCredentials: true })
+            .then((res) => setEmployerPhotoUrl(res.data.viewUrl || null))
+            .catch(() => setEmployerPhotoUrl(null));
+    }, [jobDetails?.user_id]);
 
     const handleEmployer = () => {};
 
@@ -57,7 +67,7 @@ const JobDetails = ({ jobDetails, handleApply }) => {
         </div>
         <div className="top-right">
           <button onClick={handleEmployer}>
-            <img src={DefaultAvatar} alt="employer-avatar" width="32px" height="auto" />
+            <img src={employerPhotoUrl || DefaultAvatar} alt="employer-avatar" width="32px" height="auto" />
             {jobDetails.business_name}
           </button>
           <button onClick={handleMessage}>
