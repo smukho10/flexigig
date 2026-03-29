@@ -19,14 +19,7 @@ const SKILLS = [
   "Delivery Driving", "Basic Carpentry",
 ];
 
-const EXPERIENCES = [
-  "Event Staffing", "Hospitality Services", "Retail Assistance",
-  "Delivery Services", "Maintenance and Repair", "Personal Services",
-  "Construction and Renovation", "Healthcare Assistance",
-  "Transportation Services", "Technical Support", "Cleaning Services",
-  "Fitness Instruction", "Photography and Videography",
-  "Creative Services", "Security Services",
-];
+const EXPERIENCES = ["0-2 years", "3-5 years", "5+ years"];
 
 const DISTANCE_OPTIONS = [
   { label: "10 miles", valueKm: 16.09 },

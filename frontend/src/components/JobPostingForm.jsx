@@ -14,14 +14,7 @@ const SKILL_OPTIONS = [
   "Delivery Driving", "Basic Carpentry",
 ];
 
-const EXPERIENCE_OPTIONS = [
-  "Event Staffing", "Hospitality Services", "Retail Assistance",
-  "Delivery Services", "Maintenance and Repair", "Personal Services",
-  "Construction and Renovation", "Healthcare Assistance",
-  "Transportation Services", "Technical Support", "Cleaning Services",
-  "Fitness Instruction", "Photography and Videography",
-  "Creative Services", "Security Services",
-];
+const EXPERIENCE_OPTIONS = ["0-2 years", "3-5 years", "5+ years"];
 
 // ── Multi-select dropdown ─────────────────────────────────────────────────────
 const MultiSelectDropdown = ({ label, options, selected, onChange }) => {
