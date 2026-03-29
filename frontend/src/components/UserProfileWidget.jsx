@@ -1,14 +1,19 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import DefaultAvatar from "../assets/images/DefaultAvatar.png";
 import MessageBubbles from "../assets/images/MessageBubbles.png";
 import { useNavigate } from "react-router-dom";
 
 const UserProfileWidget = ({ user }) => {
   const navigate = useNavigate();
+  const [profilePic, setProfilePic] = useState(DefaultAvatar);
 
-  const profilePic = user?.userImage
-    ? (user.userImage.startsWith("http") ? user.userImage : user.userImage)
-    : DefaultAvatar; // fallback avatar
+  useEffect(() => {
+    if (!user?.id) return;
+    axios.get(`/api/profile/view-photo-url/${user.id}`, { withCredentials: true })
+      .then((res) => setProfilePic(res.data.viewUrl || DefaultAvatar))
+      .catch(() => setProfilePic(DefaultAvatar));
+  }, [user?.id]);
 
   const handleMessage = () => {
     navigate(`/messages`, { state: { partnerId: user.id } });
