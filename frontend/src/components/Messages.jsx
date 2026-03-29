@@ -68,20 +68,19 @@ const Messages = () => {
 
     // Fetch name and photo for each unique partner
     const fetchPartnerDetails = (partnerIds) => {
-        const newDetails = {};
         partnerIds.forEach((partnerId) => {
             if (!partnerDetails[partnerId]) {
-                axios
-                    .get(`/api/user-details/${partnerId}`, { withCredentials: true })
-                    .then((response) => {
-                        const { type, firstName, lastName, businessName, userImage } = response.data.userDetails;
-                        const name = type === "worker" ? `${firstName} ${lastName}` : businessName;
-                        newDetails[partnerId] = { name, userImage: userImage || null };
-                        setPartnerDetails((prev) => ({ ...prev, ...newDetails }));
-                    })
-                    .catch((error) => {
-                        console.error(`Error fetching details for partner ${partnerId}:`, error);
-                    });
+                Promise.all([
+                    axios.get(`/api/user-details/${partnerId}`, { withCredentials: true }),
+                    axios.get(`/api/profile/view-photo-url/${partnerId}`, { withCredentials: true }).catch(() => null),
+                ]).then(([detailsRes, photoRes]) => {
+                    const { type, firstName, lastName, businessName } = detailsRes.data.userDetails;
+                    const name = type === "worker" ? `${firstName} ${lastName}` : businessName;
+                    const userImage = photoRes?.data?.viewUrl || null;
+                    setPartnerDetails((prev) => ({ ...prev, [partnerId]: { name, userImage } }));
+                }).catch((error) => {
+                    console.error(`Error fetching details for partner ${partnerId}:`, error);
+                });
             }
         });
     };
