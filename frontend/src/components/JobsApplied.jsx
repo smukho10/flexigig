@@ -11,6 +11,7 @@ import DefaultAvatar from "../assets/images/DefaultAvatar.png";
 const JobsApplied = () => {
   const { user } = useUser();
   const [appliedJobs, setAppliedJobs] = useState([]);
+  const [employerPhotoUrls, setEmployerPhotoUrls] = useState({});
   const [refresh, setRefresh] = useState();
   const [withdrawing, setWithdrawing] = useState();
   const [currentPage, setCurrentPage] = useState(1);
@@ -33,6 +34,20 @@ const JobsApplied = () => {
             .sort((a, b) => a.jobstart.localeCompare(b.jobstart));
           setAppliedJobs(sorted);
           setCurrentPage(1);
+          // Fetch employer profile photos
+          const uniqueEmployerIds = [...new Set(sorted.map(j => j.employer_user_id).filter(Boolean))];
+          const photoMap = {};
+          await Promise.all(
+            uniqueEmployerIds.map(async (employerId) => {
+              try {
+                const photoRes = await axios.get(`/api/profile/view-photo-url/${employerId}`, { withCredentials: true });
+                if (photoRes.data.viewUrl) photoMap[employerId] = photoRes.data.viewUrl;
+              } catch (_) {
+                // No photo — DefaultAvatar fallback used
+              }
+            })
+          );
+          setEmployerPhotoUrls(photoMap);
         } catch (error) {
           console.error("Error fetching applied jobs:", error);
         }
@@ -126,7 +141,7 @@ const JobsApplied = () => {
               </div>
               <div className="top-right">
                 <button onClick={handleEmployer}>
-                  <img src={DefaultAvatar} alt="employer-avatar" width="32px" height="auto" />
+                  <img src={employerPhotoUrls[job.employer_user_id] || DefaultAvatar} alt="employer-avatar" width="32px" height="auto" />
                   {job.business_name}
                 </button>
               </div>

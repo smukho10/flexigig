@@ -41,22 +41,23 @@ const MessageWidget = () => {
 
   // Fetch sender details (name + profile picture) for each message
   const fetchSenderDetails = (messages) => {
-    const details = {};
     messages.forEach((message) => {
       if (!senderDetails[message.sender_id]) {
-        axios
-          .get(`/api/user-details/${message.sender_id}`, { withCredentials: true })
-          .then((response) => {
-            const { type, firstName, lastName, businessName, userImage } = response.data.userDetails;
-            details[message.sender_id] = {
+        Promise.all([
+          axios.get(`/api/user-details/${message.sender_id}`, { withCredentials: true }),
+          axios.get(`/api/profile/view-photo-url/${message.sender_id}`, { withCredentials: true }).catch(() => null),
+        ]).then(([detailsRes, photoRes]) => {
+          const { type, firstName, lastName, businessName } = detailsRes.data.userDetails;
+          setSenderDetails((prev) => ({
+            ...prev,
+            [message.sender_id]: {
               name: type === "worker" ? `${firstName} ${lastName}` : businessName,
-              userImage: userImage || null,
-            };
-            setSenderDetails((prev) => ({ ...prev, ...details }));
-          })
-          .catch((error) => {
-            console.error(`Error fetching details for sender ${message.sender_id}:`, error);
-          });
+              userImage: photoRes?.data?.viewUrl || null,
+            },
+          }));
+        }).catch((error) => {
+          console.error(`Error fetching details for sender ${message.sender_id}:`, error);
+        });
       }
     });
   };

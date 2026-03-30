@@ -217,13 +217,15 @@ const Dashboard = memo(() => {
 
       Promise.all(
         unique.filter((p) => !partnerCache.current[p.partner_id]).map((p) =>
-          axios.get(`/api/user-details/${p.partner_id}`, { withCredentials: true })
-            .then((r) => {
-              const { type, firstName, lastName, businessName, userImage } = r.data.userDetails;
-              const detail = { name: type === "worker" ? `${firstName} ${lastName}` : businessName, userImage: userImage || null };
-              partnerCache.current[p.partner_id] = detail;
-              return { id: p.partner_id, detail };
-            }).catch(() => null)
+          Promise.all([
+            axios.get(`/api/user-details/${p.partner_id}`, { withCredentials: true }),
+            axios.get(`/api/profile/view-photo-url/${p.partner_id}`, { withCredentials: true }).catch(() => null),
+          ]).then(([detailsRes, photoRes]) => {
+            const { type, firstName, lastName, businessName } = detailsRes.data.userDetails;
+            const detail = { name: type === "worker" ? `${firstName} ${lastName}` : businessName, userImage: photoRes?.data?.viewUrl || null };
+            partnerCache.current[p.partner_id] = detail;
+            return { id: p.partner_id, detail };
+          }).catch(() => null)
         )
       ).then((results) => {
         const newDetails = {};

@@ -21,6 +21,7 @@ const ApplicantProfileView = () => {
     const [skills, setSkills] = useState([]);
     const [experiences, setExperiences] = useState([]);
     const [calendarEvents, setCalendarEvents] = useState([]);
+    const [profilePhotoUrl, setProfilePhotoUrl] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
 
@@ -28,9 +29,17 @@ const ApplicantProfileView = () => {
         axios
             .get(`/api/applicant-profile/${workerId}`, { withCredentials: true })
             .then((res) => {
-                setProfile(res.data.profile);
+                const p = res.data.profile;
+                setProfile(p);
                 setSkills(res.data.skills || []);
                 setExperiences(res.data.experiences || []);
+                // Fetch the applicant's profile photo using their user ID
+                if (p?.id) {
+                    axios
+                        .get(`/api/profile/view-photo-url/${p.id}`, { withCredentials: true })
+                        .then((photoRes) => setProfilePhotoUrl(photoRes.data.viewUrl || null))
+                        .catch(() => setProfilePhotoUrl(null));
+                }
             })
             .catch(() => setError(true))
             .finally(() => setLoading(false));
@@ -82,7 +91,15 @@ const ApplicantProfileView = () => {
             <div className="apv-card apv-card-main">
                 <div className="apv-name-row">
                     <div className="apv-avatar">
-                        {profile.firstname?.[0]}{profile.lastname?.[0]}
+                        {profilePhotoUrl ? (
+                            <img
+                                src={profilePhotoUrl}
+                                alt="profile"
+                                style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }}
+                            />
+                        ) : (
+                            <>{profile.firstname?.[0]}{profile.lastname?.[0]}</>
+                        )}
                     </div>
                     <div>
                         <h2 className="apv-name">{profile.firstname} {profile.lastname}</h2>

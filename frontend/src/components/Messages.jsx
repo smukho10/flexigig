@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "../styles/Messages.css";
 import ChevronLeft from "../assets/images/ChevronLeft.png";
+import DefaultAvatar from "../assets/images/DefaultAvatar.png";
 import { useUser } from "./UserContext";
 import axios from "axios";
 
@@ -65,21 +66,21 @@ const Messages = () => {
         }
     }, [location.state, conversationPartners]);
 
-    // Fetch name for each unique partner
+    // Fetch name and photo for each unique partner
     const fetchPartnerDetails = (partnerIds) => {
-        const newDetails = {};
         partnerIds.forEach((partnerId) => {
             if (!partnerDetails[partnerId]) {
-                axios
-                    .get(`/api/user-details/${partnerId}`, { withCredentials: true })
-                    .then((response) => {
-                        const { type, firstName, lastName, businessName } = response.data.userDetails;
-                        newDetails[partnerId] = type === "worker" ? `${firstName} ${lastName}` : businessName;
-                        setPartnerDetails((prev) => ({ ...prev, ...newDetails }));
-                    })
-                    .catch((error) => {
-                        console.error(`Error fetching details for partner ${partnerId}:`, error);
-                    });
+                Promise.all([
+                    axios.get(`/api/user-details/${partnerId}`, { withCredentials: true }),
+                    axios.get(`/api/profile/view-photo-url/${partnerId}`, { withCredentials: true }).catch(() => null),
+                ]).then(([detailsRes, photoRes]) => {
+                    const { type, firstName, lastName, businessName } = detailsRes.data.userDetails;
+                    const name = type === "worker" ? `${firstName} ${lastName}` : businessName;
+                    const userImage = photoRes?.data?.viewUrl || null;
+                    setPartnerDetails((prev) => ({ ...prev, [partnerId]: { name, userImage } }));
+                }).catch((error) => {
+                    console.error(`Error fetching details for partner ${partnerId}:`, error);
+                });
             }
         });
     };
@@ -168,19 +169,27 @@ const Messages = () => {
                     <ul className="person-list-items">
                         {conversationPartners
                             .filter((conv) => {
-                                const partnerName = partnerDetails[conv.partner_id] || "";
+                                const partnerName = partnerDetails[conv.partner_id]?.name || "";
                                 return partnerName.toLowerCase().includes(search.toLowerCase());
                             })
-                            .map((conv) => (
-                                <li
-                                    key={`${conv.partner_id}-${conv.job_id || 'direct'}`}
-                                    className={`person-item ${selectedPartner?.partner_id === conv.partner_id && selectedPartner?.job_id === conv.job_id ? "active" : ""}`}
-                                    onClick={() => fetchMessageHistory(conv.partner_id, conv.job_id)}
-                                >
-                                    {partnerDetails[conv.partner_id] || "Loading..."}
-                                    {conv.job_title && <span className="job-thread-label">{conv.job_title}</span>}
-                                </li>
-                            ))}
+                            .map((conv) => {
+                                const partner = partnerDetails[conv.partner_id];
+                                return (
+                                    <li
+                                        key={`${conv.partner_id}-${conv.job_id || 'direct'}`}
+                                        className={`person-item ${selectedPartner?.partner_id === conv.partner_id && selectedPartner?.job_id === conv.job_id ? "active" : ""}`}
+                                        onClick={() => fetchMessageHistory(conv.partner_id, conv.job_id)}
+                                    >
+                                        <img
+                                            className="person-item-avatar"
+                                            src={partner?.userImage || DefaultAvatar}
+                                            alt="avatar"
+                                        />
+                                        <span>{partner?.name || "Loading..."}</span>
+                                        {conv.job_title && <span className="job-thread-label">{conv.job_title}</span>}
+                                    </li>
+                                );
+                            })}
                     </ul>
                 </div>
                 <div className="chat-divider" />
