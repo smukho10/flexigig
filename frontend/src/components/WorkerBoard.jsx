@@ -12,7 +12,6 @@ import Grid from "../assets/images/gigwidget-grid.svg";
 import Bookmark from "../assets/images/bookmark-icon.svg";
 import SearchFilter from "../assets/images/search-filter-icon.svg";
 
-
 import "../styles/WorkerBoard.css";
 
 const WorkerBoard = () => {
@@ -159,6 +158,7 @@ const WorkerBoard = () => {
     const rating =
       worker.avg_rating ??
       worker.average_rating ??
+      worker.worker_rating ??
       worker.rating;
 
     if (rating == null || rating === "") {
@@ -199,52 +199,56 @@ const WorkerBoard = () => {
   const WorkerItem = ({ worker }) => {
     return (
       <div id='workerboard-worker'>
-          <div id='workerboard-worker-header'>
-            <div id='workerboard-worker-title-wrap'>
-              <h2 id='workerboard-worker-name'>{getWorkerName(worker)}</h2>
-              <Link to={`/applicant-profile/${worker.id}`}>
-                <img id="workerboard-arrow" src={Arrow} alt="View worker"/>
-              </Link>
-            </div>
-          </div>
-          <div id='workerboard-worker-details'>
-            <div id='workerboard-worker-info'>
-              <div id='workerboard-worker-item'>
-                <img id="workerboard-icons" src={Money} alt="Pay"/>
-                {getPayDisplay(worker)}
-              </div>
-              <div id='workerboard-worker-item'>
-                <img id="workerboard-icons" src={Star} alt="Skills"/>
-                {getSkillsDisplay(worker)}
-              </div>
-              <div id='workerboard-worker-item'>
-                <img id="workerboard-icons" src={Calendar} alt="Experience"/>
-                {getAvailabilityDisplay(worker)}
-              </div>
-              <div id='workerboard-worker-item'>
-                <img id="workerboard-icons" src={Grid} alt="Location"/>
-                {getLocationDisplay(worker)}
-              </div>
-            </div>
-            <div id='workerboard-worker-actions'>
-              <img id="workerboard-bookmark" src={Bookmark} alt="Save worker"/>
-              <Link to={`/applicant-profile/${worker.id}`} id='workerboard-actions-link'>
-                <div id='workerboard-actions-button'>View Profile</div>
-              </Link>
-            </div>
+        <div id='workerboard-worker-header'>
+          <div id='workerboard-worker-title-wrap'>
+            <h2 id='workerboard-worker-name'>{getWorkerName(worker)}</h2>
+            <Link to={`/applicant-profile/${worker.id}`}>
+              <img id="workerboard-arrow" src={Arrow} alt="View worker" />
+            </Link>
           </div>
         </div>
+        <div id='workerboard-worker-details'>
+          <div id='workerboard-worker-info'>
+            <div id='workerboard-worker-item'>
+              <img id="workerboard-icons" src={Money} alt="Pay" />
+              {getPayDisplay(worker)}
+            </div>
+            <div id='workerboard-worker-item'>
+              <img id="workerboard-icons" src={Star} alt="Skills" />
+              {getSkillsDisplay(worker)}
+            </div>
+            <div id='workerboard-worker-item'>
+              <img id="workerboard-icons" src={Calendar} alt="Experience" />
+              {getAvailabilityDisplay(worker)}
+            </div>
+            <div id='workerboard-worker-item'>
+              <img id="workerboard-icons" src={Grid} alt="Location" />
+              {getLocationDisplay(worker)}
+            </div>
+          </div>
+          <div id='workerboard-worker-actions'>
+            <img id="workerboard-bookmark" src={Bookmark} alt="Save worker" />
+            <Link to={`/applicant-profile/${worker.id}`} id='workerboard-actions-link'>
+              <div id='workerboard-actions-button'>View Profile</div>
+            </Link>
+          </div>
+        </div>
+      </div>
     )
   }
 
   return (
     <div id='workerboard-content'>
       <div id='workerboard-header'>
-        <img id="workerboard-arrow-back" src={ArrowBack} alt=""/>
+        <img id="workerboard-arrow-back" src={ArrowBack} alt="" />
         <h1>Find Workers</h1>
       </div>
+
       <div id='workerboard-skill-search'>
-        <img id="workerboard-filter-icon" src={SearchFilter} alt=""/>
+        <img id="workerboard-filter-icon" src={SearchFilter} alt="" />
+      </div>
+
+      <div id='workerboard-extra-filters'>
         <select
           id='workerboard-filter-select'
           value={selectedSkill}
@@ -257,9 +261,7 @@ const WorkerBoard = () => {
             </option>
           ))}
         </select>
-      </div>
 
-      <div id='workerboard-extra-filters'>
         <select
           id='workerboard-filter-select'
           value={selectedLocation}
@@ -308,14 +310,12 @@ const WorkerBoard = () => {
           <div>No workers found.</div>
         ) : (
           filteredWorkers.map((worker) => (
-            <WorkerItem key={worker.id} worker={worker}/>
+            <WorkerItem key={worker.id} worker={worker} />
           ))
         )}
       </div>
     </div>
-    )
-
+  )
 }
-
 
 export default WorkerBoard;
