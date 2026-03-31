@@ -441,6 +441,7 @@ const JobPostingForm = ({ job, setDone, onBackClick }) => {
 
       {showTemplateModal && (
         <SaveTemplateModal jobPost={jobPost}
+          templates={templates}
           onClose={() => setShowTemplateModal(false)}
           onSaved={() => { setTemplateSavedMsg("Template saved successfully!"); setTimeout(() => setTemplateSavedMsg(""), 3000); fetchTemplates(); }}
         />
