@@ -74,8 +74,9 @@ router.get("/profile/:id", (req, res) => {
     profile_queries.getBusinessProfile(userId)
       .then((businessProfile) => {
         if (businessProfile) {
-          businessProfile["business_id"] = businessProfile["id"];
+          businessProfile["business_id"] = businessProfile["businesses_id"];
           delete businessProfile["id"];
+          delete businessProfile["businesses_id"];
           response["businessData"] = businessProfile;
         }
         res.json(response);
@@ -327,6 +328,7 @@ router.post("/profile/update/:id", async (req, res) => {
     try {
       const businessProfileExists = await profile_queries.checkBusinessProfile(userId);
       if (businessProfileExists) {
+        business.id = businessProfileExists.id; // Use the actual businesses.id from DB
         let response = await profile_queries.updateBusinessProfile(business);
         //res.send(response);
         response["business_id"] = response["id"];
