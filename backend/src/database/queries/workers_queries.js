@@ -4,11 +4,6 @@ const fetchWorkers = () => {
   const query = `
     SELECT
       w.*,
-      u.id AS user_id,
-      l.city,
-      l.province,
-      COALESCE(rs.avg_rating, 0) AS avg_rating,
-      COALESCE(rs.ratings_count, 0) AS ratings_count,
       COALESCE(
         ARRAY(
           SELECT DISTINCT s.skill_name
@@ -40,19 +35,6 @@ const fetchWorkers = () => {
         ARRAY[]::text[]
       ) AS traits
     FROM workers w
-    LEFT JOIN users u
-      ON u.id = w.user_id
-    LEFT JOIN locations l
-      ON l.location_id = u.user_address
-    LEFT JOIN (
-      SELECT
-        reviewee_id,
-        ROUND(AVG(rating)::numeric, 2) AS avg_rating,
-        COUNT(rating) FILTER (WHERE rating IS NOT NULL)::int AS ratings_count
-      FROM reviews
-      GROUP BY reviewee_id
-    ) rs
-      ON rs.reviewee_id = w.user_id
     ORDER BY w.id;
   `
 
@@ -68,7 +50,7 @@ const fetchWorkers = () => {
 }
 
 const getAllSkills = () => {
-  const query = "SELECT * FROM skills ORDER BY skill_name ASC";
+  const query = "SELECT * FROM skills";
 
   return db
     .query(query)

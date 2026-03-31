@@ -92,8 +92,8 @@ const WorkerBoard = () => {
   };
 
   const getLocationDisplay = (worker) => {
-    const city = worker.city || "";
-    const province = worker.province || "";
+    const city = worker.worker_city || worker.city || "";
+    const province = worker.worker_province || worker.province || "";
 
     if (city && province) {
       return `${city}, ${province}`;
@@ -111,8 +111,8 @@ const WorkerBoard = () => {
   };
 
   const getWorkerLocationValue = (worker) => {
-    const city = worker.city || "";
-    const province = worker.province || "";
+    const city = worker.worker_city || worker.city || "";
+    const province = worker.worker_province || worker.province || "";
 
     if (city && province) {
       return `${city}, ${province}`;
@@ -130,19 +130,24 @@ const WorkerBoard = () => {
   };
 
   const getWorkerRating = (worker) => {
-    if (worker.avg_rating == null || worker.avg_rating === "") {
+    const rating =
+      worker.rating ??
+      worker.worker_rating ??
+      worker.average_rating ??
+      worker.avg_rating;
+
+    if (rating == null || rating === "") {
       return null;
     }
 
-    return Number(worker.avg_rating);
+    return Number(rating);
   };
 
   const filteredWorkers = useMemo(() => {
     return workers.filter((worker) => {
       const matchesSkill =
         !selectedSkill ||
-        (Array.isArray(worker.skills) &&
-          worker.skills.some((skill) => skill === selectedSkill));
+        (Array.isArray(worker.skills) && worker.skills.includes(selectedSkill));
 
       const workerLocation = getWorkerLocationValue(worker);
       const matchesLocation =
@@ -214,18 +219,25 @@ const WorkerBoard = () => {
       </div>
       <div id='workerboard-skill-search'>
         <img id="workerboard-filter-icon" src={SearchFilter} alt=""/>
-        <select
-          id='workerboard-filter-select'
-          value={selectedSkill}
-          onChange={(e) => setSelectedSkill(e.target.value)}
+        <div
+          id='workerboard-skill-item'
+          className={!selectedSkill ? "workerboard-skill-active" : ""}
+          onClick={() => setSelectedSkill("")}
+          style={{ cursor: "pointer" }}
         >
-          <option value="">All Skills</option>
-          {skills.map((skill) => (
-            <option key={skill.skill_id} value={skill.skill_name}>
-              {skill.skill_name}
-            </option>
-          ))}
-        </select>
+          All
+        </div>
+        {skills.slice(0, 3).map((skill) => (
+          <div
+            key={skill.skill_id}
+            id='workerboard-skill-item'
+            className={selectedSkill === skill.skill_name ? "workerboard-skill-active" : ""}
+            onClick={() => setSelectedSkill(skill.skill_name)}
+            style={{ cursor: "pointer" }}
+          >
+            {skill.skill_name}
+          </div>
+        ))}
       </div>
 
       <div id='workerboard-extra-filters'>
