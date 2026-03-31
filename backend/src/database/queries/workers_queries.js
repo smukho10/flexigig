@@ -49,7 +49,7 @@ const fetchWorkers = () => {
       SELECT
         reviewee_id,
         ROUND(AVG(rating)::numeric, 2) AS avg_rating,
-        COUNT(*)::int AS ratings_count
+        COUNT(rating)::int AS ratings_count
       FROM reviews
       WHERE rating IS NOT NULL
       GROUP BY reviewee_id

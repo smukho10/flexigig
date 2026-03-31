@@ -92,8 +92,17 @@ const WorkerBoard = () => {
   };
 
   const getLocationDisplay = (worker) => {
-    const city = worker.city || "";
-    const province = worker.province || "";
+    const city =
+      worker.city ||
+      worker.worker_city ||
+      worker.user_city ||
+      "";
+    const province =
+      worker.province ||
+      worker.worker_province ||
+      worker.user_province ||
+      worker.state ||
+      "";
 
     if (city && province) {
       return `${city}, ${province}`;
@@ -105,14 +114,27 @@ const WorkerBoard = () => {
 
     if (province) {
       return province;
+    }
+
+    if (worker.location) {
+      return worker.location;
     }
 
     return "No location listed";
   };
 
   const getWorkerLocationValue = (worker) => {
-    const city = worker.city || "";
-    const province = worker.province || "";
+    const city =
+      worker.city ||
+      worker.worker_city ||
+      worker.user_city ||
+      "";
+    const province =
+      worker.province ||
+      worker.worker_province ||
+      worker.user_province ||
+      worker.state ||
+      "";
 
     if (city && province) {
       return `${city}, ${province}`;
@@ -126,15 +148,24 @@ const WorkerBoard = () => {
       return province;
     }
 
+    if (worker.location) {
+      return worker.location;
+    }
+
     return "";
   };
 
   const getWorkerRating = (worker) => {
-    if (worker.avg_rating == null || worker.avg_rating === "") {
+    const rating =
+      worker.avg_rating ??
+      worker.average_rating ??
+      worker.rating;
+
+    if (rating == null || rating === "") {
       return null;
     }
 
-    return Number(worker.avg_rating);
+    return Number(rating);
   };
 
   const filteredWorkers = useMemo(() => {
