@@ -4,8 +4,6 @@ const fetchWorkers = () => {
   const query = `
     SELECT
       w.*,
-      u.first_name,
-      u.last_name,
       l.city,
       l.province,
       COALESCE(r.avg_rating, 0) AS avg_rating,
@@ -48,8 +46,8 @@ const fetchWorkers = () => {
     LEFT JOIN (
       SELECT
         reviewee_id,
-        ROUND(AVG(rating)::numeric, 2) AS avg_rating,
-        COUNT(rating)::int AS ratings_count
+        AVG(rating) AS avg_rating,
+        COUNT(rating) AS ratings_count
       FROM reviews
       WHERE rating IS NOT NULL
       GROUP BY reviewee_id
