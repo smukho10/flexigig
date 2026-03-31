@@ -14,16 +14,17 @@
 }
 
 .template-modal {
-    background-color: white;
-    border-radius: 19px;
-    padding: 32px 36px;
-    max-width: 460px;
-    width: 90%;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
-    font-family: "Poppins";
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+  background-color: white;
+  border-radius: 19px;
+  padding: 32px 36px;
+  max-width: 460px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  font-family: "Poppins";
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 280px;
 }
 
 .template-modal h3 {
