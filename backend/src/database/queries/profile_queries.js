@@ -51,12 +51,14 @@ const addUserProfile = (userId, worker) => {
 
 const getBusinessProfile = (user_id) => {
   const query = `SELECT users.id,
+    businesses.id AS businesses_id,
     users.email,
     users.active,
     users.signUpDate,
     users.user_phone_number AS phone_number,
     businesses.business_name,
     businesses.business_description,
+    businesses.business_email,
     businesses.business_website,
     locations.streetaddress AS street_address,
     locations.city,
