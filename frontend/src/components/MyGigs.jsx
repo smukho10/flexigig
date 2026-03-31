@@ -178,7 +178,7 @@ const MyGigs = () => {
             const isWithdrawn = job.application_status === 'WITHDRAWN';
             const myRatingForEmployer = job.my_rating_for_employer;
                         const employerRatingForMe = job.employer_rating_for_me;
-                        const alreadyRated = myRatingForEmployer != null;
+                        const alreadyRated = !!job.has_reviewed_employer;
                         const renderStars = (r) =>
                           [1, 2, 3, 4, 5].map((s) => (
                             <span key={s} className={`gig-star ${s <= r ? 'gig-star--filled' : ''}`}>★</span>

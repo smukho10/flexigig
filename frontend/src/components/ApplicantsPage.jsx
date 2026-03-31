@@ -243,7 +243,7 @@ const ApplicantsPage = () => {
                             const rowNumber = (page - 1) * APPLICANTS_PER_PAGE + index + 1;
                             const myRatingForWorker = a.my_rating_for_worker;
                             const workerRatingForMe = a.worker_rating_for_me;
-                            const alreadyReviewed = myRatingForWorker != null;
+                            const alreadyReviewed = !!a.has_reviewed_worker;
                             const canRate = isJobCompleted && a.application_status === "ACCEPTED";
 
                             return (
