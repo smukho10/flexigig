@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import ChevronLeft from "../assets/images/ChevronLeft.png";
-import DefaultAvatar from "../assets/images/DefaultAvatar.png";
 import "../styles/ApplicantsPage.css";
 import { useUser } from "./UserContext";
 
@@ -44,7 +43,6 @@ const ApplicantsPage = () => {
             const res = await axios.get(`/api/job-applicants/${jobId}`, { withCredentials: true });
             const list = res.data.applicants;
             setApplicants(list);
-            // Fetch profile photo URLs for all applicants
             const photoMap = {};
             await Promise.all(
                 list.map(async (a) => {
@@ -52,9 +50,7 @@ const ApplicantsPage = () => {
                     try {
                         const photoRes = await axios.get(`/api/profile/view-photo-url/${a.user_id}`, { withCredentials: true });
                         if (photoRes.data.viewUrl) photoMap[a.user_id] = photoRes.data.viewUrl;
-                    } catch (_) {
-                        // No photo for this applicant — fallback will show initials
-                    }
+                    } catch (_) {}
                 })
             );
             setApplicantPhotoUrls(photoMap);
@@ -127,7 +123,7 @@ const ApplicantsPage = () => {
             setReviewSuccess(true);
             setTimeout(() => {
                 closeReviewModal();
-                fetchApplicants(); // re-fetch so has_reviewed_worker flips to true from DB
+                fetchApplicants();
             }, 1800);
         } catch (err) {
             setReviewError(err.response?.data?.message || "Failed to submit review.");
@@ -142,6 +138,11 @@ const ApplicantsPage = () => {
         });
     };
 
+    const renderStars = (r) =>
+        [1, 2, 3, 4, 5].map((s) => (
+            <span key={s} className={`gig-star ${s <= r ? "gig-star--filled" : ""}`}>★</span>
+        ));
+
     const filteredApplicants = activeFilter === "ALL"
         ? applicants
         : applicants.filter((a) => a.application_status === activeFilter);
@@ -155,11 +156,11 @@ const ApplicantsPage = () => {
     };
 
     const STATUS_FILTER_OPTIONS = [
-        { label: "All", value: "ALL" },
-        { label: "Applied", value: "APPLIED" },
+        { label: "All",       value: "ALL" },
+        { label: "Applied",   value: "APPLIED" },
         { label: "In Review", value: "IN_REVIEW" },
-        { label: "Accepted", value: "ACCEPTED" },
-        { label: "Rejected", value: "REJECTED" },
+        { label: "Accepted",  value: "ACCEPTED" },
+        { label: "Rejected",  value: "REJECTED" },
         { label: "Withdrawn", value: "WITHDRAWN" },
     ];
 
@@ -229,7 +230,6 @@ const ApplicantsPage = () => {
             ) : (
                 <>
                     <div className="applicants-table">
-                        {/* Table header */}
                         <div className="applicants-table-header">
                             <span>#</span>
                             <span>Applicant</span>
@@ -241,7 +241,9 @@ const ApplicantsPage = () => {
                         {paginated.map((a, index) => {
                             const statusStyle = STATUS_COLORS[a.application_status] || STATUS_COLORS.APPLIED;
                             const rowNumber = (page - 1) * APPLICANTS_PER_PAGE + index + 1;
-                            const alreadyReviewed = !!a.has_reviewed_worker; // from DB, no localStorage
+                            const myRatingForWorker = a.my_rating_for_worker;
+                            const workerRatingForMe = a.worker_rating_for_me;
+                            const alreadyReviewed = myRatingForWorker != null;
                             const canRate = isJobCompleted && a.application_status === "ACCEPTED";
 
                             return (
@@ -351,6 +353,23 @@ const ApplicantsPage = () => {
                                             )
                                         )}
                                     </div>
+
+                                    {canRate && (
+                                        <div className="gig-ratings">
+                                            <div className="gig-rating-row">
+                                                <span className="gig-rating-label">Your rating for worker:</span>
+                                                {alreadyReviewed
+                                                    ? <span className="gig-rating-stars">{renderStars(myRatingForWorker)}</span>
+                                                    : <span className="gig-rating-pending">Not rated yet</span>}
+                                            </div>
+                                            <div className="gig-rating-row">
+                                                <span className="gig-rating-label">Worker's rating for you:</span>
+                                                {workerRatingForMe != null
+                                                    ? <span className="gig-rating-stars">{renderStars(workerRatingForMe)}</span>
+                                                    : <span className="gig-rating-pending">Not rated yet</span>}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}

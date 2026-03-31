@@ -561,3 +561,41 @@
     background-color: #FDECEA;
     color: #C2554E;
 }
+
+/* Task 7 — Rating display rows */
+.gig-ratings {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 12px;
+    margin-top: 6px;
+    background-color: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+.gig-rating-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+}
+.gig-rating-label {
+    color: #6b7280;
+    min-width: 180px;
+}
+.gig-rating-stars {
+    display: flex;
+    gap: 2px;
+}
+.gig-star {
+    font-size: 1rem;
+    color: #d1d5db;
+}
+.gig-star--filled {
+    color: #f59e0b;
+}
+.gig-rating-pending {
+    font-size: 0.78rem;
+    color: #9ca3af;
+    font-style: italic;
+}
