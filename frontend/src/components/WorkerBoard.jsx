@@ -92,17 +92,8 @@ const WorkerBoard = () => {
   };
 
   const getLocationDisplay = (worker) => {
-    const city =
-      worker.city ||
-      worker.worker_city ||
-      worker.user_city ||
-      "";
-    const province =
-      worker.province ||
-      worker.worker_province ||
-      worker.user_province ||
-      worker.state ||
-      "";
+    const city = worker.city || "";
+    const province = worker.province || "";
 
     if (city && province) {
       return `${city}, ${province}`;
@@ -114,27 +105,14 @@ const WorkerBoard = () => {
 
     if (province) {
       return province;
-    }
-
-    if (worker.location) {
-      return worker.location;
     }
 
     return "No location listed";
   };
 
   const getWorkerLocationValue = (worker) => {
-    const city =
-      worker.city ||
-      worker.worker_city ||
-      worker.user_city ||
-      "";
-    const province =
-      worker.province ||
-      worker.worker_province ||
-      worker.user_province ||
-      worker.state ||
-      "";
+    const city = worker.city || "";
+    const province = worker.province || "";
 
     if (city && province) {
       return `${city}, ${province}`;
@@ -146,10 +124,6 @@ const WorkerBoard = () => {
 
     if (province) {
       return province;
-    }
-
-    if (worker.location) {
-      return worker.location;
     }
 
     return "";

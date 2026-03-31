@@ -4,11 +4,12 @@ const fetchWorkers = () => {
   const query = `
     SELECT
       w.*,
-      u.id AS user_id,
+      u.first_name,
+      u.last_name,
       l.city,
       l.province,
-      COALESCE(rs.avg_rating, 0) AS avg_rating,
-      COALESCE(rs.ratings_count, 0) AS ratings_count,
+      COALESCE(r.avg_rating, 0) AS avg_rating,
+      COALESCE(r.ratings_count, 0) AS ratings_count,
       COALESCE(
         ARRAY(
           SELECT DISTINCT s.skill_name
@@ -41,18 +42,19 @@ const fetchWorkers = () => {
       ) AS traits
     FROM workers w
     LEFT JOIN users u
-      ON u.id = w.user_id
+      ON w.user_id = u.id
     LEFT JOIN locations l
-      ON l.location_id = u.user_address
+      ON u.user_address = l.location_id
     LEFT JOIN (
       SELECT
         reviewee_id,
         ROUND(AVG(rating)::numeric, 2) AS avg_rating,
-        COUNT(rating) FILTER (WHERE rating IS NOT NULL)::int AS ratings_count
+        COUNT(*)::int AS ratings_count
       FROM reviews
+      WHERE rating IS NOT NULL
       GROUP BY reviewee_id
-    ) rs
-      ON rs.reviewee_id = w.user_id
+    ) r
+      ON r.reviewee_id = w.user_id
     ORDER BY w.id;
   `
 
