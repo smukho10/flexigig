@@ -12,7 +12,6 @@ import Grid from "../assets/images/gigwidget-grid.svg";
 import Bookmark from "../assets/images/bookmark-icon.svg";
 import SearchFilter from "../assets/images/search-filter-icon.svg";
 
-
 import "../styles/WorkerBoard.css";
 
 const WorkerBoard = () => {
@@ -92,8 +91,17 @@ const WorkerBoard = () => {
   };
 
   const getLocationDisplay = (worker) => {
-    const city = worker.worker_city || worker.city || "";
-    const province = worker.worker_province || worker.province || "";
+    const city =
+      worker.city ||
+      worker.worker_city ||
+      worker.user_city ||
+      "";
+    const province =
+      worker.province ||
+      worker.worker_province ||
+      worker.user_province ||
+      worker.state ||
+      "";
 
     if (city && province) {
       return `${city}, ${province}`;
@@ -105,14 +113,27 @@ const WorkerBoard = () => {
 
     if (province) {
       return province;
+    }
+
+    if (worker.location) {
+      return worker.location;
     }
 
     return "No location listed";
   };
 
   const getWorkerLocationValue = (worker) => {
-    const city = worker.worker_city || worker.city || "";
-    const province = worker.worker_province || worker.province || "";
+    const city =
+      worker.city ||
+      worker.worker_city ||
+      worker.user_city ||
+      "";
+    const province =
+      worker.province ||
+      worker.worker_province ||
+      worker.user_province ||
+      worker.state ||
+      "";
 
     if (city && province) {
       return `${city}, ${province}`;
@@ -124,6 +145,10 @@ const WorkerBoard = () => {
 
     if (province) {
       return province;
+    }
+
+    if (worker.location) {
+      return worker.location;
     }
 
     return "";
@@ -131,10 +156,10 @@ const WorkerBoard = () => {
 
   const getWorkerRating = (worker) => {
     const rating =
-      worker.rating ??
-      worker.worker_rating ??
+      worker.avg_rating ??
       worker.average_rating ??
-      worker.avg_rating;
+      worker.worker_rating ??
+      worker.rating;
 
     if (rating == null || rating === "") {
       return null;
@@ -147,7 +172,8 @@ const WorkerBoard = () => {
     return workers.filter((worker) => {
       const matchesSkill =
         !selectedSkill ||
-        (Array.isArray(worker.skills) && worker.skills.includes(selectedSkill));
+        (Array.isArray(worker.skills) &&
+          worker.skills.some((skill) => skill === selectedSkill));
 
       const workerLocation = getWorkerLocationValue(worker);
       const matchesLocation =
@@ -173,74 +199,69 @@ const WorkerBoard = () => {
   const WorkerItem = ({ worker }) => {
     return (
       <div id='workerboard-worker'>
-          <div id='workerboard-worker-header'>
-            <div id='workerboard-worker-title-wrap'>
-              <h2 id='workerboard-worker-name'>{getWorkerName(worker)}</h2>
-              <Link to={`/applicant-profile/${worker.id}`}>
-                <img id="workerboard-arrow" src={Arrow} alt="View worker"/>
-              </Link>
-            </div>
-          </div>
-          <div id='workerboard-worker-details'>
-            <div id='workerboard-worker-info'>
-              <div id='workerboard-worker-item'>
-                <img id="workerboard-icons" src={Money} alt="Pay"/>
-                {getPayDisplay(worker)}
-              </div>
-              <div id='workerboard-worker-item'>
-                <img id="workerboard-icons" src={Star} alt="Skills"/>
-                {getSkillsDisplay(worker)}
-              </div>
-              <div id='workerboard-worker-item'>
-                <img id="workerboard-icons" src={Calendar} alt="Experience"/>
-                {getAvailabilityDisplay(worker)}
-              </div>
-              <div id='workerboard-worker-item'>
-                <img id="workerboard-icons" src={Grid} alt="Location"/>
-                {getLocationDisplay(worker)}
-              </div>
-            </div>
-            <div id='workerboard-worker-actions'>
-              <img id="workerboard-bookmark" src={Bookmark} alt="Save worker"/>
-              <Link to={`/applicant-profile/${worker.id}`} id='workerboard-actions-link'>
-                <div id='workerboard-actions-button'>View Profile</div>
-              </Link>
-            </div>
+        <div id='workerboard-worker-header'>
+          <div id='workerboard-worker-title-wrap'>
+            <h2 id='workerboard-worker-name'>{getWorkerName(worker)}</h2>
+            <Link to={`/applicant-profile/${worker.id}`}>
+              <img id="workerboard-arrow" src={Arrow} alt="View worker" />
+            </Link>
           </div>
         </div>
+        <div id='workerboard-worker-details'>
+          <div id='workerboard-worker-info'>
+            <div id='workerboard-worker-item'>
+              <img id="workerboard-icons" src={Money} alt="Pay" />
+              {getPayDisplay(worker)}
+            </div>
+            <div id='workerboard-worker-item'>
+              <img id="workerboard-icons" src={Star} alt="Skills" />
+              {getSkillsDisplay(worker)}
+            </div>
+            <div id='workerboard-worker-item'>
+              <img id="workerboard-icons" src={Calendar} alt="Experience" />
+              {getAvailabilityDisplay(worker)}
+            </div>
+            <div id='workerboard-worker-item'>
+              <img id="workerboard-icons" src={Grid} alt="Location" />
+              {getLocationDisplay(worker)}
+            </div>
+          </div>
+          <div id='workerboard-worker-actions'>
+            <img id="workerboard-bookmark" src={Bookmark} alt="Save worker" />
+            <Link to={`/applicant-profile/${worker.id}`} id='workerboard-actions-link'>
+              <div id='workerboard-actions-button'>View Profile</div>
+            </Link>
+          </div>
+        </div>
+      </div>
     )
   }
 
   return (
     <div id='workerboard-content'>
       <div id='workerboard-header'>
-        <img id="workerboard-arrow-back" src={ArrowBack} alt=""/>
+        <img id="workerboard-arrow-back" src={ArrowBack} alt="" />
         <h1>Find Workers</h1>
       </div>
+
       <div id='workerboard-skill-search'>
-        <img id="workerboard-filter-icon" src={SearchFilter} alt=""/>
-        <div
-          id='workerboard-skill-item'
-          className={!selectedSkill ? "workerboard-skill-active" : ""}
-          onClick={() => setSelectedSkill("")}
-          style={{ cursor: "pointer" }}
-        >
-          All
-        </div>
-        {skills.slice(0, 3).map((skill) => (
-          <div
-            key={skill.skill_id}
-            id='workerboard-skill-item'
-            className={selectedSkill === skill.skill_name ? "workerboard-skill-active" : ""}
-            onClick={() => setSelectedSkill(skill.skill_name)}
-            style={{ cursor: "pointer" }}
-          >
-            {skill.skill_name}
-          </div>
-        ))}
+        <img id="workerboard-filter-icon" src={SearchFilter} alt="" />
       </div>
 
       <div id='workerboard-extra-filters'>
+        <select
+          id='workerboard-filter-select'
+          value={selectedSkill}
+          onChange={(e) => setSelectedSkill(e.target.value)}
+        >
+          <option value="">All Skills</option>
+          {skills.map((skill) => (
+            <option key={skill.skill_id} value={skill.skill_name}>
+              {skill.skill_name}
+            </option>
+          ))}
+        </select>
+
         <select
           id='workerboard-filter-select'
           value={selectedLocation}
@@ -289,14 +310,12 @@ const WorkerBoard = () => {
           <div>No workers found.</div>
         ) : (
           filteredWorkers.map((worker) => (
-            <WorkerItem key={worker.id} worker={worker}/>
+            <WorkerItem key={worker.id} worker={worker} />
           ))
         )}
       </div>
     </div>
-    )
-
+  )
 }
-
 
 export default WorkerBoard;
