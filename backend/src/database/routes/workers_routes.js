@@ -5,7 +5,21 @@ const db = require('../connection.js');
 
 router.get('/gig-workers', async (req, res) => {
   try {
-    const workers = await workers_queries.fetchWorkers();
+    const { jobId, distanceKm, skill, rating } = req.query;
+
+    let workers;
+
+    if (jobId || distanceKm || skill || rating) {
+      workers = await workers_queries.fetchWorkersForBoard({
+        jobId: jobId ? parseInt(jobId, 10) : null,
+        distanceKm: distanceKm ? parseFloat(distanceKm) : null,
+        skill: skill || null,
+        rating: rating ? parseFloat(rating) : null
+      });
+    } else {
+      workers = await workers_queries.fetchWorkers();
+    }
+
     console.log(workers);
     res.json(workers);
     return;

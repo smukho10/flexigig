@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useUser } from "./UserContext";
 import axios from "axios";
@@ -18,35 +18,115 @@ const WorkerBoard = () => {
   const { user } = useUser();
   const [workers, setWorkers] = useState([]);
   const [skills, setSkills] = useState([]);
+  const [jobs, setJobs] = useState([]);
+  const [selectedJobId, setSelectedJobId] = useState("");
   const [selectedSkill, setSelectedSkill] = useState("");
-  const [selectedLocation, setSelectedLocation] = useState("");
   const [selectedRating, setSelectedRating] = useState("");
+  const [selectedDistance, setSelectedDistance] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const distanceOptions = [
+    { label: "10 miles", km: 16.09 },
+    { label: "20 miles", km: 32.19 },
+    { label: "30 miles", km: 48.28 },
+    { label: "50 miles", km: 80.47 },
+    { label: "75 miles", km: 120.70 },
+    { label: "100+ miles", km: 160.93 }
+  ];
+
   useEffect(() => {
-    const fetchWorkerBoardData = async () => {
+    const fetchInitialWorkerBoardData = async () => {
       try {
         setLoading(true);
         setError("");
 
-        const [workersRes, skillsRes] = await Promise.all([
-          axios.get("/api/gig-workers", { withCredentials: true }),
+        const requests = [
           axios.get("/api/get-all-skills", { withCredentials: true })
-        ]);
+        ];
 
-        setWorkers(Array.isArray(workersRes.data) ? workersRes.data : []);
+        if (user?.id) {
+          requests.push(
+            axios.get(`/api/posted-jobs/${user.id}`, { withCredentials: true })
+          );
+        }
+
+        const responses = await Promise.all(requests);
+        const skillsRes = responses[0];
+        const jobsRes = responses[1];
+
         setSkills(Array.isArray(skillsRes.data) ? skillsRes.data : []);
+
+        const fetchedJobs = Array.isArray(jobsRes?.data) ? jobsRes.data : [];
+        setJobs(fetchedJobs);
+
+        if (fetchedJobs.length > 0) {
+          setSelectedJobId(String(fetchedJobs[0].job_id));
+        }
       } catch (err) {
         console.error("Error fetching worker board data:", err);
+        setError("Failed to load workers board filters.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user?.id) {
+      fetchInitialWorkerBoardData();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const fetchWorkers = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const params = {};
+
+        if (selectedJobId) {
+          params.jobId = selectedJobId;
+        }
+
+        if (selectedDistance) {
+          params.distanceKm = selectedDistance;
+        }
+
+        if (selectedSkill) {
+          params.skill = selectedSkill;
+        }
+
+        if (selectedRating) {
+          params.rating = selectedRating;
+        }
+
+        const workersRes = await axios.get("/api/gig-workers", {
+          params,
+          withCredentials: true
+        });
+
+        setWorkers(Array.isArray(workersRes.data) ? workersRes.data : []);
+      } catch (err) {
+        console.error("Error fetching workers:", err);
         setError("Failed to load workers.");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchWorkerBoardData();
-  }, []);
+    if (user?.id) {
+      fetchWorkers();
+    }
+  }, [user, selectedJobId, selectedDistance, selectedSkill, selectedRating]);
+
+  const selectedJob = jobs.find((job) => String(job.job_id) === String(selectedJobId));
+
+  const selectedJobHasCoordinates =
+    selectedJob &&
+    selectedJob.latitude !== null &&
+    selectedJob.latitude !== undefined &&
+    selectedJob.longitude !== null &&
+    selectedJob.longitude !== undefined;
 
   const getWorkerName = (worker) => {
     return [
@@ -122,38 +202,6 @@ const WorkerBoard = () => {
     return "No location listed";
   };
 
-  const getWorkerLocationValue = (worker) => {
-    const city =
-      worker.city ||
-      worker.worker_city ||
-      worker.user_city ||
-      "";
-    const province =
-      worker.province ||
-      worker.worker_province ||
-      worker.user_province ||
-      worker.state ||
-      "";
-
-    if (city && province) {
-      return `${city}, ${province}`;
-    }
-
-    if (city) {
-      return city;
-    }
-
-    if (province) {
-      return province;
-    }
-
-    if (worker.location) {
-      return worker.location;
-    }
-
-    return "";
-  };
-
   const getWorkerRating = (worker) => {
     const rating =
       worker.avg_rating ??
@@ -168,33 +216,14 @@ const WorkerBoard = () => {
     return Number(rating);
   };
 
-  const filteredWorkers = useMemo(() => {
-    return workers.filter((worker) => {
-      const matchesSkill =
-        !selectedSkill ||
-        (Array.isArray(worker.skills) &&
-          worker.skills.some((skill) => skill === selectedSkill));
+  const getDistanceDisplay = (worker) => {
+    if (worker.distance_km == null || worker.distance_km === "") {
+      return null;
+    }
 
-      const workerLocation = getWorkerLocationValue(worker);
-      const matchesLocation =
-        !selectedLocation || workerLocation === selectedLocation;
-
-      const workerRating = getWorkerRating(worker);
-      const matchesRating =
-        !selectedRating ||
-        (workerRating !== null && workerRating >= Number(selectedRating));
-
-      return matchesSkill && matchesLocation && matchesRating;
-    });
-  }, [workers, selectedSkill, selectedLocation, selectedRating]);
-
-  const locationOptions = useMemo(() => {
-    return [...new Set(
-      workers
-        .map((worker) => getWorkerLocationValue(worker))
-        .filter((location) => location && location.trim() !== "")
-    )].sort((a, b) => a.localeCompare(b));
-  }, [workers]);
+    const miles = Number(worker.distance_km) * 0.621371;
+    return `${miles.toFixed(1)} miles away`;
+  };
 
   const WorkerItem = ({ worker }) => {
     return (
@@ -225,6 +254,18 @@ const WorkerBoard = () => {
               <img id="workerboard-icons" src={Grid} alt="Location" />
               {getLocationDisplay(worker)}
             </div>
+            {getDistanceDisplay(worker) && (
+              <div id='workerboard-worker-item'>
+                <img id="workerboard-icons" src={Grid} alt="Distance" />
+                {getDistanceDisplay(worker)}
+              </div>
+            )}
+            {getWorkerRating(worker) !== null && (
+              <div id='workerboard-worker-item'>
+                <img id="workerboard-icons" src={Star} alt="Rating" />
+                {Number(getWorkerRating(worker)).toFixed(1)} stars
+              </div>
+            )}
           </div>
           <div id='workerboard-worker-actions'>
             <img id="workerboard-bookmark" src={Bookmark} alt="Save worker" />
@@ -251,6 +292,19 @@ const WorkerBoard = () => {
       <div id='workerboard-extra-filters'>
         <select
           id='workerboard-filter-select'
+          value={selectedJobId}
+          onChange={(e) => setSelectedJobId(e.target.value)}
+        >
+          <option value="">Select Job</option>
+          {jobs.map((job) => (
+            <option key={job.job_id} value={job.job_id}>
+              {job.jobtitle}
+            </option>
+          ))}
+        </select>
+
+        <select
+          id='workerboard-filter-select'
           value={selectedSkill}
           onChange={(e) => setSelectedSkill(e.target.value)}
         >
@@ -258,19 +312,6 @@ const WorkerBoard = () => {
           {skills.map((skill) => (
             <option key={skill.skill_id} value={skill.skill_name}>
               {skill.skill_name}
-            </option>
-          ))}
-        </select>
-
-        <select
-          id='workerboard-filter-select'
-          value={selectedLocation}
-          onChange={(e) => setSelectedLocation(e.target.value)}
-        >
-          <option value="">All Locations</option>
-          {locationOptions.map((location) => (
-            <option key={location} value={location}>
-              {location}
             </option>
           ))}
         </select>
@@ -292,8 +333,9 @@ const WorkerBoard = () => {
           id='workerboard-clear-filters'
           onClick={() => {
             setSelectedSkill("");
-            setSelectedLocation("");
             setSelectedRating("");
+            setSelectedDistance("");
+            setSelectedJobId(jobs.length > 0 ? String(jobs[0].job_id) : "");
           }}
           style={{ cursor: "pointer" }}
         >
@@ -301,15 +343,53 @@ const WorkerBoard = () => {
         </div>
       </div>
 
+      <div id='workerboard-extra-filters'>
+        {distanceOptions.map((option) => (
+          <div
+            key={option.label}
+            id='workerboard-clear-filters'
+            onClick={() => {
+              if (!selectedJobHasCoordinates) {
+                return;
+              }
+
+              setSelectedDistance(String(option.km));
+            }}
+            style={{
+              cursor: selectedJobHasCoordinates ? "pointer" : "not-allowed",
+              opacity: selectedJobHasCoordinates ? 1 : 0.5
+            }}
+          >
+            {option.label}
+          </div>
+        ))}
+
+        {selectedDistance && (
+          <div
+            id='workerboard-clear-filters'
+            onClick={() => setSelectedDistance("")}
+            style={{ cursor: "pointer" }}
+          >
+            Clear Distance
+          </div>
+        )}
+      </div>
+
+      {selectedJobId && !selectedJobHasCoordinates && (
+        <div style={{ marginBottom: "20px" }}>
+          This selected job does not have a geocoded address yet.
+        </div>
+      )}
+
       <div id='workerboard-items'>
         {loading ? (
           <div>Loading workers...</div>
         ) : error ? (
           <div>{error}</div>
-        ) : filteredWorkers.length === 0 ? (
+        ) : workers.length === 0 ? (
           <div>No workers found.</div>
         ) : (
-          filteredWorkers.map((worker) => (
+          workers.map((worker) => (
             <WorkerItem key={worker.id} worker={worker} />
           ))
         )}
