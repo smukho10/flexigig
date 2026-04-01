@@ -58,7 +58,7 @@ const JobsApplied = () => {
       }
     };
     fetchAppliedJobs();
-  }, [user, refresh]);
+  }, [user?.id, refresh]);
 
   const handleWithdraw = async (e) => {
     const jobId = e.target.value;

@@ -50,7 +50,7 @@ const MyGigs = () => {
           console.error("Error fetching gigs:", error);
         });
     }
-  }, [user, refresh]);
+  }, [user?.id, refresh]);
 
   const openReviewModal = (gig) => {
     setCurrentReviewGig(gig);
