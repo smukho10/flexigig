@@ -183,6 +183,13 @@ const ProfilePage = () => {
           worker_postal_code: merge.postal_code,
           desired_work_radius: merge.desired_work_radius >= 0 ? merge.desired_work_radius : "",
           desired_pay: merge.desired_pay >= 0 ? merge.desired_pay : "",
+          // Employer prefill: map fetched data to form field names
+          business_phone_number: merge.business_phone_number || merge.phone_number || "",
+          business_email: merge.business_email || merge.email || "",
+          business_street_address: merge.business_street_address || merge.street_address || "",
+          business_city: merge.business_city || merge.city || "",
+          business_province: merge.business_province || merge.province || "",
+          business_postal_code: merge.business_postal_code || merge.postal_code || "",
         });
       })
       .catch((error) => {
@@ -1078,6 +1085,10 @@ const ProfilePage = () => {
         /* ============ BUSINESS PROFILE ============ */
         <div className="profile-container">
           <div className="business-profile">
+            <div className="profile-section" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h2>{user.business_name || "My Business"}</h2>
+              <button className="btn-primary" onClick={toggleEdit}>Edit Profile</button>
+            </div>
             <div className="profile-section">
               <h2>Business Description</h2>
               <p>{user.business_description || ""}</p>
