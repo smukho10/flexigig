@@ -16,6 +16,8 @@ import "../styles/WorkerBoard.css";
 
 const WorkerBoard = () => {
   const { user } = useUser();
+  const employerId = user?.id || user?.user_id;
+
   const [workers, setWorkers] = useState([]);
   const [skills, setSkills] = useState([]);
   const [jobs, setJobs] = useState([]);
@@ -23,7 +25,9 @@ const WorkerBoard = () => {
   const [selectedSkill, setSelectedSkill] = useState("");
   const [selectedRating, setSelectedRating] = useState("");
   const [selectedDistance, setSelectedDistance] = useState("");
+  const [showLocationFilter, setShowLocationFilter] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [jobsLoading, setJobsLoading] = useState(true);
   const [error, setError] = useState("");
 
   const distanceOptions = [
@@ -36,45 +40,48 @@ const WorkerBoard = () => {
   ];
 
   useEffect(() => {
-    const fetchInitialWorkerBoardData = async () => {
+    const fetchSkills = async () => {
       try {
-        setLoading(true);
-        setError("");
-
-        const requests = [
-          axios.get("/api/get-all-skills", { withCredentials: true })
-        ];
-
-        if (user?.id) {
-          requests.push(
-            axios.get(`/api/posted-jobs/${user.id}`, { withCredentials: true })
-          );
-        }
-
-        const responses = await Promise.all(requests);
-        const skillsRes = responses[0];
-        const jobsRes = responses[1];
-
+        const skillsRes = await axios.get("/api/get-all-skills", { withCredentials: true });
         setSkills(Array.isArray(skillsRes.data) ? skillsRes.data : []);
-
-        const fetchedJobs = Array.isArray(jobsRes?.data) ? jobsRes.data : [];
-        setJobs(fetchedJobs);
-
-        if (fetchedJobs.length > 0) {
-          setSelectedJobId(String(fetchedJobs[0].job_id));
-        }
       } catch (err) {
-        console.error("Error fetching worker board data:", err);
-        setError("Failed to load workers board filters.");
-      } finally {
-        setLoading(false);
+        console.error("Error fetching skills:", err);
       }
     };
 
-    if (user?.id) {
-      fetchInitialWorkerBoardData();
-    }
-  }, [user]);
+    fetchSkills();
+  }, []);
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        setJobsLoading(true);
+
+        if (!employerId) {
+          setJobs([]);
+          return;
+        }
+
+        const jobsRes = await axios.get(`/api/posted-jobs/${employerId}`, { withCredentials: true });
+        const fetchedJobs = Array.isArray(jobsRes.data) ? jobsRes.data : [];
+
+        setJobs(fetchedJobs);
+
+        if (fetchedJobs.length > 0) {
+          setSelectedJobId((prev) => prev || String(fetchedJobs[0].job_id));
+        } else {
+          setSelectedJobId("");
+        }
+      } catch (err) {
+        console.error("Error fetching posted jobs:", err);
+        setJobs([]);
+      } finally {
+        setJobsLoading(false);
+      }
+    };
+
+    fetchJobs();
+  }, [employerId]);
 
   useEffect(() => {
     const fetchWorkers = async () => {
@@ -114,10 +121,8 @@ const WorkerBoard = () => {
       }
     };
 
-    if (user?.id) {
-      fetchWorkers();
-    }
-  }, [user, selectedJobId, selectedDistance, selectedSkill, selectedRating]);
+    fetchWorkers();
+  }, [selectedJobId, selectedDistance, selectedSkill, selectedRating]);
 
   const selectedJob = jobs.find((job) => String(job.job_id) === String(selectedJobId));
 
@@ -286,23 +291,99 @@ const WorkerBoard = () => {
       </div>
 
       <div id='workerboard-skill-search'>
-        <img id="workerboard-filter-icon" src={SearchFilter} alt="" />
+        <img
+          id="workerboard-filter-icon"
+          src={SearchFilter}
+          alt=""
+          style={{ cursor: "pointer" }}
+          onClick={() => setShowLocationFilter(!showLocationFilter)}
+        />
       </div>
 
-      <div id='workerboard-extra-filters'>
-        <select
-          id='workerboard-filter-select'
-          value={selectedJobId}
-          onChange={(e) => setSelectedJobId(e.target.value)}
-        >
-          <option value="">Select Job</option>
-          {jobs.map((job) => (
-            <option key={job.job_id} value={job.job_id}>
-              {job.jobtitle}
-            </option>
-          ))}
-        </select>
+      {showLocationFilter && (
+        <div id='workerboard-location-popup'>
+          <div id='workerboard-location-popup-inner'>
+            <div id='workerboard-location-popup-title'>LOCATION</div>
 
+            <select
+              id='workerboard-filter-select'
+              value={selectedJobId}
+              onChange={(e) => setSelectedJobId(e.target.value)}
+            >
+              <option value="">
+                {jobsLoading ? "Loading jobs..." : "Select Job"}
+              </option>
+              {jobs.map((job) => (
+                <option key={job.job_id} value={job.job_id}>
+                  {job.jobtitle}
+                </option>
+              ))}
+            </select>
+
+            {!jobsLoading && jobs.length === 0 && (
+              <div style={{ marginTop: "10px" }}>
+                No job postings found.
+              </div>
+            )}
+
+            <div style={{ marginTop: "18px", marginBottom: "10px" }}>
+              Distance
+            </div>
+
+            <div id='workerboard-distance-buttons'>
+              {distanceOptions.map((option) => (
+                <div
+                  key={option.label}
+                  id='workerboard-distance-pill'
+                  onClick={() => {
+                    if (!selectedJobHasCoordinates) {
+                      return;
+                    }
+
+                    setSelectedDistance(String(option.km));
+                  }}
+                  style={{
+                    cursor: selectedJobHasCoordinates ? "pointer" : "not-allowed",
+                    opacity: selectedJobHasCoordinates ? 1 : 0.5,
+                    fontWeight: String(selectedDistance) === String(option.km) ? "600" : "400"
+                  }}
+                >
+                  {option.label}
+                </div>
+              ))}
+            </div>
+
+            {selectedJobId && !selectedJobHasCoordinates && (
+              <div style={{ marginTop: "12px" }}>
+                This selected job does not have a geocoded address yet.
+              </div>
+            )}
+
+            <div id='workerboard-location-popup-actions'>
+              <div
+                id='workerboard-location-clear'
+                onClick={() => {
+                  setSelectedDistance("");
+                  setSelectedJobId(jobs.length > 0 ? String(jobs[0].job_id) : "");
+                }}
+                style={{ cursor: "pointer" }}
+              >
+                Clear
+              </div>
+
+              <div
+                id='workerboard-location-apply'
+                onClick={() => setShowLocationFilter(false)}
+                style={{ cursor: "pointer" }}
+              >
+                Apply
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div id='workerboard-extra-filters'>
         <select
           id='workerboard-filter-select'
           value={selectedSkill}
@@ -342,44 +423,6 @@ const WorkerBoard = () => {
           Clear Filters
         </div>
       </div>
-
-      <div id='workerboard-extra-filters'>
-        {distanceOptions.map((option) => (
-          <div
-            key={option.label}
-            id='workerboard-clear-filters'
-            onClick={() => {
-              if (!selectedJobHasCoordinates) {
-                return;
-              }
-
-              setSelectedDistance(String(option.km));
-            }}
-            style={{
-              cursor: selectedJobHasCoordinates ? "pointer" : "not-allowed",
-              opacity: selectedJobHasCoordinates ? 1 : 0.5
-            }}
-          >
-            {option.label}
-          </div>
-        ))}
-
-        {selectedDistance && (
-          <div
-            id='workerboard-clear-filters'
-            onClick={() => setSelectedDistance("")}
-            style={{ cursor: "pointer" }}
-          >
-            Clear Distance
-          </div>
-        )}
-      </div>
-
-      {selectedJobId && !selectedJobHasCoordinates && (
-        <div style={{ marginBottom: "20px" }}>
-          This selected job does not have a geocoded address yet.
-        </div>
-      )}
 
       <div id='workerboard-items'>
         {loading ? (
