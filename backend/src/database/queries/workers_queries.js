@@ -95,9 +95,21 @@ const fetchWorkersForBoard = ({ jobId, distanceKm, skill, rating }) => {
   }
 
   if (rating !== null && rating !== undefined && rating !== '') {
-    conditions.push(`COALESCE(r.avg_rating, 0) >= $${paramIndex}`);
-    params.push(rating);
-    paramIndex++;
+    const ratingValue = parseFloat(rating);
+
+    if (ratingValue === 5) {
+      conditions.push(`COALESCE(r.avg_rating, 0) >= $${paramIndex}`);
+      params.push(5);
+      paramIndex++;
+    } else {
+      conditions.push(`COALESCE(r.avg_rating, 0) >= $${paramIndex}`);
+      params.push(ratingValue);
+      paramIndex++;
+
+      conditions.push(`COALESCE(r.avg_rating, 0) < $${paramIndex}`);
+      params.push(ratingValue + 1);
+      paramIndex++;
+    }
   }
 
   if (jobId && distanceKm) {

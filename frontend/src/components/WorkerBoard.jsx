@@ -63,7 +63,7 @@ const WorkerBoard = () => {
         }
 
         const jobsRes = await axios.get(`/api/posted-jobs/${employerId}`, { withCredentials: true });
-        const fetchedJobs = Array.isArray(jobsRes.data) ? jobsRes.data : [];
+        const fetchedJobs = Array.isArray(jobsRes.data?.jobs) ? jobsRes.data.jobs : [];
 
         setJobs(fetchedJobs);
 
@@ -290,105 +290,105 @@ const WorkerBoard = () => {
         <h1>Find Workers</h1>
       </div>
 
-      <div id='workerboard-skill-search'>
-        <div
-          id='workerboard-location-toggle'
-          onClick={() => setShowLocationFilter(!showLocationFilter)}
-          style={{ cursor: "pointer" }}
-        >
-          <img
-            id="workerboard-filter-icon"
-            src={SearchFilter}
-            alt="Location filter"
-          />
-          <span id='workerboard-location-toggle-text'>Location</span>
-        </div>
-      </div>
-
-      {showLocationFilter && (
-        <div id='workerboard-location-popup'>
-          <div id='workerboard-location-popup-inner'>
-            <div id='workerboard-location-popup-title'>LOCATION</div>
-
-            <select
-              id='workerboard-filter-select'
-              value={selectedJobId}
-              onChange={(e) => setSelectedJobId(e.target.value)}
-            >
-              <option value="">
-                {jobsLoading ? "Loading jobs..." : "Select Job"}
-              </option>
-              {jobs.map((job) => (
-                <option key={job.job_id} value={job.job_id}>
-                  {job.jobtitle}
-                </option>
-              ))}
-            </select>
-
-            {!jobsLoading && jobs.length === 0 && (
-              <div style={{ marginTop: "10px" }}>
-                No job postings found.
-              </div>
-            )}
-
-            <div style={{ marginTop: "18px", marginBottom: "10px" }}>
-              Distance
-            </div>
-
-            <div id='workerboard-distance-buttons'>
-              {distanceOptions.map((option) => (
-                <div
-                  key={option.label}
-                  id='workerboard-distance-pill'
-                  onClick={() => {
-                    if (!selectedJobHasCoordinates) {
-                      return;
-                    }
-
-                    setSelectedDistance(String(option.km));
-                  }}
-                  style={{
-                    cursor: selectedJobHasCoordinates ? "pointer" : "not-allowed",
-                    opacity: selectedJobHasCoordinates ? 1 : 0.5,
-                    fontWeight: String(selectedDistance) === String(option.km) ? "600" : "400"
-                  }}
-                >
-                  {option.label}
-                </div>
-              ))}
-            </div>
-
-            {selectedJobId && !selectedJobHasCoordinates && (
-              <div style={{ marginTop: "12px" }}>
-                This selected job does not have a geocoded address yet.
-              </div>
-            )}
-
-            <div id='workerboard-location-popup-actions'>
-              <div
-                id='workerboard-location-clear'
-                onClick={() => {
-                  setSelectedDistance("");
-                  setSelectedJobId(jobs.length > 0 ? String(jobs[0].job_id) : "");
-                }}
-                style={{ cursor: "pointer" }}
-              >
-                Clear
-              </div>
-
-              <div
-                id='workerboard-location-apply'
-                onClick={() => setShowLocationFilter(false)}
-                style={{ cursor: "pointer" }}
-              >
-                Apply
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div id='workerboard-extra-filters'>
+        <div id='workerboard-location-filter-wrap'>
+          <div
+            id='workerboard-location-toggle'
+            onClick={() => setShowLocationFilter(!showLocationFilter)}
+            style={{ cursor: "pointer" }}
+          >
+            <img
+              id="workerboard-filter-icon"
+              src={SearchFilter}
+              alt="Location filter"
+            />
+            <span id='workerboard-location-toggle-text'>Location</span>
+          </div>
+
+          {showLocationFilter && (
+            <div id='workerboard-location-popup'>
+              <div id='workerboard-location-popup-inner'>
+                <div id='workerboard-location-popup-title'>LOCATION</div>
+
+                <select
+                  id='workerboard-filter-select'
+                  value={selectedJobId}
+                  onChange={(e) => setSelectedJobId(e.target.value)}
+                >
+                  <option value="">
+                    {jobsLoading ? "Loading jobs..." : "Select Job"}
+                  </option>
+                  {jobs.map((job) => (
+                    <option key={job.job_id} value={job.job_id}>
+                      {job.jobtitle}
+                    </option>
+                  ))}
+                </select>
+
+                {!jobsLoading && jobs.length === 0 && (
+                  <div style={{ marginTop: "10px" }}>
+                    No job postings found.
+                  </div>
+                )}
+
+                <div style={{ marginTop: "18px", marginBottom: "10px" }}>
+                  Distance
+                </div>
+
+                <div id='workerboard-distance-buttons'>
+                  {distanceOptions.map((option) => (
+                    <div
+                      key={option.label}
+                      id='workerboard-distance-pill'
+                      onClick={() => {
+                        if (!selectedJobHasCoordinates) {
+                          return;
+                        }
+
+                        setSelectedDistance(String(option.km));
+                      }}
+                      style={{
+                        cursor: selectedJobHasCoordinates ? "pointer" : "not-allowed",
+                        opacity: selectedJobHasCoordinates ? 1 : 0.5,
+                        fontWeight: String(selectedDistance) === String(option.km) ? "600" : "400"
+                      }}
+                    >
+                      {option.label}
+                    </div>
+                  ))}
+                </div>
+
+                {selectedJobId && !selectedJobHasCoordinates && (
+                  <div style={{ marginTop: "12px" }}>
+                    This selected job does not have a geocoded address yet.
+                  </div>
+                )}
+
+                <div id='workerboard-location-popup-actions'>
+                  <div
+                    id='workerboard-location-clear'
+                    onClick={() => {
+                      setSelectedDistance("");
+                      setSelectedJobId(jobs.length > 0 ? String(jobs[0].job_id) : "");
+                    }}
+                    style={{ cursor: "pointer" }}
+                  >
+                    Clear
+                  </div>
+
+                  <div
+                    id='workerboard-location-apply'
+                    onClick={() => setShowLocationFilter(false)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    Apply
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
         <select
           id='workerboard-filter-select'
           value={selectedSkill}
@@ -408,11 +408,11 @@ const WorkerBoard = () => {
           onChange={(e) => setSelectedRating(e.target.value)}
         >
           <option value="">All Ratings</option>
-          <option value="5">5+ Stars</option>
-          <option value="4">4+ Stars</option>
-          <option value="3">3+ Stars</option>
-          <option value="2">2+ Stars</option>
-          <option value="1">1+ Stars</option>
+          <option value="5">5 Stars</option>
+          <option value="4">4 Stars</option>
+          <option value="3">3 Stars</option>
+          <option value="2">2 Stars</option>
+          <option value="1">1 Stars</option>
         </select>
 
         <div
