@@ -2,7 +2,7 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
-  "proxy": "http://localhost:8080",
+  "proxy": "http://localhost:5000",
   "dependencies": {
     "@mui/x-date-pickers-pro": "^6.19.6",
     "axios": "^1.6.7",
@@ -44,7 +44,11 @@
       "<rootDir>/src/**/*.test.jsx",
       "<rootDir>/src/**/__tests__/**/*.test.js",
       "<rootDir>/src/**/__tests__/**/*.test.jsx"
-    ]
+    ],
+    "moduleNameMapper": {
+      "\\.(css|scss|sass|less)$": "identity-obj-proxy",
+      "\\.(png|jpg|jpeg|gif|svg|ico|webp)$": "<rootDir>/src/__mocks__/fileMock.js"
+    }
   },
   "browserslist": {
     "production": [
