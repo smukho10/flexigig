@@ -25,6 +25,8 @@ const WorkerBoard = () => {
   const [selectedSkill, setSelectedSkill] = useState("");
   const [selectedRating, setSelectedRating] = useState("");
   const [selectedDistance, setSelectedDistance] = useState("");
+  const [customDistance, setCustomDistance] = useState("");
+  const [isCustomDistance, setIsCustomDistance] = useState(false);
   const [showLocationFilter, setShowLocationFilter] = useState(false);
   const [loading, setLoading] = useState(true);
   const [jobsLoading, setJobsLoading] = useState(true);
@@ -346,6 +348,8 @@ const WorkerBoard = () => {
                         }
 
                         setSelectedDistance(String(option.km));
+                        setIsCustomDistance(false);
+                        setCustomDistance("");
                       }}
                       style={{
                         cursor: selectedJobHasCoordinates ? "pointer" : "not-allowed",
@@ -356,7 +360,44 @@ const WorkerBoard = () => {
                       {option.label}
                     </div>
                   ))}
+
+                  <div
+                    id='workerboard-distance-pill'
+                    onClick={() => {
+                      if (!selectedJobHasCoordinates) {
+                        return;
+                      }
+
+                      setIsCustomDistance(true);
+                      setSelectedDistance("");
+                    }}
+                    style={{
+                      cursor: selectedJobHasCoordinates ? "pointer" : "not-allowed",
+                      opacity: selectedJobHasCoordinates ? 1 : 0.5,
+                      fontWeight: isCustomDistance ? "600" : "400"
+                    }}
+                  >
+                    Custom
+                  </div>
                 </div>
+
+                {isCustomDistance && (
+                  <div style={{ marginTop: "12px" }}>
+                    <input
+                      type="number"
+                      placeholder="Enter miles"
+                      value={customDistance}
+                      onChange={(e) => setCustomDistance(e.target.value)}
+                      style={{
+                        width: "100%",
+                        height: "40px",
+                        padding: "8px",
+                        borderRadius: "8px",
+                        border: "1px solid #7ad7df"
+                      }}
+                    />
+                  </div>
+                )}
 
                 {selectedJobId && !selectedJobHasCoordinates && (
                   <div style={{ marginTop: "12px" }}>
@@ -369,6 +410,8 @@ const WorkerBoard = () => {
                     id='workerboard-location-clear'
                     onClick={() => {
                       setSelectedDistance("");
+                      setCustomDistance("");
+                      setIsCustomDistance(false);
                       setSelectedJobId(jobs.length > 0 ? String(jobs[0].job_id) : "");
                     }}
                     style={{ cursor: "pointer" }}
@@ -378,7 +421,13 @@ const WorkerBoard = () => {
 
                   <div
                     id='workerboard-location-apply'
-                    onClick={() => setShowLocationFilter(false)}
+                    onClick={() => {
+                      if (isCustomDistance && customDistance) {
+                        const km = Number(customDistance) * 1.60934;
+                        setSelectedDistance(String(km));
+                      }
+                      setShowLocationFilter(false);
+                    }}
                     style={{ cursor: "pointer" }}
                   >
                     Apply
@@ -421,6 +470,8 @@ const WorkerBoard = () => {
             setSelectedSkill("");
             setSelectedRating("");
             setSelectedDistance("");
+            setCustomDistance("");
+            setIsCustomDistance(false);
             setSelectedJobId(jobs.length > 0 ? String(jobs[0].job_id) : "");
           }}
           style={{ cursor: "pointer" }}
