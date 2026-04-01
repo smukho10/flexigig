@@ -173,16 +173,28 @@ const MyGigs = () => {
         value={searchInput}
         onChange={(e) => setSearchInput(e.target.value)}
       />
-      {approvedGigs.length === 0 ? (
-        <div className="no-gigs-message">
-          <p>You have no gigs at the moment.</p>
-          <p>Apply for jobs to see them here once they are reviewed!</p>
-        </div>
-      ) : (
+      {(() => {
+        const filteredGigs = approvedGigs.filter(job =>
+          !searchInput.trim() ||
+          (job.jobtitle || "").toLowerCase().includes(searchInput.trim().toLowerCase())
+        );
+
+        if (approvedGigs.length === 0) {
+          return (
+            <div className="no-gigs-message">
+              <p>You have no gigs at the moment.</p>
+              <p>Apply for jobs to see them here once they are reviewed!</p>
+            </div>
+          );
+        }
+
+        if (filteredGigs.length === 0) {
+          return <div className="no-gigs-message"><p>No gigs match your search.</p></div>;
+        }
+
+        return (
         <ul className="gigs-list">
-          {approvedGigs.filter(job =>
-            !searchInput.trim() || job.jobtitle?.toLowerCase().includes(searchInput.trim().toLowerCase())
-          ).map(job => {
+          {filteredGigs.map(job => {
             const isAccepted = job.application_status === 'ACCEPTED';
             const isCompleted = job.status === 'completed';
             const isWithdrawn = job.application_status === 'WITHDRAWN';
@@ -285,7 +297,8 @@ const MyGigs = () => {
             );
           })}
         </ul>
-      )}
+        );
+      })()}
 
       {/* Withdraw confirmation modal */}
       {withdrawing && (
