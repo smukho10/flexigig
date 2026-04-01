@@ -397,15 +397,13 @@ const JobBoard = () => {
     };
 
     fetchWorkerLocation();
-  }, [user]);
+  }, [user?.id]);
 
   useEffect(() => {
     const fetchJobs = async () => {
       try {
         const { skills, experience, distanceLabel, ...restFilters } = appliedFilters;
         const params = { page, perPage, ...restFilters };
-        if (searchInput.trim()) params.q = searchInput.trim();
-        // REPLACE with:
         if (Array.isArray(skills) && skills.length > 0) {
           params.skills = skills;
         }
@@ -459,7 +457,7 @@ const JobBoard = () => {
     };
 
     fetchJobs();
-  }, [refresh, page, perPage, appliedFilters, workerCoords, workerRadius, user, searchInput]);
+  }, [refresh, page, perPage, appliedFilters, workerCoords, workerRadius, user]);
 
   useEffect(() => {
     if (location.state?.openJobId && jobs.length) {
@@ -692,10 +690,17 @@ const JobBoard = () => {
     return tags.length ? <div className="active-filters-row">{tags}</div> : null;
   };
 
+  const filteredJobs = searchInput.trim()
+    ? jobs.filter((job) =>
+        (job.jobtitle || "").toLowerCase().includes(searchInput.trim().toLowerCase()) ||
+        (job.jobdescription || "").toLowerCase().includes(searchInput.trim().toLowerCase())
+      )
+    : jobs;
+
   const listItems =
-    jobs.length === 0
+    filteredJobs.length === 0
       ? null
-      : jobs.map((job) => (
+      : filteredJobs.map((job) => (
           <li key={job.job_id}>
             <div className="left">
               <h2>{job.jobtitle}</h2>
