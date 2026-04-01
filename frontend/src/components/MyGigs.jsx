@@ -12,6 +12,7 @@ const MyGigs = () => {
   const { user } = useUser();
   const [approvedGigs, setApprovedGigs] = useState([]);
   const [employerPhotoUrls, setEmployerPhotoUrls] = useState({});
+  const [searchInput, setSearchInput] = useState("");
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [currentReviewGig, setCurrentReviewGig] = useState(null);
   const [rating, setRating] = useState(0);
@@ -165,6 +166,13 @@ const MyGigs = () => {
         <h1>My Gigs</h1>
         <button className="add-job-button" onClick={findJob}>+ Find a New Job</button>
       </div>
+      <input
+        type="text"
+        className="mg-search-input"
+        placeholder="Search by job title..."
+        value={searchInput}
+        onChange={(e) => setSearchInput(e.target.value)}
+      />
       {approvedGigs.length === 0 ? (
         <div className="no-gigs-message">
           <p>You have no gigs at the moment.</p>
@@ -172,7 +180,9 @@ const MyGigs = () => {
         </div>
       ) : (
         <ul className="gigs-list">
-          {approvedGigs.map(job => {
+          {approvedGigs.filter(job =>
+            !searchInput.trim() || job.jobtitle?.toLowerCase().includes(searchInput.trim().toLowerCase())
+          ).map(job => {
             const isAccepted = job.application_status === 'ACCEPTED';
             const isCompleted = job.status === 'completed';
             const isWithdrawn = job.application_status === 'WITHDRAWN';
