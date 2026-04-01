@@ -267,7 +267,7 @@
     width: 26px;
     min-height: 26px;
     min-width: 26px;
-    margin: 0 2px 0 0;
+    margin: 0;
     align-self: center;
     object-fit: contain;
     display: block;
@@ -283,9 +283,37 @@
     display: block;
 }
 
+#workerboard-location-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid #4EBBC2;
+    border-radius: 12px;
+    min-height: 42px;
+    padding: 0 16px;
+    background-color: #ffffff;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+
+#workerboard-location-toggle:hover {
+    background-color: #4EBBC2;
+}
+
+#workerboard-location-toggle:hover #workerboard-location-toggle-text {
+    color: #ffffff;
+}
+
+#workerboard-location-toggle-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: #273240;
+    line-height: 1;
+}
+
 #workerboard-location-popup {
     position: relative;
-    margin: 0 0 22px 0;
+    margin: -6px 0 22px 0;
     z-index: 20;
 }
 
@@ -452,6 +480,11 @@
         min-width: 24px;
         max-height: 24px;
         max-width: 24px;
+    }
+
+    #workerboard-location-toggle {
+        width: 100%;
+        justify-content: center;
     }
 
     #workerboard-location-popup-inner {

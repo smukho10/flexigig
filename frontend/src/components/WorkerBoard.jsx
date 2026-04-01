@@ -291,13 +291,18 @@ const WorkerBoard = () => {
       </div>
 
       <div id='workerboard-skill-search'>
-        <img
-          id="workerboard-filter-icon"
-          src={SearchFilter}
-          alt=""
-          style={{ cursor: "pointer" }}
+        <div
+          id='workerboard-location-toggle'
           onClick={() => setShowLocationFilter(!showLocationFilter)}
-        />
+          style={{ cursor: "pointer" }}
+        >
+          <img
+            id="workerboard-filter-icon"
+            src={SearchFilter}
+            alt="Location filter"
+          />
+          <span id='workerboard-location-toggle-text'>Location</span>
+        </div>
       </div>
 
       {showLocationFilter && (
