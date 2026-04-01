@@ -176,7 +176,13 @@ const MyGigs = () => {
             const isAccepted = job.application_status === 'ACCEPTED';
             const isCompleted = job.status === 'completed';
             const isWithdrawn = job.application_status === 'WITHDRAWN';
-            const alreadyRated = !!job.has_reviewed_employer;
+            const myRatingForEmployer = job.my_rating_for_employer;
+                        const employerRatingForMe = job.employer_rating_for_me;
+                        const alreadyRated = !!job.has_reviewed_employer;
+                        const renderStars = (r) =>
+                          [1, 2, 3, 4, 5].map((s) => (
+                            <span key={s} className={`gig-star ${s <= r ? 'gig-star--filled' : ''}`}>★</span>
+                          ));
 
             return (
               <li key={job.job_id} className="gig-item">
@@ -223,6 +229,24 @@ const MyGigs = () => {
                     </button>
                   </div>
                 </div>
+
+                {isAccepted && isCompleted && (
+                  <div className="gig-ratings">
+                    <div className="gig-rating-row">
+                      <span className="gig-rating-label">Your rating for employer:</span>
+                      {myRatingForEmployer != null
+                        ? <span className="gig-rating-stars">{renderStars(myRatingForEmployer)}</span>
+                        : <span className="gig-rating-pending">Not rated yet</span>}
+                    </div>
+                    <div className="gig-rating-row">
+                      <span className="gig-rating-label">Employer's rating for you:</span>
+                      {employerRatingForMe != null
+                        ? <span className="gig-rating-stars">{renderStars(employerRatingForMe)}</span>
+                        : <span className="gig-rating-pending">Not rated yet</span>}
+                    </div>
+                  </div>
+                )}
+
                 <div className="bottom">
                   <div className="bottom-left">
                     <div className="details-div">

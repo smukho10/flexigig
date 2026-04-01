@@ -602,12 +602,16 @@ const fetchAppliedJobs = async (userId) => {
         w.profile_name,
         COALESCE(bs.business_name, 'Unknown Business') AS business_name,
         jp.user_id AS employer_user_id,
-        EXISTS (
+EXISTS (
           SELECT 1 FROM reviews r
-          WHERE r.reviewer_id = $1
-            AND r.reviewee_id = jp.user_id
-            AND r.job_id = jp.job_id
-        ) AS has_reviewed_employer
+          WHERE r.reviewer_id = $1 AND r.reviewee_id = jp.user_id AND r.job_id = jp.job_id
+        ) AS has_reviewed_employer,
+        (SELECT r.rating FROM reviews r
+          WHERE r.reviewer_id = $1 AND r.reviewee_id = jp.user_id AND r.job_id = jp.job_id
+          LIMIT 1) AS my_rating_for_employer,
+        (SELECT r.rating FROM reviews r
+          WHERE r.reviewer_id = jp.user_id AND r.reviewee_id = $1 AND r.job_id = jp.job_id
+          LIMIT 1) AS employer_rating_for_me
       FROM gig_applications ga
       JOIN workers w ON ga.worker_profile_id = w.id AND w.user_id = $1
       JOIN jobPostings jp ON ga.job_id = jp.job_id
@@ -845,12 +849,16 @@ const fetchApplicantsForJob = async (jobId) => {
       u.id              AS user_id,
       u.email,
       u.userimage       AS user_image,
-      EXISTS (
-        SELECT 1 FROM reviews r
-        WHERE r.reviewer_id = jp.user_id
-          AND r.reviewee_id = u.id
-          AND r.job_id      = $1
-      ) AS has_reviewed_worker
+EXISTS (
+      SELECT 1 FROM reviews r
+      WHERE r.reviewer_id = jp.user_id AND r.reviewee_id = u.id AND r.job_id = $1
+    ) AS has_reviewed_worker,
+    (SELECT r.rating FROM reviews r
+      WHERE r.reviewer_id = jp.user_id AND r.reviewee_id = u.id AND r.job_id = $1
+      LIMIT 1) AS my_rating_for_worker,
+    (SELECT r.rating FROM reviews r
+      WHERE r.reviewer_id = u.id AND r.reviewee_id = jp.user_id AND r.job_id = $1
+      LIMIT 1) AS worker_rating_for_me
     FROM gig_applications ga
     JOIN workers w      ON ga.worker_profile_id = w.id
     JOIN users   u      ON w.user_id = u.id
