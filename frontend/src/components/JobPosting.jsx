@@ -42,6 +42,7 @@ const JobPosting = () => {
     const navigate = useNavigate();
     const [jobs, setJobs] = useState([]);
     const [activeTab, setActiveTab] = useState(JOB_STATUS.OPEN);
+    const [searchInput, setSearchInput] = useState("");
     const [createJob, setCreateJob] = useState(false);
     const [editJob, setEditJob] = useState(false);
     const [removeJob, setRemoveJob] = useState(false);
@@ -210,7 +211,9 @@ const JobPosting = () => {
     const getJobStatus = (job) =>
         localStatusOverrides[job.job_id] ?? job.status ?? JOB_STATUS.OPEN;
 
-    const tabJobs = jobs.filter(j => getJobStatus(j) === activeTab);
+    const tabJobs = jobs
+        .filter(j => getJobStatus(j) === activeTab)
+        .filter(j => !searchInput.trim() || j.jobtitle?.toLowerCase().includes(searchInput.trim().toLowerCase()));
     const tabConfig = TAB_CONFIG.find(t => t.key === activeTab);
 
     // Badge counts per tab
@@ -315,6 +318,16 @@ const JobPosting = () => {
                         <span>Create New</span>
                         <img src={PlusSign} alt="create-new" width="13px" height="auto" />
                     </button>
+
+                    <div className="jp-search-row">
+                        <input
+                            type="text"
+                            className="jp-search-input"
+                            placeholder="Search by job title..."
+                            value={searchInput}
+                            onChange={(e) => setSearchInput(e.target.value)}
+                        />
+                    </div>
 
                     {/* ── Status Tabs ── */}
                     <div className="status-tabs">

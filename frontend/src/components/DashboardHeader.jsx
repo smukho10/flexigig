@@ -31,18 +31,6 @@ const DashboardHeader = () => {
         navigate("/", { replace: true });
     };
 
-    const [searchTerm, setSearchTerm] = useState("");
-    const handleSearchKeyDown = (e) => {
-        if (e.key === 'Enter') {
-            const trimmed = searchTerm.trim();
-            if (trimmed.length > 0) {
-                navigate(`/search?query=${encodeURIComponent(trimmed)}`);
-            } else {
-                navigate(`/search`);
-            }
-        }
-    };
-
 
     useEffect(() => {
         const fetchProfilePhoto = async () => {
@@ -76,16 +64,6 @@ const DashboardHeader = () => {
                         <span className="gig">GIG</span>
                     </h1>
                 </div>
-            </div>
-
-            <div className="header-section center">
-                <input type="text"
-                    className="search-bar"
-                    placeholder="Search"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onKeyDown={handleSearchKeyDown}
-                />
             </div>
 
             <div className="header-section right">

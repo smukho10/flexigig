@@ -312,6 +312,8 @@ const JobBoard = () => {
   const [openFilter, setOpenFilter] = useState(null);
   const filterBarRef = useRef(null);
 
+  const [searchInput, setSearchInput] = useState("");
+
   const [pendingFilters, setPendingFilters] = useState({
     city: "",
     province: "",
@@ -402,6 +404,7 @@ const JobBoard = () => {
       try {
         const { skills, experience, distanceLabel, ...restFilters } = appliedFilters;
         const params = { page, perPage, ...restFilters };
+        if (searchInput.trim()) params.q = searchInput.trim();
         // REPLACE with:
         if (Array.isArray(skills) && skills.length > 0) {
           params.skills = skills;
@@ -456,7 +459,7 @@ const JobBoard = () => {
     };
 
     fetchJobs();
-  }, [refresh, page, perPage, appliedFilters, workerCoords, workerRadius, user]);
+  }, [refresh, page, perPage, appliedFilters, workerCoords, workerRadius, user, searchInput]);
 
   useEffect(() => {
     if (location.state?.openJobId && jobs.length) {
@@ -755,6 +758,16 @@ const JobBoard = () => {
       {!jobDetails ? (
         <div>
           <h1>Job Board</h1>
+
+          <div className="jb-search-row">
+            <input
+              type="text"
+              className="jb-search-input"
+              placeholder="Search by job title or description..."
+              value={searchInput}
+              onChange={(e) => { setSearchInput(e.target.value); setPage(1); }}
+            />
+          </div>
 
           <div className="filter-bar" ref={filterBarRef}>
             <img src={FiltersIcon} alt="filters" width="24px" height="auto" />
