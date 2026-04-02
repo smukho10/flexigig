@@ -5,7 +5,7 @@
   border-radius: 8px;
   margin-top: 20px;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: visible;
   position: relative;
 }
 
@@ -29,8 +29,6 @@
   border-radius: 6px;
   padding: 10px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
 }
 
 /* React Big Calendar Overrides */
@@ -57,14 +55,26 @@
 .scheduler-calendar .rbc-event {
   padding: 4px;
   border-radius: 4px;
+  font-size: 15px;
+  font-weight: 600;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+  border-left: 3px solid rgba(255,255,255,0.4) !important;
+}
+
+.scheduler-calendar .rbc-event-label {
   font-size: 12px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  font-weight: 700;
+  opacity: 0.95;
+  letter-spacing: 0.01em;
 }
 
 .scheduler-calendar .rbc-event-content {
+  font-size: 13px;
+  font-weight: 600;
   white-space: normal;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.4;
 }
 
 .scheduler-calendar .rbc-time-slot {
@@ -73,6 +83,47 @@
 
 .scheduler-calendar .rbc-time-content {
   border-top: 1px solid #e0e0e0;
+}
+
+/* Force shifts to take full column width in week/day view only — no side-by-side stacking */
+.scheduler-calendar .rbc-time-view .rbc-event {
+  width: 100% !important;
+  left: 0 !important;
+  right: 0 !important;
+  margin-right: 0 !important;
+  z-index: 1;
+}
+
+/* Inline overlap/validation error banner inside the shift modal */
+.shift-overlap-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background-color: #fff3f3;
+  border: 1px solid #ffb3b3;
+  border-left: 4px solid #e53935;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: #c62828;
+  line-height: 1.5;
+  animation: shake 0.3s ease-in-out;
+}
+
+.shift-overlap-icon {
+  flex-shrink: 0;
+  font-size: 15px;
+  margin-top: 1px;
+}
+
+@keyframes shake {
+  0%   { transform: translateX(0); }
+  20%  { transform: translateX(-4px); }
+  40%  { transform: translateX(4px); }
+  60%  { transform: translateX(-3px); }
+  80%  { transform: translateX(3px); }
+  100% { transform: translateX(0); }
 }
 
 /* Custom Modal Styles */
