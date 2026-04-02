@@ -105,16 +105,6 @@ const DashboardHeader = () => {
                 </div>
             </div>
 
-            <div className="header-section center">
-                <input type="text"
-                    className="search-bar"
-                    placeholder="Search"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onKeyDown={handleSearchKeyDown}
-                />
-            </div>
-
             <div className="header-section right">
                 <div className="user-menu">
                     <div className="user-info" onClick={toggleDropdown}>

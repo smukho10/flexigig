@@ -22,6 +22,10 @@
   .header-section {
     display: flex;
 
+    &.left {
+        flex: 1;
+    }
+
     &.logo {
         display: flex;
         align-items: center;
