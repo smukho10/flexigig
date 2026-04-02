@@ -21,7 +21,6 @@ const WorkerBoard = () => {
   const [workers, setWorkers] = useState([]);
   const [skills, setSkills] = useState([]);
   const [jobs, setJobs] = useState([]);
-  const [selectedJobId, setSelectedJobId] = useState("");
   const [selectedSkill, setSelectedSkill] = useState("");
   const [selectedRating, setSelectedRating] = useState("");
   const [selectedDistance, setSelectedDistance] = useState("");
@@ -31,14 +30,19 @@ const WorkerBoard = () => {
   const [loading, setLoading] = useState(true);
   const [jobsLoading, setJobsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [useCustomAddress, setUseCustomAddress] = useState(false);
+  const [customStreetAddress, setCustomStreetAddress] = useState("");
+  const [customCity, setCustomCity] = useState("");
+  const [customProvince, setCustomProvince] = useState("");
+  const [customPostalCode, setCustomPostalCode] = useState("");
 
   const distanceOptions = [
     { label: "10 miles", km: 16.09 },
     { label: "20 miles", km: 32.19 },
     { label: "30 miles", km: 48.28 },
     { label: "50 miles", km: 80.47 },
-    { label: "75 miles", km: 120.70 },
-    { label: "100+ miles", km: 160.93 }
+    { label: "75 miles", km: 120.7 },
+    { label: "100 miles", km: 160.93 }
   ];
 
   useEffect(() => {
@@ -68,12 +72,6 @@ const WorkerBoard = () => {
         const fetchedJobs = Array.isArray(jobsRes.data?.jobs) ? jobsRes.data.jobs : [];
 
         setJobs(fetchedJobs);
-
-        if (fetchedJobs.length > 0) {
-          setSelectedJobId((prev) => prev || String(fetchedJobs[0].job_id));
-        } else {
-          setSelectedJobId("");
-        }
       } catch (err) {
         console.error("Error fetching posted jobs:", err);
         setJobs([]);
@@ -85,6 +83,16 @@ const WorkerBoard = () => {
     fetchJobs();
   }, [employerId]);
 
+  const defaultOriginJob = jobs.find(
+    (job) =>
+      job.latitude !== null &&
+      job.latitude !== undefined &&
+      job.longitude !== null &&
+      job.longitude !== undefined
+  ) || null;
+
+  const hasDefaultOrigin = !!defaultOriginJob;
+
   useEffect(() => {
     const fetchWorkers = async () => {
       try {
@@ -92,10 +100,6 @@ const WorkerBoard = () => {
         setError("");
 
         const params = {};
-
-        if (selectedJobId) {
-          params.jobId = selectedJobId;
-        }
 
         if (selectedDistance) {
           params.distanceKm = selectedDistance;
@@ -107,6 +111,18 @@ const WorkerBoard = () => {
 
         if (selectedRating) {
           params.rating = selectedRating;
+        }
+
+        if (selectedDistance) {
+          if (useCustomAddress) {
+            if (customStreetAddress) params.streetAddress = customStreetAddress;
+            if (customCity) params.city = customCity;
+            if (customProvince) params.province = customProvince;
+            if (customPostalCode) params.postalCode = customPostalCode;
+          } else if (defaultOriginJob) {
+            params.originLat = defaultOriginJob.latitude;
+            params.originLon = defaultOriginJob.longitude;
+          }
         }
 
         const workersRes = await axios.get("/api/gig-workers", {
@@ -124,16 +140,36 @@ const WorkerBoard = () => {
     };
 
     fetchWorkers();
-  }, [selectedJobId, selectedDistance, selectedSkill, selectedRating]);
+  }, [
+    selectedDistance,
+    selectedSkill,
+    selectedRating,
+    useCustomAddress,
+    customStreetAddress,
+    customCity,
+    customProvince,
+    customPostalCode,
+    defaultOriginJob
+  ]);
 
-  const selectedJob = jobs.find((job) => String(job.job_id) === String(selectedJobId));
+  const canUseDistanceFilter = useCustomAddress
+    ? Boolean(customStreetAddress || customCity || customProvince || customPostalCode)
+    : hasDefaultOrigin;
 
-  const selectedJobHasCoordinates =
-    selectedJob &&
-    selectedJob.latitude !== null &&
-    selectedJob.latitude !== undefined &&
-    selectedJob.longitude !== null &&
-    selectedJob.longitude !== undefined;
+  const getDefaultOriginLabel = () => {
+    if (!defaultOriginJob) {
+      return "No saved business location found.";
+    }
+
+    const parts = [
+      defaultOriginJob.streetaddress || defaultOriginJob.streetAddress,
+      defaultOriginJob.city,
+      defaultOriginJob.province,
+      defaultOriginJob.postalcode || defaultOriginJob.postalCode
+    ].filter(Boolean);
+
+    return parts.length > 0 ? parts.join(", ") : defaultOriginJob.jobtitle || "Saved business location";
+  };
 
   const getWorkerName = (worker) => {
     return [
@@ -210,6 +246,12 @@ const WorkerBoard = () => {
   };
 
   const getWorkerRating = (worker) => {
+    const ratingsCount = Number(worker.ratings_count ?? 0);
+
+    if (ratingsCount === 0) {
+      return null;
+    }
+
     const rating =
       worker.avg_rating ??
       worker.average_rating ??
@@ -221,6 +263,16 @@ const WorkerBoard = () => {
     }
 
     return Number(rating);
+  };
+
+  const getRatingDisplay = (worker) => {
+    const rating = getWorkerRating(worker);
+
+    if (rating === null) {
+      return "Not yet rated";
+    }
+
+    return `${Number(rating).toFixed(1)} stars`;
   };
 
   const getDistanceDisplay = (worker) => {
@@ -267,12 +319,10 @@ const WorkerBoard = () => {
                 {getDistanceDisplay(worker)}
               </div>
             )}
-            {getWorkerRating(worker) !== null && (
-              <div id='workerboard-worker-item'>
-                <img id="workerboard-icons" src={Star} alt="Rating" />
-                {Number(getWorkerRating(worker)).toFixed(1)} stars
-              </div>
-            )}
+            <div id='workerboard-worker-item'>
+              <img id="workerboard-icons" src={Star} alt="Rating" />
+              {getRatingDisplay(worker)}
+            </div>
           </div>
           <div id='workerboard-worker-actions'>
             <img id="workerboard-bookmark" src={Bookmark} alt="Save worker" />
@@ -312,24 +362,94 @@ const WorkerBoard = () => {
               <div id='workerboard-location-popup-inner'>
                 <div id='workerboard-location-popup-title'>LOCATION</div>
 
-                <select
-                  id='workerboard-filter-select'
-                  value={selectedJobId}
-                  onChange={(e) => setSelectedJobId(e.target.value)}
-                >
-                  <option value="">
-                    {jobsLoading ? "Loading jobs..." : "Select Job"}
-                  </option>
-                  {jobs.map((job) => (
-                    <option key={job.job_id} value={job.job_id}>
-                      {job.jobtitle}
-                    </option>
-                  ))}
-                </select>
+                {!jobsLoading && !useCustomAddress && (
+                  <div style={{ marginBottom: "12px" }}>
+                    {hasDefaultOrigin ? (
+                      <>
+                        Using saved business location:
+                        <div style={{ marginTop: "6px", fontWeight: "600" }}>
+                          {getDefaultOriginLabel()}
+                        </div>
+                      </>
+                    ) : (
+                      "No saved business location found. Enter a custom address below."
+                    )}
+                  </div>
+                )}
 
-                {!jobsLoading && jobs.length === 0 && (
-                  <div style={{ marginTop: "10px" }}>
-                    No job postings found.
+                <div
+                  id='workerboard-distance-pill'
+                  onClick={() => setUseCustomAddress((prev) => !prev)}
+                  style={{
+                    marginBottom: "14px",
+                    cursor: "pointer",
+                    fontWeight: useCustomAddress ? "600" : "400"
+                  }}
+                >
+                  {useCustomAddress ? "Use Saved Business Location" : "Use Custom Address"}
+                </div>
+
+                {useCustomAddress && (
+                  <div style={{ marginBottom: "18px" }}>
+                    <input
+                      type="text"
+                      placeholder="Street address"
+                      value={customStreetAddress}
+                      onChange={(e) => setCustomStreetAddress(e.target.value)}
+                      style={{
+                        width: "100%",
+                        height: "40px",
+                        padding: "8px",
+                        borderRadius: "8px",
+                        border: "1px solid #7ad7df",
+                        boxSizing: "border-box",
+                        marginBottom: "10px"
+                      }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="City"
+                      value={customCity}
+                      onChange={(e) => setCustomCity(e.target.value)}
+                      style={{
+                        width: "100%",
+                        height: "40px",
+                        padding: "8px",
+                        borderRadius: "8px",
+                        border: "1px solid #7ad7df",
+                        boxSizing: "border-box",
+                        marginBottom: "10px"
+                      }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Province / State"
+                      value={customProvince}
+                      onChange={(e) => setCustomProvince(e.target.value)}
+                      style={{
+                        width: "100%",
+                        height: "40px",
+                        padding: "8px",
+                        borderRadius: "8px",
+                        border: "1px solid #7ad7df",
+                        boxSizing: "border-box",
+                        marginBottom: "10px"
+                      }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Postal / ZIP code"
+                      value={customPostalCode}
+                      onChange={(e) => setCustomPostalCode(e.target.value)}
+                      style={{
+                        width: "100%",
+                        height: "40px",
+                        padding: "8px",
+                        borderRadius: "8px",
+                        border: "1px solid #7ad7df",
+                        boxSizing: "border-box"
+                      }}
+                    />
                   </div>
                 )}
 
@@ -343,7 +463,7 @@ const WorkerBoard = () => {
                       key={option.label}
                       id='workerboard-distance-pill'
                       onClick={() => {
-                        if (!selectedJobHasCoordinates) {
+                        if (!canUseDistanceFilter) {
                           return;
                         }
 
@@ -352,8 +472,8 @@ const WorkerBoard = () => {
                         setCustomDistance("");
                       }}
                       style={{
-                        cursor: selectedJobHasCoordinates ? "pointer" : "not-allowed",
-                        opacity: selectedJobHasCoordinates ? 1 : 0.5,
+                        cursor: canUseDistanceFilter ? "pointer" : "not-allowed",
+                        opacity: canUseDistanceFilter ? 1 : 0.5,
                         fontWeight: String(selectedDistance) === String(option.km) ? "600" : "400"
                       }}
                     >
@@ -364,7 +484,7 @@ const WorkerBoard = () => {
                   <div
                     id='workerboard-distance-pill'
                     onClick={() => {
-                      if (!selectedJobHasCoordinates) {
+                      if (!canUseDistanceFilter) {
                         return;
                       }
 
@@ -372,8 +492,8 @@ const WorkerBoard = () => {
                       setSelectedDistance("");
                     }}
                     style={{
-                      cursor: selectedJobHasCoordinates ? "pointer" : "not-allowed",
-                      opacity: selectedJobHasCoordinates ? 1 : 0.5,
+                      cursor: canUseDistanceFilter ? "pointer" : "not-allowed",
+                      opacity: canUseDistanceFilter ? 1 : 0.5,
                       fontWeight: isCustomDistance ? "600" : "400"
                     }}
                   >
@@ -384,24 +504,36 @@ const WorkerBoard = () => {
                 {isCustomDistance && (
                   <div style={{ marginTop: "12px" }}>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       placeholder="Enter miles"
                       value={customDistance}
-                      onChange={(e) => setCustomDistance(e.target.value)}
+                      onChange={(e) => {
+                        const cleaned = e.target.value.replace(/[^0-9.]/g, "");
+                        const parts = cleaned.split(".");
+                        const normalized =
+                          parts.length > 2
+                            ? `${parts[0]}.${parts.slice(1).join("")}`
+                            : cleaned;
+                        setCustomDistance(normalized);
+                      }}
                       style={{
                         width: "100%",
                         height: "40px",
                         padding: "8px",
                         borderRadius: "8px",
-                        border: "1px solid #7ad7df"
+                        border: "1px solid #7ad7df",
+                        boxSizing: "border-box"
                       }}
                     />
                   </div>
                 )}
 
-                {selectedJobId && !selectedJobHasCoordinates && (
+                {!canUseDistanceFilter && (
                   <div style={{ marginTop: "12px" }}>
-                    This selected job does not have a geocoded address yet.
+                    {useCustomAddress
+                      ? "Enter an address to use distance filtering."
+                      : "No saved business location is available yet. Switch to custom address to filter by distance."}
                   </div>
                 )}
 
@@ -412,7 +544,11 @@ const WorkerBoard = () => {
                       setSelectedDistance("");
                       setCustomDistance("");
                       setIsCustomDistance(false);
-                      setSelectedJobId(jobs.length > 0 ? String(jobs[0].job_id) : "");
+                      setUseCustomAddress(false);
+                      setCustomStreetAddress("");
+                      setCustomCity("");
+                      setCustomProvince("");
+                      setCustomPostalCode("");
                     }}
                     style={{ cursor: "pointer" }}
                   >
@@ -423,8 +559,11 @@ const WorkerBoard = () => {
                     id='workerboard-location-apply'
                     onClick={() => {
                       if (isCustomDistance && customDistance) {
-                        const km = Number(customDistance) * 1.60934;
-                        setSelectedDistance(String(km));
+                        const miles = Number(customDistance);
+                        if (!Number.isNaN(miles) && miles > 0) {
+                          const km = miles * 1.60934;
+                          setSelectedDistance(String(km));
+                        }
                       }
                       setShowLocationFilter(false);
                     }}
@@ -472,7 +611,11 @@ const WorkerBoard = () => {
             setSelectedDistance("");
             setCustomDistance("");
             setIsCustomDistance(false);
-            setSelectedJobId(jobs.length > 0 ? String(jobs[0].job_id) : "");
+            setUseCustomAddress(false);
+            setCustomStreetAddress("");
+            setCustomCity("");
+            setCustomProvince("");
+            setCustomPostalCode("");
           }}
           style={{ cursor: "pointer" }}
         >

@@ -6,7 +6,7 @@ const fetchWorkers = () => {
       w.*,
       l.city,
       l.province,
-      COALESCE(r.avg_rating, 0) AS avg_rating,
+      r.avg_rating AS avg_rating,
       COALESCE(r.ratings_count, 0) AS ratings_count,
       COALESCE(
         ARRAY(
@@ -67,17 +67,40 @@ const fetchWorkers = () => {
     });
 }
 
-const fetchWorkersForBoard = ({ jobId, distanceKm, skill, rating }) => {
+const fetchWorkersForBoard = ({ jobId, distanceKm, skill, rating, originLat, originLon }) => {
   const conditions = [];
   const params = [];
   let paramIndex = 1;
 
+  const hasCustomOrigin =
+    originLat !== null &&
+    originLat !== undefined &&
+    originLon !== null &&
+    originLon !== undefined;
+
+  let jobIdParamIndex = null;
+  let originLatParamIndex = null;
+  let originLonParamIndex = null;
+
+  if (jobId) {
+    jobIdParamIndex = paramIndex;
+    params.push(jobId);
+    paramIndex++;
+  }
+
+  if (hasCustomOrigin) {
+    originLatParamIndex = paramIndex;
+    params.push(originLat);
+    paramIndex++;
+    originLonParamIndex = paramIndex;
+    params.push(originLon);
+    paramIndex++;
+  }
+
   conditions.push(`1=1`);
 
   if (jobId) {
-    conditions.push(`jp.job_id = $${paramIndex}`);
-    params.push(jobId);
-    paramIndex++;
+    conditions.push(`jp.job_id = $${jobIdParamIndex}`);
   }
 
   if (skill) {
@@ -98,53 +121,94 @@ const fetchWorkersForBoard = ({ jobId, distanceKm, skill, rating }) => {
     const ratingValue = parseFloat(rating);
 
     if (ratingValue === 5) {
-      conditions.push(`COALESCE(r.avg_rating, 0) >= $${paramIndex}`);
+      conditions.push(`r.avg_rating >= $${paramIndex}`);
       params.push(5);
       paramIndex++;
     } else {
-      conditions.push(`COALESCE(r.avg_rating, 0) >= $${paramIndex}`);
+      conditions.push(`r.avg_rating >= $${paramIndex}`);
       params.push(ratingValue);
       paramIndex++;
 
-      conditions.push(`COALESCE(r.avg_rating, 0) < $${paramIndex}`);
+      conditions.push(`r.avg_rating < $${paramIndex}`);
       params.push(ratingValue + 1);
       paramIndex++;
     }
   }
 
-  if (jobId && distanceKm) {
-    conditions.push(`jl.latitude IS NOT NULL`);
-    conditions.push(`jl.longitude IS NOT NULL`);
-    conditions.push(`wl.latitude IS NOT NULL`);
-    conditions.push(`wl.longitude IS NOT NULL`);
-    conditions.push(`
-      (
-        6371 * acos(
-          LEAST(
-            1,
-            GREATEST(
-              -1,
-              cos(radians(jl.latitude)) *
-              cos(radians(wl.latitude)) *
-              cos(radians(wl.longitude) - radians(jl.longitude)) +
-              sin(radians(jl.latitude)) *
-              sin(radians(wl.latitude))
+  if (distanceKm) {
+    if (hasCustomOrigin) {
+      conditions.push(`wl.latitude IS NOT NULL`);
+      conditions.push(`wl.longitude IS NOT NULL`);
+      conditions.push(`
+        (
+          6371 * acos(
+            LEAST(
+              1,
+              GREATEST(
+                -1,
+                cos(radians($${originLatParamIndex})) *
+                cos(radians(wl.latitude)) *
+                cos(radians(wl.longitude) - radians($${originLonParamIndex})) +
+                sin(radians($${originLatParamIndex})) *
+                sin(radians(wl.latitude))
+              )
+            )
+          )
+        ) <= $${paramIndex}
+      `);
+      params.push(distanceKm);
+      paramIndex++;
+    } else if (jobId) {
+      conditions.push(`jl.latitude IS NOT NULL`);
+      conditions.push(`jl.longitude IS NOT NULL`);
+      conditions.push(`wl.latitude IS NOT NULL`);
+      conditions.push(`wl.longitude IS NOT NULL`);
+      conditions.push(`
+        (
+          6371 * acos(
+            LEAST(
+              1,
+              GREATEST(
+                -1,
+                cos(radians(jl.latitude)) *
+                cos(radians(wl.latitude)) *
+                cos(radians(wl.longitude) - radians(jl.longitude)) +
+                sin(radians(jl.latitude)) *
+                sin(radians(wl.latitude))
+              )
+            )
+          )
+        ) <= $${paramIndex}
+      `);
+      params.push(distanceKm);
+      paramIndex++;
+    }
+  }
+
+  const distanceExpression = hasCustomOrigin
+    ? `
+      CASE
+        WHEN wl.latitude IS NOT NULL
+          AND wl.longitude IS NOT NULL
+        THEN (
+          6371 * acos(
+            LEAST(
+              1,
+              GREATEST(
+                -1,
+                cos(radians($${originLatParamIndex})) *
+                cos(radians(wl.latitude)) *
+                cos(radians(wl.longitude) - radians($${originLonParamIndex})) +
+                sin(radians($${originLatParamIndex})) *
+                sin(radians(wl.latitude))
+              )
             )
           )
         )
-      ) <= $${paramIndex}
-    `);
-    params.push(distanceKm);
-    paramIndex++;
-  }
-
-  const query = `
-    SELECT
-      w.*,
-      wl.city,
-      wl.province,
-      COALESCE(r.avg_rating, 0) AS avg_rating,
-      COALESCE(r.ratings_count, 0) AS ratings_count,
+        ELSE NULL
+      END
+    `
+    : `
       CASE
         WHEN jl.latitude IS NOT NULL
           AND jl.longitude IS NOT NULL
@@ -166,7 +230,17 @@ const fetchWorkersForBoard = ({ jobId, distanceKm, skill, rating }) => {
           )
         )
         ELSE NULL
-      END AS distance_km,
+      END
+    `;
+
+  const query = `
+    SELECT
+      w.*,
+      wl.city,
+      wl.province,
+      r.avg_rating AS avg_rating,
+      COALESCE(r.ratings_count, 0) AS ratings_count,
+      ${distanceExpression} AS distance_km,
       COALESCE(
         ARRAY(
           SELECT DISTINCT s.skill_name
@@ -213,35 +287,14 @@ const fetchWorkersForBoard = ({ jobId, distanceKm, skill, rating }) => {
     ) r
       ON r.reviewee_id = w.user_id
     LEFT JOIN jobpostings jp
-      ON jp.job_id = ${jobId ? `$1` : `NULL`}
+      ON ${jobId ? `jp.job_id = $${jobIdParamIndex}` : `FALSE`}
     LEFT JOIN locations jl
       ON jp.location_id = jl.location_id
     WHERE ${conditions.join(' AND ')}
     ORDER BY
       CASE
-        WHEN ${jobId && distanceKm ? 'TRUE' : 'FALSE'} THEN
-          CASE
-            WHEN jl.latitude IS NOT NULL
-              AND jl.longitude IS NOT NULL
-              AND wl.latitude IS NOT NULL
-              AND wl.longitude IS NOT NULL
-            THEN (
-              6371 * acos(
-                LEAST(
-                  1,
-                  GREATEST(
-                    -1,
-                    cos(radians(jl.latitude)) *
-                    cos(radians(wl.latitude)) *
-                    cos(radians(wl.longitude) - radians(jl.longitude)) +
-                    sin(radians(jl.latitude)) *
-                    sin(radians(wl.latitude))
-                  )
-                )
-              )
-            )
-            ELSE NULL
-          END
+        WHEN ${distanceKm && (hasCustomOrigin || jobId) ? 'TRUE' : 'FALSE'} THEN
+          ${distanceExpression}
         ELSE NULL
       END ASC NULLS LAST,
       w.id;

@@ -327,6 +327,28 @@
     box-sizing: border-box;
 }
 
+#workerboard-location-popup-inner input {
+    font-size: 14px;
+    color: #273240;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#workerboard-location-popup-inner input:focus {
+    border-color: #4EBBC2 !important;
+    box-shadow: 0 0 0 3px rgba(78, 187, 194, 0.14);
+}
+
+#workerboard-location-popup-inner input[type="number"]::-webkit-outer-spin-button,
+#workerboard-location-popup-inner input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+#workerboard-location-popup-inner input[type="number"] {
+    -moz-appearance: textfield;
+}
+
 #workerboard-location-popup-title {
     color: #4EBBC2;
     font-size: 22px;
@@ -357,6 +379,7 @@
     background-color: #ffffff;
     box-sizing: border-box;
     transition: all 0.2s ease;
+    text-align: center;
 }
 
 #workerboard-distance-pill:hover {

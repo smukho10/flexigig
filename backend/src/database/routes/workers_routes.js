@@ -2,19 +2,67 @@ const express = require('express');
 const router = express.Router();
 const workers_queries = require("../queries/workers_queries.js");
 const db = require('../connection.js');
+const { geocodeAddress } = require("../../services/geocodingService");
+
+const buildFullAddress = ({ streetAddress, city, province, postalCode }) => {
+  const parts = [streetAddress, city, province, postalCode].filter(Boolean);
+  return parts.length > 0 ? parts.join(', ') : null;
+};
 
 router.get('/gig-workers', async (req, res) => {
   try {
-    const { jobId, distanceKm, skill, rating } = req.query;
+    const {
+      jobId,
+      distanceKm,
+      skill,
+      rating,
+      originLat,
+      originLon,
+      streetAddress,
+      city,
+      province,
+      postalCode
+    } = req.query;
+
+    let parsedOriginLat = originLat !== undefined && originLat !== '' ? parseFloat(originLat) : null;
+    let parsedOriginLon = originLon !== undefined && originLon !== '' ? parseFloat(originLon) : null;
+
+    if (
+      (parsedOriginLat === null || parsedOriginLon === null) &&
+      (streetAddress || city || province || postalCode)
+    ) {
+      const fullAddress = buildFullAddress({
+        streetAddress,
+        city,
+        province,
+        postalCode
+      });
+
+      if (fullAddress) {
+        const geocoded = await geocodeAddress(fullAddress);
+        if (geocoded) {
+          parsedOriginLat = geocoded.latitude;
+          parsedOriginLon = geocoded.longitude;
+        }
+      }
+    }
 
     let workers;
 
-    if (jobId || distanceKm || skill || rating) {
+    if (
+      jobId ||
+      distanceKm ||
+      skill ||
+      rating ||
+      (parsedOriginLat !== null && parsedOriginLon !== null)
+    ) {
       workers = await workers_queries.fetchWorkersForBoard({
         jobId: jobId ? parseInt(jobId, 10) : null,
         distanceKm: distanceKm ? parseFloat(distanceKm) : null,
         skill: skill || null,
-        rating: rating ? parseFloat(rating) : null
+        rating: rating ? parseFloat(rating) : null,
+        originLat: parsedOriginLat,
+        originLon: parsedOriginLon
       });
     } else {
       workers = await workers_queries.fetchWorkers();
