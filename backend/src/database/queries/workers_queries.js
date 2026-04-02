@@ -6,7 +6,7 @@ const fetchWorkers = () => {
       w.*,
       l.city,
       l.province,
-      COALESCE(r.avg_rating, 0) AS avg_rating,
+      r.avg_rating AS avg_rating,
       COALESCE(r.ratings_count, 0) AS ratings_count,
       COALESCE(
         ARRAY(
@@ -63,6 +63,278 @@ const fetchWorkers = () => {
     })
     .catch((err) => {
       console.error("Error fetching workers:", err);
+      throw err;
+    });
+}
+
+const fetchWorkersForBoard = ({ jobId, distanceKm, skill, rating, originLat, originLon }) => {
+  const conditions = [];
+  const params = [];
+  let paramIndex = 1;
+
+  const normalizedJobId =
+    jobId !== null && jobId !== undefined && jobId !== '' && !Number.isNaN(Number(jobId))
+      ? parseInt(jobId, 10)
+      : null;
+
+  const normalizedDistanceKm =
+    distanceKm !== null && distanceKm !== undefined && distanceKm !== '' && !Number.isNaN(Number(distanceKm))
+      ? parseFloat(distanceKm)
+      : null;
+
+  const normalizedSkill =
+    typeof skill === 'string' && skill.trim() !== ''
+      ? skill.trim()
+      : null;
+
+  const normalizedRating =
+    rating !== null && rating !== undefined && rating !== '' && !Number.isNaN(Number(rating))
+      ? parseFloat(rating)
+      : null;
+
+  const normalizedOriginLat =
+    originLat !== null && originLat !== undefined && originLat !== '' && !Number.isNaN(Number(originLat))
+      ? parseFloat(originLat)
+      : null;
+
+  const normalizedOriginLon =
+    originLon !== null && originLon !== undefined && originLon !== '' && !Number.isNaN(Number(originLon))
+      ? parseFloat(originLon)
+      : null;
+
+  const hasCustomOrigin =
+    normalizedOriginLat !== null &&
+    normalizedOriginLon !== null;
+
+  let jobIdParamIndex = null;
+  let originLatParamIndex = null;
+  let originLonParamIndex = null;
+
+  if (normalizedJobId !== null) {
+    jobIdParamIndex = paramIndex;
+    params.push(normalizedJobId);
+    paramIndex++;
+  }
+
+  if (hasCustomOrigin) {
+    originLatParamIndex = paramIndex;
+    params.push(normalizedOriginLat);
+    paramIndex++;
+    originLonParamIndex = paramIndex;
+    params.push(normalizedOriginLon);
+    paramIndex++;
+  }
+
+  conditions.push(`1=1`);
+
+  if (normalizedJobId !== null) {
+    conditions.push(`jp.job_id = $${jobIdParamIndex}`);
+  }
+
+  if (normalizedSkill !== null) {
+    conditions.push(`
+      EXISTS (
+        SELECT 1
+        FROM workers_skills ws_filter
+        INNER JOIN skills s_filter ON ws_filter.skill_id = s_filter.skill_id
+        WHERE ws_filter.workers_id = w.id
+          AND LOWER(TRIM(s_filter.skill_name)) = LOWER(TRIM($${paramIndex}))
+      )
+    `);
+    params.push(normalizedSkill);
+    paramIndex++;
+  }
+
+  if (normalizedRating !== null) {
+    conditions.push(`COALESCE(r.ratings_count, 0) > 0`);
+
+    if (normalizedRating === 5) {
+      conditions.push(`r.avg_rating >= $${paramIndex}`);
+      params.push(5);
+      paramIndex++;
+    } else {
+      conditions.push(`r.avg_rating >= $${paramIndex}`);
+      params.push(normalizedRating);
+      paramIndex++;
+
+      conditions.push(`r.avg_rating < $${paramIndex}`);
+      params.push(normalizedRating + 1);
+      paramIndex++;
+    }
+  }
+
+  if (normalizedDistanceKm !== null) {
+    if (hasCustomOrigin) {
+      conditions.push(`wl.latitude IS NOT NULL`);
+      conditions.push(`wl.longitude IS NOT NULL`);
+      conditions.push(`
+        (
+          6371 * acos(
+            LEAST(
+              1,
+              GREATEST(
+                -1,
+                cos(radians($${originLatParamIndex})) *
+                cos(radians(wl.latitude)) *
+                cos(radians(wl.longitude) - radians($${originLonParamIndex})) +
+                sin(radians($${originLatParamIndex})) *
+                sin(radians(wl.latitude))
+              )
+            )
+          )
+        ) <= $${paramIndex}
+      `);
+      params.push(normalizedDistanceKm);
+      paramIndex++;
+    } else if (normalizedJobId !== null) {
+      conditions.push(`jl.latitude IS NOT NULL`);
+      conditions.push(`jl.longitude IS NOT NULL`);
+      conditions.push(`wl.latitude IS NOT NULL`);
+      conditions.push(`wl.longitude IS NOT NULL`);
+      conditions.push(`
+        (
+          6371 * acos(
+            LEAST(
+              1,
+              GREATEST(
+                -1,
+                cos(radians(jl.latitude)) *
+                cos(radians(wl.latitude)) *
+                cos(radians(wl.longitude) - radians(jl.longitude)) +
+                sin(radians(jl.latitude)) *
+                sin(radians(wl.latitude))
+              )
+            )
+          )
+        ) <= $${paramIndex}
+      `);
+      params.push(normalizedDistanceKm);
+      paramIndex++;
+    }
+  }
+
+  const distanceExpression = hasCustomOrigin
+    ? `
+      CASE
+        WHEN wl.latitude IS NOT NULL
+          AND wl.longitude IS NOT NULL
+        THEN (
+          6371 * acos(
+            LEAST(
+              1,
+              GREATEST(
+                -1,
+                cos(radians($${originLatParamIndex})) *
+                cos(radians(wl.latitude)) *
+                cos(radians(wl.longitude) - radians($${originLonParamIndex})) +
+                sin(radians($${originLatParamIndex})) *
+                sin(radians(wl.latitude))
+              )
+            )
+          )
+        )
+        ELSE NULL
+      END
+    `
+    : `
+      CASE
+        WHEN jl.latitude IS NOT NULL
+          AND jl.longitude IS NOT NULL
+          AND wl.latitude IS NOT NULL
+          AND wl.longitude IS NOT NULL
+        THEN (
+          6371 * acos(
+            LEAST(
+              1,
+              GREATEST(
+                -1,
+                cos(radians(jl.latitude)) *
+                cos(radians(wl.latitude)) *
+                cos(radians(wl.longitude) - radians(jl.longitude)) +
+                sin(radians(jl.latitude)) *
+                sin(radians(wl.latitude))
+              )
+            )
+          )
+        )
+        ELSE NULL
+      END
+    `;
+
+  const query = `
+    SELECT
+      w.*,
+      wl.city,
+      wl.province,
+      r.avg_rating AS avg_rating,
+      COALESCE(r.ratings_count, 0) AS ratings_count,
+      ${distanceExpression} AS distance_km,
+      COALESCE(
+        ARRAY(
+          SELECT DISTINCT s.skill_name
+          FROM workers_skills ws
+          INNER JOIN skills s ON ws.skill_id = s.skill_id
+          WHERE ws.workers_id = w.id
+          ORDER BY s.skill_name
+        ),
+        ARRAY[]::text[]
+      ) AS skills,
+      COALESCE(
+        ARRAY(
+          SELECT DISTINCT e.experience_name
+          FROM workers_experiences we
+          INNER JOIN experiences e ON we.experience_id = e.experience_id
+          WHERE we.workers_id = w.id
+          ORDER BY e.experience_name
+        ),
+        ARRAY[]::text[]
+      ) AS experiences,
+      COALESCE(
+        ARRAY(
+          SELECT DISTINCT t.trait_name
+          FROM workers_traits wt
+          INNER JOIN traits t ON wt.trait_id = t.trait_id
+          WHERE wt.workers_id = w.id
+          ORDER BY t.trait_name
+        ),
+        ARRAY[]::text[]
+      ) AS traits
+    FROM workers w
+    LEFT JOIN users u
+      ON w.user_id = u.id
+    LEFT JOIN locations wl
+      ON u.user_address = wl.location_id
+    LEFT JOIN (
+      SELECT
+        reviewee_id,
+        AVG(rating) AS avg_rating,
+        COUNT(rating) AS ratings_count
+      FROM reviews
+      WHERE rating IS NOT NULL
+      GROUP BY reviewee_id
+    ) r
+      ON r.reviewee_id = w.user_id
+    LEFT JOIN jobpostings jp
+      ON ${normalizedJobId !== null ? `jp.job_id = $${jobIdParamIndex}` : `FALSE`}
+    LEFT JOIN locations jl
+      ON jp.location_id = jl.location_id
+    WHERE ${conditions.join(' AND ')}
+    ORDER BY
+      CASE
+        WHEN ${normalizedDistanceKm !== null && (hasCustomOrigin || normalizedJobId !== null) ? 'TRUE' : 'FALSE'} THEN
+          ${distanceExpression}
+        ELSE NULL
+      END ASC NULLS LAST,
+      w.id;
+  `
+
+  return db
+    .query(query, params)
+    .then((result) => {
+      return result.rows;
+    })
+    .catch((err) => {
+      console.error("Error fetching workers for board:", err);
       throw err;
     });
 }
@@ -303,6 +575,7 @@ const getWorkerTraitsWithId = (workersId) => {
 
 module.exports = {
   fetchWorkers,
+  fetchWorkersForBoard,
   getAllSkills,
   getAllExperiences,
   getAllTraits,
