@@ -755,7 +755,7 @@ router.get('/notifications/:userId', async (req, res) => {
 
   try {
     const notifications = await user_queries.getNotifications(userId);
-
+    console.log(notifications);
     // Attempt to resolve R2 signed photo URLs for each sender
     for (const notif of notifications) {
       if (notif.sender_photo_key) {
