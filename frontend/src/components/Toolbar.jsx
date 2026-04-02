@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "react-router-dom";
+import axios from "axios";
 import EnvelopeIcon from "../assets/images/EnvelopeIcon.png";
 import CalendarIcon from "../assets/images/CalendarIcon.png";
 import MessagesIcon from "../assets/images/ChatIcon.png";
@@ -13,6 +14,31 @@ import "../styles/Toolbar.scss";
 const Toolbar = () => {
   const { user } = useUser();
   const location = useLocation();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const fetchUnreadCount = useCallback(() => {
+    if (!user?.id) return;
+    axios
+      .get(`/api/unread-count/${user.id}`, { withCredentials: true })
+      .then((res) => setUnreadCount(res.data.unreadCount || 0))
+      .catch(() => setUnreadCount(0));
+  }, [user?.id]);
+
+  useEffect(() => {
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, [fetchUnreadCount]);
+
+  // Listen for notificationsRead event
+  useEffect(() => {
+    const handleNotificationsRead = () => {
+      setUnreadCount(0);
+      setTimeout(fetchUnreadCount, 500);
+    };
+    window.addEventListener("notificationsRead", handleNotificationsRead);
+    return () => window.removeEventListener("notificationsRead", handleNotificationsRead);
+  }, [fetchUnreadCount]);
 
   if (!user) {
     return (
@@ -35,9 +61,12 @@ const Toolbar = () => {
           <img src={HomeIcon} alt="Home" className="toolbar-icon" />
           <p>Home</p>
         </Link>
-        <Link to="/notifications" className={isActive("/notifications") ? "active" : ""}>
+        <Link to="/notifications" className={`${isActive("/notifications") ? "active" : ""} toolbar-notifications-link`}>
           <img src={EnvelopeIcon} alt="Notifications" className="toolbar-icon" />
           <p>Notifications</p>
+          {unreadCount > 0 && (
+            <span className="toolbar-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+          )}
         </Link>
         <Link to="/messages" className={isActive("/messages") ? "active" : ""}>
           <img src={MessagesIcon} alt="Messages" className="toolbar-icon" />
