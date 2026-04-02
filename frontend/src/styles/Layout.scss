@@ -12,14 +12,13 @@
   overflow: hidden; // prevents second scrollbar on the wrapper
 }
 
-.toolbar {
+.sidebar-wrapper {
   width: 240px;
   position: fixed;
   top: 60px;
   left: 0;
   bottom: 0;
   z-index: 9;
-  padding-top: 15px;
   overflow: hidden;
 }
 
@@ -36,22 +35,21 @@
 /* ── Mobile / Tablet (≤ 768px) ── */
 @media (max-width: 768px) {
   /* Completely remove sidebar from layout — no space taken, no transform tricks */
-  .toolbar {
+  .sidebar-wrapper {
     display: none;
   }
 
   /* Slide-in overlay when hamburger is open */
-  .toolbar.mobile-open {
-    display: flex;
+  .sidebar-wrapper.mobile-open {
+    display: block;
     position: fixed;
     left: 0;
     top: 0;
     bottom: 0;
     width: 260px;
     z-index: 99;
-    padding-top: 70px;
-    box-shadow: 2px 0 16px rgba(0, 0, 0, 0.18);
     overflow-y: auto;
+    overflow-x: hidden;
   }
 
   /* Semi-transparent backdrop behind the open drawer */

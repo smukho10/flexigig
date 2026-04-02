@@ -12,7 +12,7 @@ const Layout = () => {
     <div className="layout-container">
       <DashboardHeader onMenuToggle={() => setMobileNavOpen(prev => !prev)} />
       <div className="main-content">
-        <div className={`toolbar${mobileNavOpen ? " mobile-open" : ""}`}>
+        <div className={`sidebar-wrapper${mobileNavOpen ? " mobile-open" : ""}`}>
           <Toolbar onLinkClick={() => setMobileNavOpen(false)} />
         </div>
         {mobileNavOpen && (
