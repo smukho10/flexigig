@@ -10,7 +10,7 @@ import { useWorker } from './WorkerContext';
 import { useBusiness } from './BusinessContext';
 import { useNavigate } from "react-router-dom";
 
-const DashboardHeader = () => {
+const DashboardHeader = ({ onMenuToggle }) => {
 
     const { user } = useUser();
     const { worker } = useWorker();
@@ -95,6 +95,10 @@ const DashboardHeader = () => {
 
     return (
         <div className="dashboard-header">
+            <button className="hamburger-btn" onClick={onMenuToggle} aria-label="Open navigation menu">
+                <span></span><span></span><span></span>
+            </button>
+
             <div className="header-section left">
                 <div className="logo">
                     <img src={flexygig} alt="Flexygig Logo" className="logo-img" />

@@ -81,3 +81,25 @@
     background-color: #9CA3AF !important;
     cursor: not-allowed;
 }
+
+/* ════════════════════════════════════════════
+   RESPONSIVE — Mobile (≤ 480px)
+════════════════════════════════════════════ */
+@media (max-width: 480px) {
+    .account-selection-container {
+        padding: 40px 20px;
+        box-sizing: border-box;
+        height: auto;
+        min-height: 100vh;
+    }
+
+    .account-button {
+        width: 100%;
+        max-width: 300px;
+    }
+
+    .account-selection-buttons {
+        width: 100%;
+        align-items: center;
+    }
+}

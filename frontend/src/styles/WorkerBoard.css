@@ -541,3 +541,43 @@
         width: 100%;
     }
 }
+
+/* ════════════════════════════════════════════
+   RESPONSIVE — Mobile (≤ 480px)
+════════════════════════════════════════════ */
+@media (max-width: 480px) {
+    #workerboard-content {
+        padding: 12px;
+    }
+
+    #workerboard-worker {
+        padding: 16px;
+        border-radius: 14px;
+    }
+
+    #workerboard-worker-name {
+        font-size: 15pt;
+    }
+
+    #workerboard-worker-title-wrap {
+        gap: 8px;
+    }
+
+    .workerboard-avatar {
+        width: 38px;
+        height: 38px;
+    }
+
+    #workerboard-extra-filters {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    #workerboard-filter-select {
+        min-width: 100%;
+    }
+
+    #workerboard-actions-button {
+        font-size: 13px;
+    }
+}

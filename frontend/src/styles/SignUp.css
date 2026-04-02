@@ -123,3 +123,30 @@
     border-radius: 4px;
     background-color: #022B7F;
 }
+
+
+/* ════════════════════════════════════════════
+   RESPONSIVE — Mobile (≤ 480px)
+════════════════════════════════════════════ */
+@media (max-width: 480px) {
+    .sign-up-container {
+        padding: 0 20px;
+        box-sizing: border-box;
+        width: 100%;
+    }
+
+    .sign-up-container #next-start,
+    .sign-up-container #next,
+    .sign-up-container #finish {
+        width: 100%;
+        max-width: 442px;
+    }
+
+    .sign-up-container progress {
+        width: 80%;
+    }
+
+    .sign-up-container .other-links .terms {
+        width: auto;
+    }
+}

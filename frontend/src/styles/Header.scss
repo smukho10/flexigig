@@ -203,14 +203,18 @@
   }
 
   .menu {
-      width: 1400px;
+      width: 100%;
+      max-width: 1400px;
       padding-top: 10px;
       padding-bottom: 10px;
       display: flex;
       justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
       font-weight: 300;
       color: gray;
       font-family: 'Montserrat', 'sans-serif';
+      box-sizing: border-box;
 
       .menulink {
           &:hover {
@@ -220,33 +224,43 @@
           }
       }
   }
+
   @media (max-width: 768px) {
-    .navbar {
-      padding: 15px 10px;
-      .container {
-        flex-direction: column;
-        align-items: center;
-      }
-      .navbarsearch input {
-        width: 100%; 
-        max-width: none; 
-      }
-      .links {
-        flex-direction: column;
-        gap: 15px; 
-      }
+    .container {
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+    }
+
+    .navbarsearch input {
+      width: 100%;
+      max-width: none;
+    }
+
+    .links {
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .menu {
+      display: none;
     }
   }
 
   @media (max-width: 480px) {
-    .navbar .logo {
-      font-size: 20px; 
+    .logo {
+      font-size: 22px;
     }
+
     .navbarsearch input {
-      width: 90%; 
+      width: 100%;
     }
-    .links button, .links a {
-      font-size: 14px; 
+
+    .links button,
+    .links a {
+      font-size: 14px;
     }
   }
 }

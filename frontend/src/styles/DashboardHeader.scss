@@ -206,6 +206,68 @@
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.1); }
   }
+
+/* ── Hamburger button (mobile only) ── */
+.hamburger-btn {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 6px;
+
+  span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background-color: #273240;
+    border-radius: 2px;
+    transition: background-color 0.2s;
+  }
+
+  &:hover span {
+    background-color: #4EBBC2;
+  }
+}
+
+/* ── Mobile / Tablet (≤ 768px) ── */
+@media (max-width: 768px) {
+  .hamburger-btn {
+    display: flex;
+  }
+
+  .dashboard-header {
+    padding: 8px 12px;
+  }
+
+  .header-section.center {
+    display: none;
+  }
+
+  .logo-name {
+    font-size: 1.3rem;
+  }
+
+  .header-section.right {
+    max-width: none;
+    margin-right: 4px;
+  }
+
+  .user-name {
+    display: none;
+  }
+
+  .dropdown-menu {
+    right: 0;
+  }
+}
   
   .dropdown-menu {
     .logout-button {
