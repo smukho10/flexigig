@@ -623,3 +623,78 @@
     color: #9ca3af;
     font-style: italic;
 }
+
+
+/* ════════════════════════════════════════════
+   RESPONSIVE — Tablet (≤ 900px)
+════════════════════════════════════════════ */
+@media (max-width: 900px) {
+    .gig-item {
+        width: 100%;
+    }
+}
+
+/* ════════════════════════════════════════════
+   RESPONSIVE — Mobile (≤ 768px)
+════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    .gig-item {
+        width: 100%;
+    }
+
+    .mg-search-input {
+        width: 100%;
+    }
+
+    /* Gig card top section stacks */
+    .gig-item .top {
+        flex-direction: column;
+    }
+
+    .gig-item .top .top-left {
+        padding: 20px 20px 12px;
+    }
+
+    .gig-item .top .top-right {
+        padding: 12px 20px 20px;
+        border-top: 0.5px solid #C8CBD9;
+        justify-content: flex-start;
+        gap: 12px;
+    }
+
+    /* Gig card bottom section stacks */
+    .gig-item .bottom {
+        flex-direction: column;
+    }
+
+    .gig-item .bottom .bottom-left {
+        min-width: 100%;
+        border-right: none;
+        border-bottom: 0.5px solid #C8CBD9;
+        padding: 20px;
+    }
+
+    .gig-item .bottom .bottom-right {
+        min-width: 100%;
+        max-height: none;
+        padding: 20px;
+        overflow-y: visible;
+    }
+
+    .gig-item .bottom .bottom-left .details-div {
+        height: auto;
+        margin-bottom: 24px;
+    }
+
+    /* Review modal */
+    .review-modal {
+        min-width: auto;
+        width: 92vw;
+        max-width: 92vw;
+        padding: 24px 20px;
+    }
+
+    .gig-rating-label {
+        min-width: 120px;
+    }
+}

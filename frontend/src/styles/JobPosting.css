@@ -703,3 +703,111 @@
 }
 
 
+/* ════════════════════════════════════════════
+   RESPONSIVE — Tablet (≤ 900px)
+════════════════════════════════════════════ */
+@media (max-width: 900px) {
+    .job-posting-container ul li,
+    .job-posting-form-container,
+    .empty-tab {
+        width: 100%;
+    }
+}
+
+/* ════════════════════════════════════════════
+   RESPONSIVE — Mobile (≤ 768px)
+════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    /* Job cards stack vertically */
+    .job-posting-container ul li {
+        flex-direction: column;
+        min-height: auto;
+        gap: 12px;
+        padding: 20px 16px;
+    }
+
+    .job-posting-container ul li .right {
+        align-items: flex-start;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .card-actions {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 6px;
+    }
+
+    .view-applicants-btn,
+    .advance-btn,
+    .job-posting-container ul li .right button {
+        width: auto !important;
+        min-width: 100px !important;
+        flex: 1 1 auto;
+    }
+
+    /* Search input full width */
+    .jp-search-input {
+        width: 100%;
+    }
+
+    /* Empty tab full width */
+    .empty-tab {
+        width: 100%;
+    }
+
+    /* Job posting form */
+    .job-posting-form-container {
+        width: 100%;
+    }
+
+    .job-posting-form-container .top {
+        flex-direction: column;
+    }
+
+    .job-posting-form-container .top .top-left,
+    .job-posting-form-container .top .top-right {
+        padding: 20px;
+    }
+
+    .job-posting-form-container .top .top-left {
+        grid-template-columns: 1fr;
+    }
+
+    .job-posting-form-container .bottom {
+        flex-direction: column;
+    }
+
+    .job-posting-form-container .bottom .bottom-left {
+        min-width: 100%;
+        border-right: none;
+        border-bottom: 0.5px solid #C8CBD9;
+        padding: 20px;
+    }
+
+    .job-posting-form-container .bottom .bottom-right {
+        min-width: 100%;
+        max-height: none;
+        padding: 20px;
+    }
+
+    .job-posting-form-container .bottom .bottom-left .details {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+
+    .job-posting-form-container .bottom .bottom-left .location {
+        grid-template-columns: 1fr;
+    }
+
+    /* Modals full-width on mobile */
+    .draft-prompt {
+        width: 92vw;
+        max-width: 92vw;
+        padding: 24px 20px;
+    }
+}
+
+

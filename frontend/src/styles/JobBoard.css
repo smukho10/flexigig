@@ -577,3 +577,61 @@
   width: auto;
   height: auto;
 }
+
+
+/* ════════════════════════════════════════════
+   RESPONSIVE — Tablet (≤ 900px)
+════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .job-board-container ul li {
+    width: 100%;
+  }
+}
+
+/* ════════════════════════════════════════════
+   RESPONSIVE — Mobile (≤ 768px)
+════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Job cards stack */
+  .job-board-container ul li {
+    width: 100%;
+    flex-direction: column;
+    min-height: auto;
+    gap: 12px;
+    padding: 20px 16px;
+  }
+
+  .job-board-container ul li .right {
+    align-items: flex-start;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .job-board-container ul li .right #apply-btn {
+    width: auto;
+    min-width: 100px;
+    flex: 1 1 auto;
+  }
+
+  .jb-search-input {
+    width: 100%;
+  }
+
+  /* Filter dropdown full-width on mobile */
+  .filter-dropdown {
+    min-width: calc(100vw - 32px);
+    width: calc(100vw - 32px);
+    left: 0;
+    right: 0;
+    box-sizing: border-box;
+  }
+
+  .job-board-container .filter-bar {
+    gap: 8px;
+  }
+
+  .filter-btn {
+    margin: 0;
+  }
+}

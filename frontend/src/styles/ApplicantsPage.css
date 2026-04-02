@@ -528,6 +528,62 @@
 .rate-worker-btn:hover:not(:disabled) { background-color: #3da9af; }
 .rated-btn { background-color: #D1FAE5; color: #065F46; cursor: not-allowed; }
 
+
+/* ════════════════════════════════════════════
+   RESPONSIVE — Mobile (≤ 768px)
+════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    .applicants-page-container {
+        max-width: 100%;
+    }
+
+    /* Hide grid header — cards are self-labelled */
+    .applicants-table-header {
+        display: none;
+    }
+
+    /* Each row becomes a card */
+    .applicant-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 14px 16px;
+        border-bottom: 2px solid #E5E7EB;
+    }
+
+    .applicant-index {
+        display: none;
+    }
+
+    .applicant-actions {
+        flex-wrap: wrap;
+    }
+
+    .action-btn {
+        height: 34px;
+        padding: 0 14px;
+        font-size: 12px;
+    }
+
+    /* Summary bar stacks */
+    .applicants-summary-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    /* Review modal */
+    .review-modal {
+        min-width: auto;
+        width: 92vw;
+        max-width: 92vw;
+        padding: 24px 20px;
+    }
+
+    .gig-rating-label {
+        min-width: 110px;
+    }
+}
+
 .job-completed-badge {
     display: inline-block;
     margin-top: 4px;

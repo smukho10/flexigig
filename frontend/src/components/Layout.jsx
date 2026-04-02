@@ -1,20 +1,25 @@
 // Layout.jsx
-import React from "react";
+import React, { useState } from "react";
 import Toolbar from "./Toolbar";
 import DashboardHeader from "./DashboardHeader";
 import { Outlet } from "react-router-dom";
 import "../styles/Layout.scss";
 
 const Layout = () => {
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
   return (
     <div className="layout-container">
-      <DashboardHeader /> {/* Static Header */}
+      <DashboardHeader onMenuToggle={() => setMobileNavOpen(prev => !prev)} />
       <div className="main-content">
-        <div className="toolbar">
-          <Toolbar /> {/* Static Toolbar */}
+        <div className={`toolbar${mobileNavOpen ? " mobile-open" : ""}`}>
+          <Toolbar onLinkClick={() => setMobileNavOpen(false)} />
         </div>
+        {mobileNavOpen && (
+          <div className="mobile-nav-backdrop" onClick={() => setMobileNavOpen(false)} />
+        )}
         <div className="content-area">
-          <Outlet /> {/* Dynamic content area */}
+          <Outlet />
         </div>
       </div>
     </div>
