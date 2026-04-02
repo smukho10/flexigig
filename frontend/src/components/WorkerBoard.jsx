@@ -5,6 +5,7 @@ import axios from "axios";
 
 import ArrowBack from "../assets/images/ChevronLeft.png";
 import Arrow from "../assets/images/arrow-more.svg";
+import DefaultAvatar from "../assets/images/DefaultAvatar.png";
 import Money from "../assets/images/gigwidget-money.svg";
 import Calendar from "../assets/images/gigwidget-calendar.svg";
 import Star from "../assets/images/gigwidget-star.svg";
@@ -41,6 +42,7 @@ const WorkerBoard = () => {
   const [appliedCustomPostalCode, setAppliedCustomPostalCode] = useState("");
 
   const [showLocationFilter, setShowLocationFilter] = useState(false);
+  const [workerPhotoUrls, setWorkerPhotoUrls] = useState({});
   const [loading, setLoading] = useState(true);
   const [jobsLoading, setJobsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -148,7 +150,21 @@ const WorkerBoard = () => {
           withCredentials: true
         });
 
-        setWorkers(Array.isArray(workersRes.data) ? workersRes.data : []);
+        const fetchedWorkers = Array.isArray(workersRes.data) ? workersRes.data : [];
+        setWorkers(fetchedWorkers);
+
+        // Fetch profile photos for each worker
+        const photoMap = {};
+        await Promise.all(
+          fetchedWorkers.map(async (w) => {
+            if (!w.user_id) return;
+            try {
+              const photoRes = await axios.get(`/api/profile/view-photo-url/${w.user_id}`, { withCredentials: true });
+              if (photoRes.data.viewUrl) photoMap[w.user_id] = photoRes.data.viewUrl;
+            } catch (_) {}
+          })
+        );
+        setWorkerPhotoUrls(photoMap);
       } catch (err) {
         console.error("Error fetching workers:", err);
         setError("Failed to load workers.");
@@ -303,10 +319,17 @@ const WorkerBoard = () => {
   };
 
   const WorkerItem = ({ worker }) => {
+    const photoUrl = workerPhotoUrls[worker.user_id];
     return (
       <div id='workerboard-worker'>
         <div id='workerboard-worker-header'>
           <div id='workerboard-worker-title-wrap'>
+            <img
+              className="workerboard-avatar"
+              src={photoUrl || DefaultAvatar}
+              alt={getWorkerName(worker)}
+              onError={(e) => { e.target.src = DefaultAvatar; }}
+            />
             <h2 id='workerboard-worker-name'>{getWorkerName(worker)}</h2>
             <Link to={`/applicant-profile/${worker.id}`}>
               <img id="workerboard-arrow" src={Arrow} alt="View worker" />

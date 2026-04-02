@@ -21,6 +21,8 @@ const ApplicantsPage = () => {
     const navigate = useNavigate();
     const { user } = useUser();
 
+    const fromTab = state?.fromTab || "open";
+
     const [applicants, setApplicants] = useState([]);
     const [jobTitle] = useState(state?.job?.jobtitle || "");
     const [jobStatus, setJobStatus] = useState(state?.job?.status || null);
@@ -174,7 +176,7 @@ const ApplicantsPage = () => {
                     src={ChevronLeft}
                     alt="back"
                     className="applicants-back-btn"
-                    onClick={() => navigate("/my-jobs")}
+                    onClick={() => navigate(`/my-jobs?tab=${fromTab}`)}
                 />
                 <div>
                     <h1 className="applicants-page-title">Applicants</h1>

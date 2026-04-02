@@ -176,6 +176,15 @@
     width: 100%;
 }
 
+.workerboard-avatar {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
 #workerboard-worker-name {
     font-size: 18pt;
     font-weight: 600;

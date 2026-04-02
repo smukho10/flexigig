@@ -5,7 +5,7 @@ import ChevronLeft from "../assets/images/ChevronLeft.png";
 import DollarSign from "../assets/images/DollarSign.png";
 import PlusSign from "../assets/images/PlusSign.png";
 import { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useUser } from "./UserContext";
 import JobPostingForm from "./JobPostingForm";
 
@@ -40,8 +40,13 @@ const NEXT_STATUS_LABEL = {
 const JobPosting = () => {
     const { user } = useUser();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [jobs, setJobs] = useState([]);
-    const [activeTab, setActiveTab] = useState(JOB_STATUS.OPEN);
+
+    // Derive active tab from URL (?tab=open|draft|in-review|completed), fallback to OPEN
+    const tabParam = searchParams.get("tab");
+    const activeTab = Object.values(JOB_STATUS).includes(tabParam) ? tabParam : JOB_STATUS.OPEN;
+    const setActiveTab = (tab) => setSearchParams({ tab }, { replace: true });
     const [searchInput, setSearchInput] = useState("");
     const [createJob, setCreateJob] = useState(false);
     const [editJob, setEditJob] = useState(false);
@@ -93,7 +98,7 @@ const JobPosting = () => {
     const handleCancelRemove = () => setRemoveJob(false);
 
     const handleViewApplicants = (job) => {
-        navigate(`/my-jobs/${job.job_id}/applicants`, { state: { job } });
+        navigate(`/my-jobs/${job.job_id}/applicants`, { state: { job, fromTab: activeTab } });
     };
 
     const handleEdit = async (e) => {

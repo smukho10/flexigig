@@ -242,7 +242,7 @@ const MyGigs = () => {
                   </div>
                   <div className="top-right">
                     <button onClick={handleEmployer}>
-                      <img src={employerPhotoUrls[job.employer_user_id] || DefaultAvatar} alt="employer-avatar" width="32px" height="auto" />
+                      <img src={employerPhotoUrls[job.employer_user_id] || DefaultAvatar} alt="employer-avatar" className="employer-avatar" />
                       {job.business_name}
                     </button>
                     <button onClick={() => handleMessage(job)}>
