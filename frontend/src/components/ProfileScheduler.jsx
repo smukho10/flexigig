@@ -21,6 +21,20 @@ const localizer = dateFnsLocalizer({
   locales,
 });
 
+// Distinct shift colours — enough for any realistic roster
+const SHIFT_COLORS = [
+  "#4EBBC2", // teal (default)
+  "#7C62D4", // purple
+  "#E07B39", // orange
+  "#3A9E6E", // green
+  "#D64E88", // pink
+  "#3A6FD8", // blue
+  "#C4A227", // amber
+  "#D04444", // red
+  "#4A9BAE", // steel blue
+  "#8B5E3C", // brown
+];
+
 // Extract YYYY-MM-DD from a Date object
 const formatDate = (date) => {
   const yyyy = date.getFullYear();
@@ -57,11 +71,12 @@ export default function ProfileScheduler({ selectedProfileId, profiles }) {
         withCredentials: true,
       })
       .then((res) => {
-        const formatted = res.data.map((evt) => ({
+        const formatted = res.data.map((evt, idx) => ({
           id: evt.id,
           title: evt.title,
           start: new Date(`${evt.startdate} ${evt.starttime}`),
           end: new Date(`${evt.enddate} ${evt.endtime}`),
+          colorIndex: idx % SHIFT_COLORS.length,
         }));
         setEvents(formatted);
         setFetchError(null);
@@ -87,40 +102,83 @@ export default function ProfileScheduler({ selectedProfileId, profiles }) {
     end: new Date(),
   });
   const [saving, setSaving] = useState(false);
+  const [overlapError, setOverlapError] = useState("");
 
-  const eventPropGetter = () => ({
+  // Returns true if the proposed [start, end] overlaps any existing shift
+  // (excluding the event being edited, identified by excludeId)
+  const hasOverlap = (start, end, excludeId = null) => {
+    return events.some((evt) => {
+      if (excludeId !== null && evt.id === excludeId) return false;
+      // Overlap exists when: newStart < existingEnd AND newEnd > existingStart
+      return start < evt.end && end > evt.start;
+    });
+  };
+
+  const eventPropGetter = (event) => ({
     style: {
-      backgroundColor: "#4EBBC2",
+      backgroundColor: SHIFT_COLORS[event.colorIndex ?? 0],
       border: "none",
       borderRadius: "6px",
       color: "#fff",
-      padding: "2px 6px",
+      padding: "4px 8px",
+      width: "100%",
+      boxShadow: "0 2px 6px rgba(0,0,0,0.18)",
     },
   });
 
-  const handleSelectSlot = useCallback(({ start, end }) => {
-    setModalMode("add");
-    setCurrentEvent({ id: null, title: "", start, end });
-    setShowModal(true);
-  }, []);
+  const handleSelectSlot = useCallback(
+    ({ start, end }) => {
+      if (hasOverlap(start, end)) {
+        // Don't open modal – give immediate feedback via a temporary state
+        setOverlapError(
+          "A shift already exists in that time range. Shifts cannot overlap."
+        );
+        setShowModal(true);
+        setModalMode("add");
+        setCurrentEvent({ id: null, title: "", start, end });
+        return;
+      }
+      setOverlapError("");
+      setModalMode("add");
+      setCurrentEvent({ id: null, title: "", start, end });
+      setShowModal(true);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [events]
+  );
 
   const handleSelectEvent = useCallback((event) => {
     setModalMode("edit");
     setCurrentEvent({ ...event });
+    setOverlapError("");
     setShowModal(true);
   }, []);
 
   // Save new or updated event to the database
   const handleSave = () => {
     if (!currentEvent.title.trim()) {
-      alert("Please enter a title.");
+      setOverlapError("Please enter a shift title.");
+      return;
+    }
+    if (currentEvent.end <= currentEvent.start) {
+      setOverlapError("End time must be after start time.");
       return;
     }
     if (!user?.id) {
-      alert("Session expired. Please log in again.");
+      setOverlapError("Session expired. Please log in again.");
       return;
     }
 
+    // Overlap check (exclude current event when editing)
+    const excludeId = modalMode === "edit" ? currentEvent.id : null;
+    if (hasOverlap(currentEvent.start, currentEvent.end, excludeId)) {
+      setOverlapError(
+        "This shift overlaps with an existing shift. Please choose a different time."
+      );
+      return;
+    }
+
+    setOverlapError("");
     setSaving(true);
 
     const payload = {
@@ -200,17 +258,23 @@ export default function ProfileScheduler({ selectedProfileId, profiles }) {
 
   const handleStartChange = (e) => {
     const d = new Date(e.target.value);
-    if (!isNaN(d.getTime())) setCurrentEvent({ ...currentEvent, start: d });
+    if (!isNaN(d.getTime())) {
+      setCurrentEvent({ ...currentEvent, start: d });
+      setOverlapError("");
+    }
   };
 
   const handleEndChange = (e) => {
     const d = new Date(e.target.value);
-    if (!isNaN(d.getTime())) setCurrentEvent({ ...currentEvent, end: d });
+    if (!isNaN(d.getTime())) {
+      setCurrentEvent({ ...currentEvent, end: d });
+      setOverlapError("");
+    }
   };
 
   const getModalTitle = () => {
-    if (modalMode === "add") return "Add Event";
-    if (modalMode === "edit") return "Edit Event";
+    if (modalMode === "add") return "Add Shift";
+    if (modalMode === "edit") return "Edit Shift";
     if (modalMode === "delete") return "Confirm Delete";
     return "";
   };
@@ -258,41 +322,50 @@ export default function ProfileScheduler({ selectedProfileId, profiles }) {
               <h3>{getModalTitle()}</h3>
               <button
                 className="modal-close-btn"
-                onClick={() => setShowModal(false)}
+                onClick={() => { setShowModal(false); setOverlapError(""); }}
               >
                 &times;
               </button>
             </div>
 
             <div className="modal-body">
-              <div className="form-group">
-                <label>Event Title</label>
-                <input
-                  type="text"
-                  placeholder="Enter title"
-                  value={currentEvent.title}
-                  onChange={handleTitleChange}
-                  autoFocus
-                />
-              </div>
+              {overlapError && (
+                <div className="shift-overlap-error">
+                  <span className="shift-overlap-icon">⚠️</span> {overlapError}
+                </div>
+              )}
+              {modalMode !== "delete" && (
+                <>
+                  <div className="form-group">
+                    <label>Shift Title</label>
+                    <input
+                      type="text"
+                      placeholder="Enter shift name"
+                      value={currentEvent.title}
+                      onChange={handleTitleChange}
+                      autoFocus
+                    />
+                  </div>
 
-              <div className="form-group">
-                <label>Start Time</label>
-                <input
-                  type="datetime-local"
-                  value={toDateTimeLocal(currentEvent.start)}
-                  onChange={handleStartChange}
-                />
-              </div>
+                  <div className="form-group">
+                    <label>Start Time</label>
+                    <input
+                      type="datetime-local"
+                      value={toDateTimeLocal(currentEvent.start)}
+                      onChange={handleStartChange}
+                    />
+                  </div>
 
-              <div className="form-group">
-                <label>End Time</label>
-                <input
-                  type="datetime-local"
-                  value={toDateTimeLocal(currentEvent.end)}
-                  onChange={handleEndChange}
-                />
-              </div>
+                  <div className="form-group">
+                    <label>End Time</label>
+                    <input
+                      type="datetime-local"
+                      value={toDateTimeLocal(currentEvent.end)}
+                      onChange={handleEndChange}
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="modal-footer">
