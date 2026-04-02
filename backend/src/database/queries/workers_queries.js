@@ -72,70 +72,98 @@ const fetchWorkersForBoard = ({ jobId, distanceKm, skill, rating, originLat, ori
   const params = [];
   let paramIndex = 1;
 
+  const normalizedJobId =
+    jobId !== null && jobId !== undefined && jobId !== '' && !Number.isNaN(Number(jobId))
+      ? parseInt(jobId, 10)
+      : null;
+
+  const normalizedDistanceKm =
+    distanceKm !== null && distanceKm !== undefined && distanceKm !== '' && !Number.isNaN(Number(distanceKm))
+      ? parseFloat(distanceKm)
+      : null;
+
+  const normalizedSkill =
+    typeof skill === 'string' && skill.trim() !== ''
+      ? skill.trim()
+      : null;
+
+  const normalizedRating =
+    rating !== null && rating !== undefined && rating !== '' && !Number.isNaN(Number(rating))
+      ? parseFloat(rating)
+      : null;
+
+  const normalizedOriginLat =
+    originLat !== null && originLat !== undefined && originLat !== '' && !Number.isNaN(Number(originLat))
+      ? parseFloat(originLat)
+      : null;
+
+  const normalizedOriginLon =
+    originLon !== null && originLon !== undefined && originLon !== '' && !Number.isNaN(Number(originLon))
+      ? parseFloat(originLon)
+      : null;
+
   const hasCustomOrigin =
-    originLat !== null &&
-    originLat !== undefined &&
-    originLon !== null &&
-    originLon !== undefined;
+    normalizedOriginLat !== null &&
+    normalizedOriginLon !== null;
 
   let jobIdParamIndex = null;
   let originLatParamIndex = null;
   let originLonParamIndex = null;
 
-  if (jobId) {
+  if (normalizedJobId !== null) {
     jobIdParamIndex = paramIndex;
-    params.push(jobId);
+    params.push(normalizedJobId);
     paramIndex++;
   }
 
   if (hasCustomOrigin) {
     originLatParamIndex = paramIndex;
-    params.push(originLat);
+    params.push(normalizedOriginLat);
     paramIndex++;
     originLonParamIndex = paramIndex;
-    params.push(originLon);
+    params.push(normalizedOriginLon);
     paramIndex++;
   }
 
   conditions.push(`1=1`);
 
-  if (jobId) {
+  if (normalizedJobId !== null) {
     conditions.push(`jp.job_id = $${jobIdParamIndex}`);
   }
 
-  if (skill) {
+  if (normalizedSkill !== null) {
     conditions.push(`
       EXISTS (
         SELECT 1
         FROM workers_skills ws_filter
         INNER JOIN skills s_filter ON ws_filter.skill_id = s_filter.skill_id
         WHERE ws_filter.workers_id = w.id
-          AND s_filter.skill_name = $${paramIndex}
+          AND LOWER(TRIM(s_filter.skill_name)) = LOWER(TRIM($${paramIndex}))
       )
     `);
-    params.push(skill);
+    params.push(normalizedSkill);
     paramIndex++;
   }
 
-  if (rating !== null && rating !== undefined && rating !== '') {
-    const ratingValue = parseFloat(rating);
+  if (normalizedRating !== null) {
+    conditions.push(`COALESCE(r.ratings_count, 0) > 0`);
 
-    if (ratingValue === 5) {
+    if (normalizedRating === 5) {
       conditions.push(`r.avg_rating >= $${paramIndex}`);
       params.push(5);
       paramIndex++;
     } else {
       conditions.push(`r.avg_rating >= $${paramIndex}`);
-      params.push(ratingValue);
+      params.push(normalizedRating);
       paramIndex++;
 
       conditions.push(`r.avg_rating < $${paramIndex}`);
-      params.push(ratingValue + 1);
+      params.push(normalizedRating + 1);
       paramIndex++;
     }
   }
 
-  if (distanceKm) {
+  if (normalizedDistanceKm !== null) {
     if (hasCustomOrigin) {
       conditions.push(`wl.latitude IS NOT NULL`);
       conditions.push(`wl.longitude IS NOT NULL`);
@@ -156,9 +184,9 @@ const fetchWorkersForBoard = ({ jobId, distanceKm, skill, rating, originLat, ori
           )
         ) <= $${paramIndex}
       `);
-      params.push(distanceKm);
+      params.push(normalizedDistanceKm);
       paramIndex++;
-    } else if (jobId) {
+    } else if (normalizedJobId !== null) {
       conditions.push(`jl.latitude IS NOT NULL`);
       conditions.push(`jl.longitude IS NOT NULL`);
       conditions.push(`wl.latitude IS NOT NULL`);
@@ -180,7 +208,7 @@ const fetchWorkersForBoard = ({ jobId, distanceKm, skill, rating, originLat, ori
           )
         ) <= $${paramIndex}
       `);
-      params.push(distanceKm);
+      params.push(normalizedDistanceKm);
       paramIndex++;
     }
   }
@@ -287,13 +315,13 @@ const fetchWorkersForBoard = ({ jobId, distanceKm, skill, rating, originLat, ori
     ) r
       ON r.reviewee_id = w.user_id
     LEFT JOIN jobpostings jp
-      ON ${jobId ? `jp.job_id = $${jobIdParamIndex}` : `FALSE`}
+      ON ${normalizedJobId !== null ? `jp.job_id = $${jobIdParamIndex}` : `FALSE`}
     LEFT JOIN locations jl
       ON jp.location_id = jl.location_id
     WHERE ${conditions.join(' AND ')}
     ORDER BY
       CASE
-        WHEN ${distanceKm && (hasCustomOrigin || jobId) ? 'TRUE' : 'FALSE'} THEN
+        WHEN ${normalizedDistanceKm !== null && (hasCustomOrigin || normalizedJobId !== null) ? 'TRUE' : 'FALSE'} THEN
           ${distanceExpression}
         ELSE NULL
       END ASC NULLS LAST,

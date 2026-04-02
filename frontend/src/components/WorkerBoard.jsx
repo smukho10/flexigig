@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useUser } from "./UserContext";
 import axios from "axios";
@@ -23,18 +23,27 @@ const WorkerBoard = () => {
   const [jobs, setJobs] = useState([]);
   const [selectedSkill, setSelectedSkill] = useState("");
   const [selectedRating, setSelectedRating] = useState("");
+
   const [selectedDistance, setSelectedDistance] = useState("");
   const [customDistance, setCustomDistance] = useState("");
   const [isCustomDistance, setIsCustomDistance] = useState(false);
-  const [showLocationFilter, setShowLocationFilter] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [jobsLoading, setJobsLoading] = useState(true);
-  const [error, setError] = useState("");
   const [useCustomAddress, setUseCustomAddress] = useState(false);
   const [customStreetAddress, setCustomStreetAddress] = useState("");
   const [customCity, setCustomCity] = useState("");
   const [customProvince, setCustomProvince] = useState("");
   const [customPostalCode, setCustomPostalCode] = useState("");
+
+  const [appliedDistance, setAppliedDistance] = useState("");
+  const [appliedUseCustomAddress, setAppliedUseCustomAddress] = useState(false);
+  const [appliedCustomStreetAddress, setAppliedCustomStreetAddress] = useState("");
+  const [appliedCustomCity, setAppliedCustomCity] = useState("");
+  const [appliedCustomProvince, setAppliedCustomProvince] = useState("");
+  const [appliedCustomPostalCode, setAppliedCustomPostalCode] = useState("");
+
+  const [showLocationFilter, setShowLocationFilter] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [jobsLoading, setJobsLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const distanceOptions = [
     { label: "10 miles", km: 16.09 },
@@ -83,13 +92,15 @@ const WorkerBoard = () => {
     fetchJobs();
   }, [employerId]);
 
-  const defaultOriginJob = jobs.find(
-    (job) =>
-      job.latitude !== null &&
-      job.latitude !== undefined &&
-      job.longitude !== null &&
-      job.longitude !== undefined
-  ) || null;
+  const defaultOriginJob = useMemo(() => {
+    return jobs.find(
+      (job) =>
+        job.latitude !== null &&
+        job.latitude !== undefined &&
+        job.longitude !== null &&
+        job.longitude !== undefined
+    ) || null;
+  }, [jobs]);
 
   const hasDefaultOrigin = !!defaultOriginJob;
 
@@ -99,26 +110,33 @@ const WorkerBoard = () => {
         setLoading(true);
         setError("");
 
+        const normalizedSkill = typeof selectedSkill === "string" ? selectedSkill.trim() : "";
+        const normalizedRating = typeof selectedRating === "string" ? selectedRating.trim() : "";
+        const normalizedDistance = typeof appliedDistance === "string" ? appliedDistance.trim() : "";
+
         const params = {};
 
-        if (selectedDistance) {
-          params.distanceKm = selectedDistance;
+        if (normalizedSkill) {
+          params.skill = normalizedSkill;
         }
 
-        if (selectedSkill) {
-          params.skill = selectedSkill;
+        if (normalizedRating) {
+          params.rating = normalizedRating;
         }
 
-        if (selectedRating) {
-          params.rating = selectedRating;
-        }
+        if (normalizedDistance) {
+          params.distanceKm = normalizedDistance;
 
-        if (selectedDistance) {
-          if (useCustomAddress) {
-            if (customStreetAddress) params.streetAddress = customStreetAddress;
-            if (customCity) params.city = customCity;
-            if (customProvince) params.province = customProvince;
-            if (customPostalCode) params.postalCode = customPostalCode;
+          if (appliedUseCustomAddress) {
+            const streetAddress = typeof appliedCustomStreetAddress === "string" ? appliedCustomStreetAddress.trim() : "";
+            const city = typeof appliedCustomCity === "string" ? appliedCustomCity.trim() : "";
+            const province = typeof appliedCustomProvince === "string" ? appliedCustomProvince.trim() : "";
+            const postalCode = typeof appliedCustomPostalCode === "string" ? appliedCustomPostalCode.trim() : "";
+
+            if (streetAddress) params.streetAddress = streetAddress;
+            if (city) params.city = city;
+            if (province) params.province = province;
+            if (postalCode) params.postalCode = postalCode;
           } else if (defaultOriginJob) {
             params.originLat = defaultOriginJob.latitude;
             params.originLon = defaultOriginJob.longitude;
@@ -141,14 +159,14 @@ const WorkerBoard = () => {
 
     fetchWorkers();
   }, [
-    selectedDistance,
     selectedSkill,
     selectedRating,
-    useCustomAddress,
-    customStreetAddress,
-    customCity,
-    customProvince,
-    customPostalCode,
+    appliedDistance,
+    appliedUseCustomAddress,
+    appliedCustomStreetAddress,
+    appliedCustomCity,
+    appliedCustomProvince,
+    appliedCustomPostalCode,
     defaultOriginJob
   ]);
 
@@ -549,6 +567,12 @@ const WorkerBoard = () => {
                       setCustomCity("");
                       setCustomProvince("");
                       setCustomPostalCode("");
+                      setAppliedDistance("");
+                      setAppliedUseCustomAddress(false);
+                      setAppliedCustomStreetAddress("");
+                      setAppliedCustomCity("");
+                      setAppliedCustomProvince("");
+                      setAppliedCustomPostalCode("");
                     }}
                     style={{ cursor: "pointer" }}
                   >
@@ -558,13 +582,29 @@ const WorkerBoard = () => {
                   <div
                     id='workerboard-location-apply'
                     onClick={() => {
-                      if (isCustomDistance && customDistance) {
-                        const miles = Number(customDistance);
-                        if (!Number.isNaN(miles) && miles > 0) {
-                          const km = miles * 1.60934;
-                          setSelectedDistance(String(km));
+                      let nextDistance = selectedDistance;
+
+                      if (isCustomDistance) {
+                        if (customDistance) {
+                          const miles = Number(customDistance);
+                          if (!Number.isNaN(miles) && miles > 0) {
+                            const km = miles * 1.60934;
+                            nextDistance = String(km);
+                          } else {
+                            nextDistance = "";
+                          }
+                        } else {
+                          nextDistance = "";
                         }
                       }
+
+                      setAppliedDistance(nextDistance);
+                      setAppliedUseCustomAddress(useCustomAddress);
+                      setAppliedCustomStreetAddress(customStreetAddress);
+                      setAppliedCustomCity(customCity);
+                      setAppliedCustomProvince(customProvince);
+                      setAppliedCustomPostalCode(customPostalCode);
+                      setSelectedDistance(nextDistance);
                       setShowLocationFilter(false);
                     }}
                     style={{ cursor: "pointer" }}
@@ -616,6 +656,12 @@ const WorkerBoard = () => {
             setCustomCity("");
             setCustomProvince("");
             setCustomPostalCode("");
+            setAppliedDistance("");
+            setAppliedUseCustomAddress(false);
+            setAppliedCustomStreetAddress("");
+            setAppliedCustomCity("");
+            setAppliedCustomProvince("");
+            setAppliedCustomPostalCode("");
           }}
           style={{ cursor: "pointer" }}
         >

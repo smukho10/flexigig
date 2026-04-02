@@ -5,8 +5,28 @@ const db = require('../connection.js');
 const { geocodeAddress } = require("../../services/geocodingService");
 
 const buildFullAddress = ({ streetAddress, city, province, postalCode }) => {
-  const parts = [streetAddress, city, province, postalCode].filter(Boolean);
+  const parts = [streetAddress, city, province, postalCode]
+    .map(part => typeof part === 'string' ? part.trim() : part)
+    .filter(Boolean);
   return parts.length > 0 ? parts.join(', ') : null;
+};
+
+const parseIntegerOrNull = (value) => {
+  if (value === undefined || value === null || value === '') return null;
+  const parsed = parseInt(value, 10);
+  return Number.isNaN(parsed) ? null : parsed;
+};
+
+const parseFloatOrNull = (value) => {
+  if (value === undefined || value === null || value === '') return null;
+  const parsed = parseFloat(value);
+  return Number.isNaN(parsed) ? null : parsed;
+};
+
+const parseStringOrNull = (value) => {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed === '' ? null : trimmed;
 };
 
 router.get('/gig-workers', async (req, res) => {
@@ -24,12 +44,17 @@ router.get('/gig-workers', async (req, res) => {
       postalCode
     } = req.query;
 
-    let parsedOriginLat = originLat !== undefined && originLat !== '' ? parseFloat(originLat) : null;
-    let parsedOriginLon = originLon !== undefined && originLon !== '' ? parseFloat(originLon) : null;
+    const normalizedJobId = parseIntegerOrNull(jobId);
+    const normalizedDistanceKm = parseFloatOrNull(distanceKm);
+    const normalizedSkill = parseStringOrNull(skill);
+    const normalizedRating = parseFloatOrNull(rating);
+
+    let parsedOriginLat = parseFloatOrNull(originLat);
+    let parsedOriginLon = parseFloatOrNull(originLon);
 
     if (
       (parsedOriginLat === null || parsedOriginLon === null) &&
-      (streetAddress || city || province || postalCode)
+      (parseStringOrNull(streetAddress) || parseStringOrNull(city) || parseStringOrNull(province) || parseStringOrNull(postalCode))
     ) {
       const fullAddress = buildFullAddress({
         streetAddress,
@@ -41,26 +66,27 @@ router.get('/gig-workers', async (req, res) => {
       if (fullAddress) {
         const geocoded = await geocodeAddress(fullAddress);
         if (geocoded) {
-          parsedOriginLat = geocoded.latitude;
-          parsedOriginLon = geocoded.longitude;
+          parsedOriginLat = parseFloatOrNull(geocoded.latitude);
+          parsedOriginLon = parseFloatOrNull(geocoded.longitude);
         }
       }
     }
 
+    const hasBoardFilters =
+      normalizedJobId !== null ||
+      normalizedDistanceKm !== null ||
+      normalizedSkill !== null ||
+      normalizedRating !== null ||
+      (parsedOriginLat !== null && parsedOriginLon !== null);
+
     let workers;
 
-    if (
-      jobId ||
-      distanceKm ||
-      skill ||
-      rating ||
-      (parsedOriginLat !== null && parsedOriginLon !== null)
-    ) {
+    if (hasBoardFilters) {
       workers = await workers_queries.fetchWorkersForBoard({
-        jobId: jobId ? parseInt(jobId, 10) : null,
-        distanceKm: distanceKm ? parseFloat(distanceKm) : null,
-        skill: skill || null,
-        rating: rating ? parseFloat(rating) : null,
+        jobId: normalizedJobId,
+        distanceKm: normalizedDistanceKm,
+        skill: normalizedSkill,
+        rating: normalizedRating,
         originLat: parsedOriginLat,
         originLon: parsedOriginLon
       });
