@@ -404,6 +404,49 @@ router.patch("/applications/:applicationId/status", async (req, res) => {
     if (!updated) {
       return res.status(404).json({ message: "Application not found" });
     }
+
+    // Send a notification message to the worker when accepted
+    if (status === "ACCEPTED" && updated.worker_profile_id && updated.job_id) {
+      try {
+        const db = require("../connection.js");
+        const user_queries = require("../queries/user_queries.js");
+
+        // Get worker's user_id from worker profile
+        const workerRes = await db.query(
+          `SELECT user_id FROM workers WHERE id = $1`,
+          [updated.worker_profile_id]
+        );
+        const workerUserId = workerRes.rows[0]?.user_id;
+
+        // Get job title
+        const jobRes = await db.query(
+          `SELECT jobtitle FROM jobPostings WHERE job_id = $1`,
+          [updated.job_id]
+        );
+        const jobTitle = jobRes.rows[0]?.jobtitle || "a job";
+
+        // Get employer/business name
+        const employerDetails = await user_queries.getUserDetails(updated.employer_id);
+        const employerName = employerDetails.type === "business"
+          ? employerDetails.businessName
+          : `${employerDetails.firstName || ""} ${employerDetails.lastName || ""}`.trim() || "the employer";
+
+        if (workerUserId) {
+          const notifContent = `Congratulations, your application has been accepted for "${jobTitle}"!`;
+          await user_queries.sendMessage(
+            updated.employer_id,
+            workerUserId,
+            notifContent,
+            updated.job_id,
+            false // not a system message, so it shows up in notifications
+          );
+        }
+      } catch (notifErr) {
+        // Don't fail the whole request if notification fails
+        console.error("Error sending acceptance notification:", notifErr);
+      }
+    }
+
     return res.json({message: "Application status updated",application: updated});
   } catch (err) {
     console.error("Error updating application status:", err);

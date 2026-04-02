@@ -750,6 +750,50 @@ router.get('/unread-count/:userId', async (req, res) => {
   }
 });
 
+router.get('/notifications/:userId', async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const notifications = await user_queries.getNotifications(userId);
+
+    // Attempt to resolve R2 signed photo URLs for each sender
+    for (const notif of notifications) {
+      if (notif.sender_photo_key) {
+        try {
+          const { GetObjectCommand } = require('@aws-sdk/client-s3');
+          const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+          const s3 = require('../../config/r2');
+          const command = new GetObjectCommand({ Bucket: process.env.R2_BUCKET, Key: notif.sender_photo_key });
+          notif.sender_photo_url = await getSignedUrl(s3, command, {
+            expiresIn: parseInt(process.env.R2_SIGNED_URL_EXPIRY || 3600),
+          });
+        } catch (_) {
+          notif.sender_photo_url = null;
+        }
+      } else {
+        notif.sender_photo_url = null;
+      }
+    }
+
+    res.status(200).json({ success: true, notifications });
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
+router.put('/notifications/mark-read/:userId', async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    await user_queries.markAllNotificationsAsRead(userId);
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Error marking notifications as read:', error);
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
 router.get('/user-details/:userId', async (req, res) => {
   const { userId } = req.params;
 
