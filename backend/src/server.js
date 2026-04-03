@@ -141,6 +141,9 @@ app.use('/api', businessRoutes);
 app.use('/api', reviewRouter);
 app.use('/api', templateRouter);
 
+const { scheduleShiftReminders } = require("./services/notificationScheduler.js");
+scheduleShiftReminders();
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}!!!`);
 });
