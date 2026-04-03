@@ -143,4 +143,4 @@ const scheduleShiftReminders = () => {
     console.log("[Notifications] Notification scheduler started.");
 };
 
-module.exports = { scheduleShiftReminders };
+module.exports = { scheduleShiftReminders, sendNewGigNotifications };

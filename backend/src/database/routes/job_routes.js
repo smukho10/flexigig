@@ -3,6 +3,7 @@ const express = require("express");
 const router = express.Router();
 const job_queries = require("../queries/job_queries.js");
 const { validateAddress } = require("../middleware/addressValidation");
+const { sendNewGigNotifications } = require("../../services/notificationScheduler.js");
 
 const VALID_STATUSES = ["draft", "open", "in-review", "filled", "completed"];
 const MILES_TO_KM = 1.60934;
@@ -149,6 +150,12 @@ router.post("/post-job", async (req, res) => {
       requiredExperience: Array.isArray(requiredExperience) ? requiredExperience : [],
     });
 
+    if (newJob.status === "open") {
+      sendNewGigNotifications().catch(err =>
+        console.error("[Notifications] Failed to send new gig notifications:", err)
+      );
+    }
+
     res.status(201).json({
       message: "Job and Location successfully created",
       job: newJob,
@@ -240,6 +247,11 @@ router.patch("/job-status/:jobId", async (req, res) => {
   try {
     const updatedJob = await job_queries.updateJobStatus(parseInt(jobId, 10), status);
     if (updatedJob) {
+      if (status === "open") {
+        sendNewGigNotifications().catch(err =>
+          console.error("[Notifications] Failed to send new gig notifications:", err)
+        );
+      }
       res.json({ message: "Job status updated", job: updatedJob });
     } else {
       res.status(404).json({ message: "Job not found" });
