@@ -575,6 +575,7 @@ const insertNotification = async (senderId, receiverId, content, jobId) => {
     const result = await db.query(`
       INSERT INTO notifications (sender_id, receiver_id, content, job_id)
       VALUES ($1, $2, $3, $4)
+      ON CONFLICT (receiver_id, job_id) DO NOTHING
       RETURNING *;
     `, [senderId, receiverId, content, jobId || null]);
     return result.rows[0];
