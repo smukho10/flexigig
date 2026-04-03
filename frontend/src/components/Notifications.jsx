@@ -95,7 +95,7 @@ const Notifications = () => {
                         const isSystemNotif = notif.content.includes("New recommended gig") || notif.content.includes("reminder");
                         return (
                         <div
-                            key={notif.message_id || index}
+                            key={notif.notification_id || index}
                             className={`notification-card ${isAcceptance ? "notification-card--accepted" : ""}`}
                             style={{ animationDelay: `${index * 0.05}s` }}
                         >

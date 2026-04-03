@@ -1,6 +1,6 @@
 const cron = require("node-cron");
 const db = require("../database/connection.js");
-const user_queries = require("../database/queries/user_queries.js");
+const { insertNotification } = require("../database/queries/user_queries.js");
 
 /**
  * Returns accepted applications where the job starts in approximately
@@ -33,7 +33,7 @@ const getShiftsStartingIn = async (hoursAhead, windowMinutes) => {
  */
 const reminderAlreadySent = async (workerUserId, jobId, label) => {
     const result = await db.query(`
-        SELECT 1 FROM messages
+        SELECT 1 FROM notifications
         WHERE receiver_id = $1
           AND job_id = $2
           AND content LIKE $3
@@ -55,13 +55,7 @@ const sendShiftReminders = async () => {
             if (await reminderAlreadySent(shift.worker_user_id, shift.job_id, label)) continue;
 
             const content = `24-hour reminder: Your shift starts in 24 hours!`;
-            await user_queries.sendMessage(
-                shift.employer_id,
-                shift.worker_user_id,
-                content,
-                shift.job_id,
-                false
-            );
+            await insertNotification(shift.employer_id, shift.worker_user_id, content, shift.job_id);
             console.log(`[Notifications] Sent 24h reminder → user ${shift.worker_user_id}, job ${shift.job_id}`);
         }
 
@@ -73,13 +67,7 @@ const sendShiftReminders = async () => {
             if (await reminderAlreadySent(shift.worker_user_id, shift.job_id, label)) continue;
 
             const content = `2-hour reminder: Your shift starts in 2 hours!`;
-            await user_queries.sendMessage(
-                shift.employer_id,
-                shift.worker_user_id,
-                content,
-                shift.job_id,
-                false
-            );
+            await insertNotification(shift.employer_id, shift.worker_user_id, content, shift.job_id);
             console.log(`[Notifications] Sent 2h reminder → user ${shift.worker_user_id}, job ${shift.job_id}`);
         }
     } catch (err) {
@@ -105,7 +93,7 @@ const sendNewGigNotifications = async () => {
             for (const job of recommendedJobs) {
                 // Check if already notified about this job
                 const alreadyNotified = await db.query(`
-                    SELECT 1 FROM messages
+                    SELECT 1 FROM notifications
                     WHERE receiver_id = $1 AND job_id = $2 AND content ILIKE '%recommended gig%'
                     LIMIT 1
                 `, [userId, job.job_id]);
@@ -120,7 +108,7 @@ const sendNewGigNotifications = async () => {
                     if (!employerId) continue;
 
                     const content = `New recommended gig available. Check it out!`;
-                    await user_queries.sendMessage(employerId, userId, content, job.job_id, false);
+                    await insertNotification(employerId, userId, content, job.job_id);
                     console.log(`[Notifications] Sent new gig notification → user ${userId}, job ${job.job_id}`);
                 }
             }
