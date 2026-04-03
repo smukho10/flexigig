@@ -88,6 +88,23 @@ const sendShiftReminders = async () => {
 };
 
 /**
+ * Finds all open jobs posted in the last `windowMinutes` minutes.
+ */
+const getRecentlyOpenedJobs = async (windowMinutes) => {
+    const result = await db.query(`
+        SELECT job_id, required_skills, required_experience, user_id AS employer_id, jobtitle
+        FROM jobPostings
+        WHERE status ILIKE 'open'
+          AND jobposteddate >= NOW() - ($1::int * INTERVAL '1 minute')
+          AND (
+              COALESCE(array_length(required_skills, 1), 0) > 0
+              OR COALESCE(array_length(required_experience, 1), 0) > 0
+          )
+    `, [windowMinutes]);
+    return result.rows;
+};
+
+/**
  * Finds workers whose skills or experience match a newly published job,
  * who haven't applied yet, and haven't already been notified for this job.
  */
@@ -160,14 +177,31 @@ const notifyWorkersOfNewGig = async (jobId) => {
 };
 
 /**
- * Starts the shift reminder cron job. Runs every 15 minutes.
+ * Checks for jobs opened in the last 15 minutes and notifies matching workers.
+ */
+const sendNewGigNotifications = async () => {
+    try {
+        const recentJobs = await getRecentlyOpenedJobs(15);
+        console.log(`[Notifications] New gig check: found ${recentJobs.length} recently opened job(s)`);
+        for (const job of recentJobs) {
+            await notifyWorkersOfNewGig(job.job_id);
+        }
+    } catch (err) {
+        console.error("[Notifications] Error in new gig scan:", err);
+    }
+};
+
+/**
+ * Starts all notification cron jobs. Runs every 15 minutes.
  */
 const scheduleShiftReminders = () => {
     cron.schedule("*/15 * * * *", () => {
         console.log("[Notifications] Running shift reminder check...");
         sendShiftReminders();
+        console.log("[Notifications] Running new gig check...");
+        sendNewGigNotifications();
     });
-    console.log("[Notifications] Shift reminder scheduler started.");
+    console.log("[Notifications] Notification scheduler started.");
 };
 
-module.exports = { scheduleShiftReminders, notifyWorkersOfNewGig };
+module.exports = { scheduleShiftReminders };
