@@ -28,8 +28,7 @@ const MyGigs = () => {
       axios.get(`/api/applied-jobs/${user.id}`, { withCredentials: true })
         .then(async res => {
           const gigs = res.data.jobs
-            .filter(job => job.application_status !== 'APPLIED')
-            .sort((a, b) => a.jobstart.localeCompare(b.jobstart));
+            .filter(job => job.application_status !== 'APPLIED');
           setApprovedGigs(gigs);
           // Fetch employer profile photos
           const uniqueEmployerIds = [...new Set(gigs.map(g => g.employer_user_id).filter(Boolean))];
