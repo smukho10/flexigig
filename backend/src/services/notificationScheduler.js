@@ -106,7 +106,7 @@ const sendNewGigNotifications = async () => {
                 // Check if already notified about this job
                 const alreadyNotified = await db.query(`
                     SELECT 1 FROM messages
-                    WHERE receiver_id = $1 AND job_id = $2 AND content LIKE '%new gig%'
+                    WHERE receiver_id = $1 AND job_id = $2 AND content ILIKE '%recommended gig%'
                     LIMIT 1
                 `, [userId, job.job_id]);
 
