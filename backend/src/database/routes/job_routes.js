@@ -492,4 +492,32 @@ router.patch("/remove-application/:applicantId/job/:jobId", async (req, res) => 
   }
 });
 
+// Debug endpoint — shows accepted shifts and what NOW() is on the server
+router.get("/debug/shift-check", async (req, res) => {
+    const db = require("../connection.js");
+    try {
+        const now = await db.query(`SELECT NOW() AS server_now`);
+        const shifts = await db.query(`
+            SELECT
+                ga.job_id,
+                jp.jobtitle,
+                jp.jobstart,
+                jp.jobstart - NOW() AS time_until_start,
+                w.user_id AS worker_user_id
+            FROM gig_applications ga
+            JOIN workers w ON ga.worker_profile_id = w.id
+            JOIN jobPostings jp ON ga.job_id = jp.job_id
+            WHERE ga.status = 'ACCEPTED'
+              AND jp.jobstart IS NOT NULL
+            ORDER BY jp.jobstart ASC
+        `);
+        res.json({
+            server_now: now.rows[0].server_now,
+            accepted_shifts: shifts.rows,
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;
