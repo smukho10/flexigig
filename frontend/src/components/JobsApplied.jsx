@@ -34,8 +34,7 @@ const JobsApplied = () => {
         try {
           const res = await axios.get(`/api/applied-jobs/${user.id}`, { withCredentials: true });
           const sorted = [...res.data.jobs]
-            .filter(job => ['APPLIED', 'IN_REVIEW'].includes(job.application_status))
-            .sort((a, b) => a.jobstart.localeCompare(b.jobstart));
+            .filter(job => ['APPLIED', 'IN_REVIEW'].includes(job.application_status));
           setAppliedJobs(sorted);
           setCurrentPage(1);
           // Fetch employer profile photos

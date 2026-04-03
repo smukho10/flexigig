@@ -618,6 +618,7 @@ EXISTS (
       JOIN jobPostings jp ON ga.job_id = jp.job_id
       JOIN locations loc ON jp.location_id = loc.location_id
       LEFT JOIN businesses bs ON jp.user_id = bs.user_id
+      ORDER BY jp.job_id DESC
       `,
       [userId]
     );
