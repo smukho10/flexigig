@@ -524,6 +524,11 @@ const fetchAllJobs = async (input = {}) => {
       loc.latitude,
       loc.longitude,
       COALESCE(bs.business_name, 'Unknown Business') AS business_name,
+      (
+        SELECT ROUND(AVG(r.rating)::numeric, 2)
+        FROM reviews r
+        WHERE r.reviewee_id = jp.user_id
+      ) AS employer_avg_rating,
       ${
         useDistanceFilter
           ? `ROUND((${distanceSql})::numeric, 2) AS distance_km,
