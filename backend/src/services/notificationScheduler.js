@@ -5,6 +5,7 @@ const user_queries = require("../database/queries/user_queries.js");
 /**
  * Returns accepted applications where the job starts in approximately
  * `hoursAhead` hours, within a ±windowMinutes tolerance.
+ * Uses interval multiplication instead of make_interval to avoid type inference issues.
  */
 const getShiftsStartingIn = async (hoursAhead, windowMinutes) => {
     const result = await db.query(`
@@ -20,8 +21,8 @@ const getShiftsStartingIn = async (hoursAhead, windowMinutes) => {
         WHERE ga.status = 'ACCEPTED'
           AND jp.jobstart IS NOT NULL
           AND jp.jobstart BETWEEN
-              NOW() + make_interval(hours => $1) - make_interval(mins => $2)
-          AND NOW() + make_interval(hours => $1) + make_interval(mins => $2)
+              NOW() + ($1::int * INTERVAL '1 hour') - ($2::int * INTERVAL '1 minute')
+          AND NOW() + ($1::int * INTERVAL '1 hour') + ($2::int * INTERVAL '1 minute')
     `, [hoursAhead, windowMinutes]);
     return result.rows;
 };
@@ -48,6 +49,7 @@ const sendShiftReminders = async () => {
     try {
         // 24-hour reminder (±30 min window)
         const shifts24h = await getShiftsStartingIn(24, 30);
+        console.log(`[Notifications] 24h check: found ${shifts24h.length} upcoming shift(s)`);
         for (const shift of shifts24h) {
             const label = "24-hour reminder";
             if (await reminderAlreadySent(shift.worker_user_id, shift.job_id, label)) continue;
@@ -65,6 +67,7 @@ const sendShiftReminders = async () => {
 
         // 2-hour reminder (±15 min window)
         const shifts2h = await getShiftsStartingIn(2, 15);
+        console.log(`[Notifications] 2h check: found ${shifts2h.length} upcoming shift(s)`);
         for (const shift of shifts2h) {
             const label = "2-hour reminder";
             if (await reminderAlreadySent(shift.worker_user_id, shift.job_id, label)) continue;
@@ -90,40 +93,44 @@ const sendShiftReminders = async () => {
  */
 const findMatchingWorkers = async (jobId) => {
     const result = await db.query(`
-        SELECT DISTINCT w.user_id, jp.employer_id, jp.jobtitle
-        FROM jobPostings jp
-        JOIN workers w ON TRUE
-        WHERE jp.job_id = $1
-          AND (
-              EXISTS (
-                  SELECT 1
-                  FROM workers_skills ws
-                  JOIN skills s ON ws.skill_id = s.skill_id
-                  WHERE ws.workers_id = w.id
-                    AND lower(s.skill_name) = ANY(
-                        SELECT lower(v) FROM unnest(COALESCE(jp.required_skills, '{}')) AS t(v)
-                    )
-              )
-              OR EXISTS (
-                  SELECT 1
-                  FROM workers_experiences we
-                  JOIN experiences e ON we.experience_id = e.experience_id
-                  WHERE we.workers_id = w.id
-                    AND lower(e.experience_name) = ANY(
-                        SELECT lower(v) FROM unnest(COALESCE(jp.required_experience, '{}')) AS t(v)
-                    )
-              )
-          )
-          AND NOT EXISTS (
-              SELECT 1 FROM gig_applications ga
-              WHERE ga.job_id = jp.job_id AND ga.worker_profile_id = w.id
-          )
-          AND NOT EXISTS (
-              SELECT 1 FROM messages m
-              WHERE m.receiver_id = w.user_id
-                AND m.job_id = jp.job_id
-                AND m.content LIKE '%new gig%'
-          )
+        WITH job_info AS (
+            SELECT job_id, required_skills, required_experience, employer_id, jobtitle
+            FROM jobPostings
+            WHERE job_id = $1
+        )
+        SELECT DISTINCT w.user_id, ji.employer_id, ji.jobtitle
+        FROM job_info ji
+        CROSS JOIN workers w
+        WHERE (
+            EXISTS (
+                SELECT 1
+                FROM workers_skills ws
+                JOIN skills s ON ws.skill_id = s.skill_id
+                WHERE ws.workers_id = w.id
+                  AND lower(s.skill_name) IN (
+                      SELECT lower(v) FROM unnest(COALESCE(ji.required_skills, '{}')) AS t(v)
+                  )
+            )
+            OR EXISTS (
+                SELECT 1
+                FROM workers_experiences we
+                JOIN experiences e ON we.experience_id = e.experience_id
+                WHERE we.workers_id = w.id
+                  AND lower(e.experience_name) IN (
+                      SELECT lower(v) FROM unnest(COALESCE(ji.required_experience, '{}')) AS t(v)
+                  )
+            )
+        )
+        AND NOT EXISTS (
+            SELECT 1 FROM gig_applications ga
+            WHERE ga.job_id = ji.job_id AND ga.worker_profile_id = w.id
+        )
+        AND NOT EXISTS (
+            SELECT 1 FROM messages m
+            WHERE m.receiver_id = w.user_id
+              AND m.job_id = ji.job_id
+              AND m.content LIKE '%new gig%'
+        )
     `, [jobId]);
     return result.rows;
 };
@@ -135,6 +142,7 @@ const findMatchingWorkers = async (jobId) => {
 const notifyWorkersOfNewGig = async (jobId) => {
     try {
         const workers = await findMatchingWorkers(jobId);
+        console.log(`[Notifications] New gig job ${jobId}: found ${workers.length} matching worker(s)`);
         for (const worker of workers) {
             const content = `🆕 New gig matching your profile: "${worker.jobtitle}". Check it out!`;
             await user_queries.sendMessage(
