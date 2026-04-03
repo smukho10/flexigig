@@ -14,7 +14,7 @@ const getShiftsStartingIn = async (hoursAhead, windowMinutes) => {
             w.user_id   AS worker_user_id,
             jp.jobtitle,
             jp.jobstart,
-            jp.employer_id
+            jp.user_id  AS employer_id
         FROM gig_applications ga
         JOIN workers w ON ga.worker_profile_id = w.id
         JOIN jobPostings jp ON ga.job_id = jp.job_id
@@ -94,7 +94,7 @@ const sendShiftReminders = async () => {
 const findMatchingWorkers = async (jobId) => {
     const result = await db.query(`
         WITH job_info AS (
-            SELECT job_id, required_skills, required_experience, employer_id, jobtitle
+            SELECT job_id, required_skills, required_experience, user_id AS employer_id, jobtitle
             FROM jobPostings
             WHERE job_id = $1
         )
