@@ -54,7 +54,7 @@ const sendShiftReminders = async () => {
             const label = "24-hour reminder";
             if (await reminderAlreadySent(shift.worker_user_id, shift.job_id, label)) continue;
 
-            const content = `⏰ ${label}: Your shift for "${shift.jobtitle}" starts in 24 hours!`;
+            const content = `24-hour reminder: Your shift starts in 24 hours!`;
             await user_queries.sendMessage(
                 shift.employer_id,
                 shift.worker_user_id,
@@ -72,7 +72,7 @@ const sendShiftReminders = async () => {
             const label = "2-hour reminder";
             if (await reminderAlreadySent(shift.worker_user_id, shift.job_id, label)) continue;
 
-            const content = `⏰ ${label}: Your shift for "${shift.jobtitle}" starts in 2 hours!`;
+            const content = `2-hour reminder: Your shift starts in 2 hours!`;
             await user_queries.sendMessage(
                 shift.employer_id,
                 shift.worker_user_id,
@@ -119,7 +119,7 @@ const sendNewGigNotifications = async () => {
                     const employerId = employerRes.rows[0]?.user_id;
                     if (!employerId) continue;
 
-                    const content = `🆕 New recommended gig: "${job.jobtitle}". Check it out!`;
+                    const content = `New recommended gig available. Check it out!`;
                     await user_queries.sendMessage(employerId, userId, content, job.job_id, false);
                     console.log(`[Notifications] Sent new gig notification → user ${userId}, job ${job.job_id}`);
                 }
