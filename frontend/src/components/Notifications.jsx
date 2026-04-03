@@ -92,6 +92,7 @@ const Notifications = () => {
                 ) : (
                     notifications.map((notif, index) => {
                         const isAcceptance = notif.content.includes("Congratulations, your application has been accepted");
+                        const isSystemNotif = notif.content.includes("New recommended gig") || notif.content.includes("reminder");
                         return (
                         <div
                             key={notif.message_id || index}
@@ -121,7 +122,7 @@ const Notifications = () => {
                                         ? notif.content.substring(0, 120) + "..."
                                         : notif.content}
                                 </p>
-                                {!isAcceptance && (
+                                {!isAcceptance && !isSystemNotif && (
                                 <button
                                     className="notification-reply-btn"
                                     onClick={() => handleReply(notif)}

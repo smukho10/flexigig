@@ -3,7 +3,7 @@ const express = require("express");
 const router = express.Router();
 const job_queries = require("../queries/job_queries.js");
 const { validateAddress } = require("../middleware/addressValidation");
-const { notifyWorkersOfNewGig } = require("../../services/notificationScheduler.js");
+const { sendNewGigNotifications } = require("../../services/notificationScheduler.js");
 
 const VALID_STATUSES = ["draft", "open", "in-review", "filled", "completed"];
 const MILES_TO_KM = 1.60934;
@@ -150,6 +150,12 @@ router.post("/post-job", async (req, res) => {
       requiredExperience: Array.isArray(requiredExperience) ? requiredExperience : [],
     });
 
+    if (newJob.status === "open") {
+      sendNewGigNotifications().catch(err =>
+        console.error("[Notifications] Failed to send new gig notifications:", err)
+      );
+    }
+
     res.status(201).json({
       message: "Job and Location successfully created",
       job: newJob,
@@ -241,9 +247,8 @@ router.patch("/job-status/:jobId", async (req, res) => {
   try {
     const updatedJob = await job_queries.updateJobStatus(parseInt(jobId, 10), status);
     if (updatedJob) {
-      // Notify matching workers when a job is published
       if (status === "open") {
-        notifyWorkersOfNewGig(parseInt(jobId, 10)).catch(err =>
+        sendNewGigNotifications().catch(err =>
           console.error("[Notifications] Failed to send new gig notifications:", err)
         );
       }
@@ -485,6 +490,34 @@ router.patch("/remove-application/:applicantId/job/:jobId", async (req, res) => 
     console.error("Error removing job application:", error);
     res.status(500).json({ message: "Error removing job application" });
   }
+});
+
+// Debug endpoint — shows accepted shifts and what NOW() is on the server
+router.get("/debug/shift-check", async (req, res) => {
+    const db = require("../connection.js");
+    try {
+        const now = await db.query(`SELECT NOW() AS server_now`);
+        const shifts = await db.query(`
+            SELECT
+                ga.job_id,
+                jp.jobtitle,
+                jp.jobstart,
+                jp.jobstart - NOW() AS time_until_start,
+                w.user_id AS worker_user_id
+            FROM gig_applications ga
+            JOIN workers w ON ga.worker_profile_id = w.id
+            JOIN jobPostings jp ON ga.job_id = jp.job_id
+            WHERE ga.status = 'ACCEPTED'
+              AND jp.jobstart IS NOT NULL
+            ORDER BY jp.jobstart ASC
+        `);
+        res.json({
+            server_now: now.rows[0].server_now,
+            accepted_shifts: shifts.rows,
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 module.exports = router;
