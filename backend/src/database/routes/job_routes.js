@@ -454,6 +454,44 @@ router.patch("/applications/:applicationId/status", async (req, res) => {
       }
     }
 
+    // Send a notification message to the employer when a worker withdraws
+    if (status === "WITHDRAWN" && updated.worker_profile_id && updated.job_id && updated.employer_id) {
+      try {
+        const db = require("../connection.js");
+        const user_queries = require("../queries/user_queries.js");
+
+        // Get worker's user_id and name from worker profile
+        const workerRes = await db.query(
+          `SELECT user_id, first_name, last_name FROM workers WHERE id = $1`,
+          [updated.worker_profile_id]
+        );
+        const workerUserId = workerRes.rows[0]?.user_id;
+        const workerName =
+          `${workerRes.rows[0]?.first_name || ""} ${workerRes.rows[0]?.last_name || ""}`.trim() || "A worker";
+
+        // Get job title
+        const jobRes = await db.query(
+          `SELECT jobtitle FROM jobPostings WHERE job_id = $1`,
+          [updated.job_id]
+        );
+        const jobTitle = jobRes.rows[0]?.jobtitle || "a job";
+
+        if (workerUserId) {
+          const notifContent = `${workerName} has withdrawn their application for "${jobTitle}".`;
+          await user_queries.sendMessage(
+            workerUserId,
+            updated.employer_id,
+            notifContent,
+            updated.job_id,
+            false // not a system message, so it shows up in notifications
+          );
+        }
+      } catch (notifErr) {
+        // Don't fail the whole request if notification fails
+        console.error("Error sending withdrawal notification:", notifErr);
+      }
+    }
+
     return res.json({message: "Application status updated",application: updated});
   } catch (err) {
     console.error("Error updating application status:", err);

@@ -11,6 +11,8 @@ const getShiftsStartingIn = async (hoursAhead, windowMinutes) => {
         SELECT
             ga.job_id,
             w.user_id   AS worker_user_id,
+            w.first_name,
+            w.last_name,
             jp.jobtitle,
             jp.jobstart,
             jp.employer_id
@@ -28,16 +30,16 @@ const getShiftsStartingIn = async (hoursAhead, windowMinutes) => {
 
 /**
  * Returns true if a reminder with `label` text has already been sent
- * to this worker for this job (prevents duplicate notifications).
+ * to this receiver for this job (prevents duplicate notifications).
  */
-const reminderAlreadySent = async (workerUserId, jobId, label) => {
+const reminderAlreadySent = async (receiverId, jobId, label) => {
     const result = await db.query(`
         SELECT 1 FROM messages
         WHERE receiver_id = $1
           AND job_id = $2
           AND content LIKE $3
         LIMIT 1
-    `, [workerUserId, jobId, `%${label}%`]);
+    `, [receiverId, jobId, `%${label}%`]);
     return result.rows.length > 0;
 };
 
@@ -50,34 +52,62 @@ const sendShiftReminders = async () => {
         const shifts24h = await getShiftsStartingIn(24, 30);
         for (const shift of shifts24h) {
             const label = "24-hour reminder";
-            if (await reminderAlreadySent(shift.worker_user_id, shift.job_id, label)) continue;
 
-            const content = `⏰ ${label}: Your shift for "${shift.jobtitle}" starts in 24 hours!`;
-            await user_queries.sendMessage(
-                shift.employer_id,
-                shift.worker_user_id,
-                content,
-                shift.job_id,
-                false
-            );
-            console.log(`[Notifications] Sent 24h reminder → user ${shift.worker_user_id}, job ${shift.job_id}`);
+            if (!(await reminderAlreadySent(shift.worker_user_id, shift.job_id, label))) {
+                const content = `⏰ ${label}: Your shift for "${shift.jobtitle}" starts in 24 hours!`;
+                await user_queries.sendMessage(
+                    shift.employer_id,
+                    shift.worker_user_id,
+                    content,
+                    shift.job_id,
+                    false
+                );
+                console.log(`[Notifications] Sent 24h reminder → user ${shift.worker_user_id}, job ${shift.job_id}`);
+            }
+
+            if (!(await reminderAlreadySent(shift.employer_id, shift.job_id, label))) {
+                const workerName = `${shift.first_name || ""} ${shift.last_name || ""}`.trim() || "A worker";
+                const content = `⏰ ${label}: ${workerName} is booked for your shift "${shift.jobtitle}" in 24 hours.`;
+                await user_queries.sendMessage(
+                    shift.worker_user_id,
+                    shift.employer_id,
+                    content,
+                    shift.job_id,
+                    false
+                );
+                console.log(`[Notifications] Sent 24h employer reminder → user ${shift.employer_id}, job ${shift.job_id}`);
+            }
         }
 
         // 2-hour reminder (±15 min window)
         const shifts2h = await getShiftsStartingIn(2, 15);
         for (const shift of shifts2h) {
             const label = "2-hour reminder";
-            if (await reminderAlreadySent(shift.worker_user_id, shift.job_id, label)) continue;
 
-            const content = `⏰ ${label}: Your shift for "${shift.jobtitle}" starts in 2 hours!`;
-            await user_queries.sendMessage(
-                shift.employer_id,
-                shift.worker_user_id,
-                content,
-                shift.job_id,
-                false
-            );
-            console.log(`[Notifications] Sent 2h reminder → user ${shift.worker_user_id}, job ${shift.job_id}`);
+            if (!(await reminderAlreadySent(shift.worker_user_id, shift.job_id, label))) {
+                const content = `⏰ ${label}: Your shift for "${shift.jobtitle}" starts in 2 hours!`;
+                await user_queries.sendMessage(
+                    shift.employer_id,
+                    shift.worker_user_id,
+                    content,
+                    shift.job_id,
+                    false
+                );
+                console.log(`[Notifications] Sent 2h reminder → user ${shift.worker_user_id}, job ${shift.job_id}`);
+            }
+
+            if (!(await reminderAlreadySent(shift.employer_id, shift.job_id, label))) {
+                const workerName = `${shift.first_name || ""} ${shift.last_name || ""}`.trim() || "A worker";
+                const content = `⏰ ${label}: ${workerName} is booked for your shift "${shift.jobtitle}" in 2 hours.`;
+                await user_queries.sendMessage(
+                    shift.worker_user_id,
+                    shift.employer_id,
+                    content,
+                    shift.job_id,
+                    false
+                );
+                console.log(`[Notifications] Sent 2h employer reminder → user ${shift.employer_id}, job ${shift.job_id}`);
+            }
         }
     } catch (err) {
         console.error("[Notifications] Error sending shift reminders:", err);

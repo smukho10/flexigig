@@ -92,6 +92,12 @@ const Notifications = () => {
                 ) : (
                     notifications.map((notif, index) => {
                         const isAcceptance = notif.content.includes("Congratulations, your application has been accepted");
+                        const isReminder =
+                            notif.content.includes("24-hour reminder") ||
+                            notif.content.includes("2-hour reminder");
+                        const isWithdrawal = notif.content.includes("has withdrawn");
+                        const showReply = !isAcceptance && !isReminder && !isWithdrawal;
+
                         return (
                         <div
                             key={notif.message_id || index}
@@ -121,7 +127,7 @@ const Notifications = () => {
                                         ? notif.content.substring(0, 120) + "..."
                                         : notif.content}
                                 </p>
-                                {!isAcceptance && (
+                                {showReply && (
                                 <button
                                     className="notification-reply-btn"
                                     onClick={() => handleReply(notif)}
