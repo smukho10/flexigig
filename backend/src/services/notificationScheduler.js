@@ -93,9 +93,7 @@ const findMatchingWorkers = async (jobId) => {
         SELECT DISTINCT w.user_id, jp.employer_id, jp.jobtitle
         FROM jobPostings jp
         JOIN workers w ON TRUE
-        JOIN users u ON w.user_id = u.id
         WHERE jp.job_id = $1
-          AND u.role = 'worker'
           AND (
               EXISTS (
                   SELECT 1
