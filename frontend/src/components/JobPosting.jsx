@@ -65,9 +65,7 @@ const JobPosting = () => {
         if (user && user.id) {
             try {
                 const response = await axios.get(`/api/posted-jobs/${user.id}`, { withCredentials: true });
-                setJobs(
-                    response.data.jobs.sort((a, b) => a.jobtitle.localeCompare(b.jobtitle))
-                );
+                setJobs(response.data.jobs);
             } catch (error) {
                 console.error("Error fetching posted jobs:", error);
             }
