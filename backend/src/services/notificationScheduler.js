@@ -87,104 +87,43 @@ const sendShiftReminders = async () => {
     }
 };
 
-/**
- * Finds all open jobs posted in the last `windowMinutes` minutes.
- */
-const getRecentlyOpenedJobs = async (windowMinutes) => {
-    const result = await db.query(`
-        SELECT job_id, required_skills, required_experience, user_id AS employer_id, jobtitle
-        FROM jobPostings
-        WHERE status ILIKE 'open'
-          AND jobposteddate >= NOW() - ($1::int * INTERVAL '1 minute')
-          AND (
-              COALESCE(array_length(required_skills, 1), 0) > 0
-              OR COALESCE(array_length(required_experience, 1), 0) > 0
-          )
-    `, [windowMinutes]);
-    return result.rows;
-};
+const job_queries = require("../database/queries/job_queries.js");
 
 /**
- * Finds workers whose skills or experience match a newly published job,
- * who haven't applied yet, and haven't already been notified for this job.
- */
-const findMatchingWorkers = async (jobId) => {
-    const result = await db.query(`
-        WITH job_info AS (
-            SELECT job_id, required_skills, required_experience, user_id AS employer_id, jobtitle
-            FROM jobPostings
-            WHERE job_id = $1
-        )
-        SELECT DISTINCT w.user_id, ji.employer_id, ji.jobtitle
-        FROM job_info ji
-        CROSS JOIN workers w
-        WHERE (
-            EXISTS (
-                SELECT 1
-                FROM workers_skills ws
-                JOIN skills s ON ws.skill_id = s.skill_id
-                WHERE ws.workers_id = w.id
-                  AND lower(s.skill_name) IN (
-                      SELECT lower(v) FROM unnest(COALESCE(ji.required_skills, '{}')) AS t(v)
-                  )
-            )
-            OR EXISTS (
-                SELECT 1
-                FROM workers_experiences we
-                JOIN experiences e ON we.experience_id = e.experience_id
-                WHERE we.workers_id = w.id
-                  AND lower(e.experience_name) IN (
-                      SELECT lower(v) FROM unnest(COALESCE(ji.required_experience, '{}')) AS t(v)
-                  )
-            )
-        )
-        AND NOT EXISTS (
-            SELECT 1 FROM gig_applications ga
-            WHERE ga.job_id = ji.job_id AND ga.worker_profile_id = w.id
-        )
-        AND NOT EXISTS (
-            SELECT 1 FROM messages m
-            WHERE m.receiver_id = w.user_id
-              AND m.job_id = ji.job_id
-              AND m.content LIKE '%new gig%'
-        )
-    `, [jobId]);
-    return result.rows;
-};
-
-/**
- * Sends a "new gig available" notification to all workers who match
- * the job's required skills/experience. Called when a job is published.
- */
-const notifyWorkersOfNewGig = async (jobId) => {
-    try {
-        const workers = await findMatchingWorkers(jobId);
-        console.log(`[Notifications] New gig job ${jobId}: found ${workers.length} matching worker(s)`);
-        for (const worker of workers) {
-            const content = `🆕 New gig matching your profile: "${worker.jobtitle}". Check it out!`;
-            await user_queries.sendMessage(
-                worker.employer_id,
-                worker.user_id,
-                content,
-                jobId,
-                false
-            );
-            console.log(`[Notifications] Sent new gig notification → user ${worker.user_id}, job ${jobId}`);
-        }
-    } catch (err) {
-        console.error("[Notifications] Error sending new gig notifications:", err);
-    }
-};
-
-/**
- * Checks for jobs opened in the last 15 minutes and notifies matching workers.
+ * For each worker, fetch their recommended jobs and send a one-time notification
+ * for any job that hasn't been notified about yet.
  */
 const sendNewGigNotifications = async () => {
     try {
-        const recentJobs = await getRecentlyOpenedJobs(15);
-        console.log(`[Notifications] New gig check: found ${recentJobs.length} recently opened job(s)`);
-        for (const job of recentJobs) {
-            await notifyWorkersOfNewGig(job.job_id);
+        const workersResult = await db.query(`SELECT DISTINCT user_id FROM workers`);
+        const workerIds = workersResult.rows.map(r => r.user_id);
+        console.log(`[Notifications] New gig check: scanning ${workerIds.length} worker(s)`);
+
+        for (const userId of workerIds) {
+            const recommendedJobs = await job_queries.fetchRecommendedJobs(userId);
+
+            for (const job of recommendedJobs) {
+                // Check if already notified about this job
+                const alreadyNotified = await db.query(`
+                    SELECT 1 FROM messages
+                    WHERE receiver_id = $1 AND job_id = $2 AND content LIKE '%new gig%'
+                    LIMIT 1
+                `, [userId, job.job_id]);
+
+                if (alreadyNotified.rows.length === 0) {
+                    // Get employer user_id as sender
+                    const employerRes = await db.query(
+                        `SELECT user_id FROM jobPostings WHERE job_id = $1`,
+                        [job.job_id]
+                    );
+                    const employerId = employerRes.rows[0]?.user_id;
+                    if (!employerId) continue;
+
+                    const content = `🆕 New recommended gig: "${job.jobtitle}". Check it out!`;
+                    await user_queries.sendMessage(employerId, userId, content, job.job_id, false);
+                    console.log(`[Notifications] Sent new gig notification → user ${userId}, job ${job.job_id}`);
+                }
+            }
         }
     } catch (err) {
         console.error("[Notifications] Error in new gig scan:", err);
