@@ -445,12 +445,11 @@ router.patch("/applications/:applicationId/status", async (req, res) => {
 
         if (workerUserId) {
           const notifContent = `Congratulations, your application has been accepted for "${jobTitle}"!`;
-          await user_queries.sendMessage(
+          await user_queries.insertNotification(
             updated.employer_id,
             workerUserId,
             notifContent,
-            updated.job_id,
-            false // not a system message, so it shows up in notifications
+            updated.job_id
           );
         }
       } catch (notifErr) {
