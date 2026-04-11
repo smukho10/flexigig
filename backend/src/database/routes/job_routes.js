@@ -463,8 +463,8 @@ router.patch("/applications/:applicationId/status", async (req, res) => {
 
               const startDate = startDt.toISOString().split("T")[0];
               const endDate = endDt.toISOString().split("T")[0];
-              const startTime = startDt.toTimeString().slice(0, 5); // HH:MM
-              const endTime = endDt.toTimeString().slice(0, 5);
+              const startTime = startDt.toISOString().split("T")[1].slice(0, 5); // HH:MM UTC
+              const endTime = endDt.toISOString().split("T")[1].slice(0, 5);
 
               // Only add if not already in calendar for this job
               const existing = await db.query(
