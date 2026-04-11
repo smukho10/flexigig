@@ -33,8 +33,9 @@ jest.mock("../../src/database/queries/user_queries.js", () => ({
   saveUserResetToken: jest.fn(),
   getUserIdAndToken: jest.fn(),
   updateUserPassword: jest.fn(),
+  getNotifications: jest.fn(),
+  markAllNotificationsAsRead: jest.fn(),
 }));
-
 jest.mock("../../src/database/queries/workers_queries.js", () => ({
   addWorkerSkill: jest.fn(),
   addWorkerExperience: jest.fn(),
@@ -660,5 +661,61 @@ describe("GET /api/recommended-jobs", () => {
     const res = await agent.get("/api/recommended-jobs");
     expect(res.statusCode).toBe(500);
     expect(res.body.message).toMatch(/failed to fetch recommended jobs/i);
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Notifications API
+// ══════════════════════════════════════════════════════════════════════════════
+describe("Notifications API", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe("GET /api/notifications/:userId", () => {
+    test("returns 200 and notifications on success", async () => {
+      const fakeNotifs = [
+        { notification_id: 1, content: "Test msg 1", is_read: false },
+        { notification_id: 2, content: "Test msg 2", is_read: true },
+      ];
+      userQueries.getNotifications.mockResolvedValueOnce(fakeNotifs);
+
+      const res = await request(app).get("/api/notifications/5");
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.notifications).toEqual(fakeNotifs);
+      expect(userQueries.getNotifications).toHaveBeenCalledWith("5");
+    });
+
+    test("returns 500 on database error", async () => {
+      userQueries.getNotifications.mockRejectedValueOnce(new Error("DB Error"));
+
+      const res = await request(app).get("/api/notifications/5");
+
+      expect(res.statusCode).toBe(500);
+      expect(res.body.success).toBe(false);
+    });
+  });
+
+  describe("PUT /api/notifications/mark-read/:userId", () => {
+    test("returns 200 on success", async () => {
+      userQueries.markAllNotificationsAsRead.mockResolvedValueOnce();
+
+      const res = await request(app).put("/api/notifications/mark-read/5");
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(userQueries.markAllNotificationsAsRead).toHaveBeenCalledWith("5");
+    });
+
+    test("returns 500 on error", async () => {
+      userQueries.markAllNotificationsAsRead.mockRejectedValueOnce(new Error("DB Error"));
+
+      const res = await request(app).put("/api/notifications/mark-read/5");
+
+      expect(res.statusCode).toBe(500);
+      expect(res.body.success).toBe(false);
+    });
   });
 });
