@@ -39,23 +39,25 @@ const ApplicantProfileView = () => {
                         .get(`/api/profile/view-photo-url/${p.id}`, { withCredentials: true })
                         .then((photoRes) => setProfilePhotoUrl(photoRes.data.viewUrl || null))
                         .catch(() => setProfilePhotoUrl(null));
+
+                    axios
+                        .get(`/api/my-calendar/${p.id}`, { withCredentials: true })
+                        .then((calRes) => {
+                            const formatted = calRes.data.map((event) => ({
+                                id: event.id,
+                                title: event.title,
+                                start: new Date(`${event.startdate} ${event.starttime}`),
+                                end: new Date(`${event.enddate} ${event.endtime}`),
+                            }));
+                            setCalendarEvents(formatted);
+                        })
+                        .catch(() => {});
                 }
             })
             .catch(() => setError(true))
             .finally(() => setLoading(false));
 
-        axios
-            .get(`/api/my-calendar/worker/${workerId}`, { withCredentials: true })
-            .then((res) => {
-                const formatted = res.data.map((event) => ({
-                    id: event.id,
-                    title: event.title,
-                    start: new Date(`${event.startdate} ${event.starttime}`),
-                    end: new Date(`${event.enddate} ${event.endtime}`),
-                }));
-                setCalendarEvents(formatted);
-            })
-            .catch(() => {});
+
     }, [workerId]);
 
     if (loading) {
