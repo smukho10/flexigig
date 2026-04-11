@@ -430,12 +430,14 @@ router.patch("/applications/:applicationId/status", async (req, res) => {
         );
         const workerUserId = workerRes.rows[0]?.user_id;
 
-        // Get job title
+        // Get job title, start and end times
         const jobRes = await db.query(
-          `SELECT jobtitle FROM jobPostings WHERE job_id = $1`,
+          `SELECT jobtitle, jobstart, jobend FROM jobPostings WHERE job_id = $1`,
           [updated.job_id]
         );
         const jobTitle = jobRes.rows[0]?.jobtitle || "a job";
+        const jobstart = jobRes.rows[0]?.jobstart;
+        const jobend = jobRes.rows[0]?.jobend;
 
         // Get employer/business name
         const employerDetails = await user_queries.getUserDetails(updated.employer_id);
@@ -451,6 +453,41 @@ router.patch("/applications/:applicationId/status", async (req, res) => {
             notifContent,
             updated.job_id
           );
+
+          // Auto-add the job shift to the worker's calendar
+          if (jobstart) {
+            try {
+              const calendar_queries = require("../queries/calendar_queries.js");
+              const startDt = new Date(jobstart);
+              const endDt = jobend ? new Date(jobend) : startDt;
+
+              const startDate = startDt.toISOString().split("T")[0];
+              const endDate = endDt.toISOString().split("T")[0];
+              const startTime = startDt.toTimeString().slice(0, 5); // HH:MM
+              const endTime = endDt.toTimeString().slice(0, 5);
+
+              // Only add if not already in calendar for this job
+              const existing = await db.query(
+                `SELECT id FROM schedule WHERE user_id = $1 AND worker_id = $2 AND title = $3 AND startDate = $4`,
+                [workerUserId, updated.worker_profile_id, jobTitle, startDate]
+              );
+
+              if (existing.rows.length === 0) {
+                await calendar_queries.setWorkerSchedule(
+                  workerUserId,
+                  updated.worker_profile_id,
+                  startDate,
+                  endDate,
+                  startTime,
+                  endTime,
+                  jobTitle
+                );
+                console.log(`[Calendar] Added shift for worker ${workerUserId}, job "${jobTitle}" on ${startDate}`);
+              }
+            } catch (calErr) {
+              console.error("Error adding job to worker calendar:", calErr);
+            }
+          }
         }
       } catch (notifErr) {
         // Don't fail the whole request if notification fails
