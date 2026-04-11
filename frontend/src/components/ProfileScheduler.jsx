@@ -58,16 +58,14 @@ export default function ProfileScheduler({ selectedProfileId, profiles }) {
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(null);
 
-  const currentProfileName =
-    profiles?.find((p) => p.id === selectedProfileId)?.profile_name ||
-    "Profile Scheduler";
 
-  // Fetch events from DB for this worker profile
+
+  // Fetch events from DB for this user globally
   const fetchEvents = useCallback(() => {
-    if (!selectedProfileId) return;
+    if (!user?.id) return;
     setLoading(true);
     axios
-      .get(`/api/my-calendar/worker/${selectedProfileId}`, {
+      .get(`/api/my-calendar/${user.id}`, {
         withCredentials: true,
       })
       .then((res) => {
@@ -86,11 +84,11 @@ export default function ProfileScheduler({ selectedProfileId, profiles }) {
         setFetchError("Failed to load schedule.");
       })
       .finally(() => setLoading(false));
-  }, [selectedProfileId]);
+  }, [user?.id]);
 
   useEffect(() => {
     fetchEvents();
-  }, [fetchEvents]);
+  }, [fetchEvents, user?.id]);
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
@@ -183,7 +181,6 @@ export default function ProfileScheduler({ selectedProfileId, profiles }) {
 
     const payload = {
       user_id: user.id,
-      worker_id: selectedProfileId,
       startDate: formatDate(currentEvent.start),
       endDate: formatDate(currentEvent.end),
       startTime: formatTime(currentEvent.start),
@@ -193,7 +190,7 @@ export default function ProfileScheduler({ selectedProfileId, profiles }) {
 
     if (modalMode === "add") {
       axios
-        .post("/api/my-calendar/worker", payload, { withCredentials: true })
+        .post("/api/my-calendar", payload, { withCredentials: true })
         .then(() => {
           fetchEvents();
           setShowModal(false);
@@ -210,7 +207,7 @@ export default function ProfileScheduler({ selectedProfileId, profiles }) {
           withCredentials: true,
         })
         .then(() =>
-          axios.post("/api/my-calendar/worker", payload, {
+          axios.post("/api/my-calendar", payload, {
             withCredentials: true,
           })
         )
@@ -282,7 +279,7 @@ export default function ProfileScheduler({ selectedProfileId, profiles }) {
   return (
     <div className="profile-scheduler">
       <div className="scheduler-header">
-        <div className="scheduler-title">Schedule for {currentProfileName}</div>
+        <div className="scheduler-title">Schedule</div>
       </div>
 
       {fetchError && (
