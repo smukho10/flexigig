@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "./UserContext";
 import axios from "axios";
 
@@ -17,6 +17,7 @@ import "../styles/WorkerBoard.css";
 
 const WorkerBoard = () => {
   const { user } = useUser();
+  const navigate = useNavigate();
   const employerId = user?.id || user?.user_id;
 
   const [workers, setWorkers] = useState([]);
@@ -367,9 +368,14 @@ const WorkerBoard = () => {
           </div>
           <div id='workerboard-worker-actions'>
             <img id="workerboard-bookmark" src={Bookmark} alt="Save worker" />
-            <Link to={`/applicant-profile/${worker.id}`} id='workerboard-actions-link'>
-              <div id='workerboard-actions-button'>View Profile</div>
-            </Link>
+            <div id='workerboard-buttons-wrap'>
+              <Link to={`/applicant-profile/${worker.id}`} id='workerboard-actions-link'>
+                <div id='workerboard-actions-button'>View Profile</div>
+              </Link>
+              <div id='workerboard-message-button' onClick={() => navigate("/messages", { state: { partnerId: worker.id } })}>
+                Message
+              </div>
+            </div>
           </div>
         </div>
       </div>
