@@ -252,7 +252,10 @@ router.patch("/job-status/:jobId", async (req, res) => {
           console.error("[Notifications] Failed to send new gig notifications:", err)
         );
       }
-      res.json({ message: "Job status updated", job: updatedJob });
+           if (status === "completed") {
+              await job_queries.acceptInReviewApplicants(parseInt(jobId, 10));
+            }
+            res.json({ message: "Job status updated", job: updatedJob });
     } else {
       res.status(404).json({ message: "Job not found" });
     }

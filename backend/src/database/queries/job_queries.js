@@ -878,6 +878,19 @@ EXISTS (
   return result.rows;
 };
 
+const acceptInReviewApplicants = async (jobId) => {
+  const result = await db.query(
+    `
+    UPDATE gig_applications
+    SET status = 'ACCEPTED', updated_at = now()
+    WHERE job_id = $1 AND status IN ('IN_REVIEW', 'APPLIED')
+    RETURNING *;
+    `,
+    [jobId]
+  );
+  return result.rows;
+};
+
 module.exports = {
   postJob,
   insertLocation,
@@ -902,4 +915,5 @@ module.exports = {
   markJobAsFilled,
   fetchJobLockState,
   setJobLocked,
+  acceptInReviewApplicants,
 };
