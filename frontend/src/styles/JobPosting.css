@@ -32,14 +32,14 @@
 }
 
 .jp-search-input:focus {
-    border-color: #0340BE;
+    border-color: #1D9E75;
 }
 
 .job-posting-container .page-header {
     margin: 0;
-    color: #0340BE;
-    font-size: 24px;
-    font-weight: 400;
+    color: #1a1a2e;
+    font-size: 1.35rem;
+    font-weight: 700;
 }
 
 .job-posting-container .posting-header {
@@ -56,8 +56,9 @@
 
 .job-posting-container ul li {
     padding: 31px 28px 35px;
-    border-radius: 19px;
-    box-shadow: 0 4px 4px rgb(0, 0, 0, .25);
+    border-radius: 16px;
+    border: 1px solid #e8ecf0;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.07);
     margin-bottom: 17px;
     display: flex;
     width: 1114px;
@@ -88,7 +89,7 @@
 }
 
 .job-posting-container ul li .right button {
-    background-color: #4EBBC2;
+    background-color: #1D9E75;
     color: white;
     width: 140px;
     height: 30px;
@@ -114,7 +115,7 @@
     display: flex;
     background-color: white;
     color: black;
-    border: 0.5px solid #4EBBC2;
+    border: 0.5px solid #1D9E75;
     justify-content: space-between;
     align-items: center;
     padding: 0 17px;
@@ -128,7 +129,7 @@
 }
 
 .job-posting-container .create-new-btn:hover {
-    background-color: #4EBBC2;
+    background-color: #1D9E75;
     color: white;
 }
 
@@ -173,7 +174,7 @@
 
 .job-posting-container .remove-job-container .prompt-buttons button {
     margin: 0 10px 0;
-    background-color: #4EBBC2;
+    background-color: #1D9E75;
     color: white;
     width: 103px;
     height: 30px;
@@ -207,9 +208,9 @@
     gap: 7px;
     padding: 6px 18px;
     border-radius: 20px;
-    border: 1.5px solid var(--tab-color, #4EBBC2);
+    border: 1.5px solid var(--tab-color, #1D9E75);
     background-color: white;
-    color: var(--tab-color, #4EBBC2);
+    color: var(--tab-color, #1D9E75);
     font-family: "Poppins";
     font-size: 13px;
     font-weight: 500;
@@ -219,12 +220,12 @@
 }
 
 .status-tab:hover {
-    background-color: var(--tab-color, #4EBBC2);
+    background-color: var(--tab-color, #1D9E75);
     color: white;
 }
 
 .status-tab.active {
-    background-color: var(--tab-color, #4EBBC2);
+    background-color: var(--tab-color, #1D9E75);
     color: white;
 }
 
@@ -238,7 +239,7 @@
     padding: 0 5px;
     border-radius: 10px;
     background-color: white;
-    color: var(--tab-color, #4EBBC2);
+    color: var(--tab-color, #1D9E75);
     font-size: 11px;
     font-weight: 700;
     line-height: 1;
@@ -246,7 +247,7 @@
 }
 
 .status-tab:not(.active) .tab-badge {
-    background-color: var(--tab-color, #4EBBC2);
+    background-color: var(--tab-color, #1D9E75);
     color: white;
 }
 
@@ -266,7 +267,7 @@
     bottom: 0;
     width: 6px;
     border-radius: 19px 0 0 19px;
-    background-color: var(--status-color, #4EBBC2);
+    background-color: var(--status-color, #1D9E75);
 }
 
 /* Status badge top-right of card */
@@ -342,9 +343,10 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    border-radius: 19px;
-    box-shadow: 0 4px 4px rgb(0, 0, 0, .25);
-    font-family: "Poppins";
+    border-radius: 16px;
+    border: 1px solid #e8ecf0;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.07);
+    font-family: 'Quicksand', 'Poppins', sans-serif;
     overflow: hidden;
     width: 1114px;
 }
@@ -420,12 +422,12 @@
 /* Post Job — primary teal */
 .job-posting-form-container .post-btn {
     width: 103px;
-    background-color: #4EBBC2;
+    background-color: #1D9E75;
     transition: background-color 0.15s ease;
 }
 
 .job-posting-form-container .post-btn:hover {
-    background-color: #3aa3aa;
+    background-color: #0F6E56;
 }
 
 .job-posting-form-container .post-btn:disabled {
@@ -558,7 +560,7 @@
     margin: 0 0 12px;
     font-size: 18px;
     font-weight: 600;
-    color: #0340BE;
+    color: #1a1a2e;
 }
 
 .draft-prompt p {
@@ -605,12 +607,12 @@
 }
 
 .draft-prompt-save {
-    background-color: #4EBBC2 !important;
+    background-color: #1D9E75 !important;
     color: white !important;
 }
 
 .draft-prompt-save:hover {
-    background-color: #3aa3aa !important;
+    background-color: #0F6E56 !important;
 }
 
 .draft-prompt-save:disabled {
@@ -673,9 +675,9 @@
     gap: 8px;
     padding: 6px 16px;
     border-radius: 20px;
-    border: 1.5px solid var(--status-color, #4EBBC2); /* Match border to job status */
+    border: 1.5px solid var(--status-color, #1D9E75); /* Match border to job status */
     background-color: white;
-    color: var(--status-color, #4EBBC2);
+    color: var(--status-color, #1D9E75);
     font-family: "Poppins";
     font-size: 14px;
     font-weight: 500;
@@ -689,7 +691,7 @@
     height: 20px;
     padding: 2px 8px;
     border-radius: 10px; /* Pill shape */
-    background-color: var(--status-color, #4EBBC2);
+    background-color: var(--status-color, #1D9E75);
     color: white;
     font-size: 12px;
     font-weight: 700;
@@ -698,7 +700,7 @@
 
 .job-posting-container .count-label {
     font-size: 14px;
-    color: var(--status-color, #4EBBC2);
+    color: var(--status-color, #1D9E75);
     font-weight: 500;
 }
 

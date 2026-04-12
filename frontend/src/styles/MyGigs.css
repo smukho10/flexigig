@@ -29,14 +29,14 @@
 }
 
 .mg-search-input:focus {
-    border-color: #0340BE;
+    border-color: #1D9E75;
 }
 
 .my-gigs-container .header-container h1 {
     margin: 0;
-    color: #0340BE;
-    font-size: 24px;
-    font-weight: 400;
+    color: #1a1a2e;
+    font-size: 1.35rem;
+    font-weight: 700;
 }
 
 .gigs-list {
@@ -55,12 +55,12 @@
     color: black;
     background-color: white;
     border-radius: 5px;
-    border: 1px solid #4EBBC2;
+    border: 1px solid #1D9E75;
     cursor: pointer;
 }
 
 .my-gigs-container .add-job-button:hover {
-    background-color: #4EBBC2;
+    background-color: #1D9E75;
     color: white;
 }
 
@@ -69,9 +69,10 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    border-radius: 19px;
-    box-shadow: 0 4px 4px rgb(0, 0, 0, .25);
-    font-family: "Poppins";
+    border-radius: 16px;
+    border: 1px solid #e8ecf0;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.07);
+    font-family: 'Quicksand', 'Poppins', sans-serif;
     overflow: hidden;
     width: 1114px;
     margin-bottom: 20px;
@@ -123,7 +124,7 @@
 .gig-item .approved-badge {
     display: inline-block;
     padding: 5px 15px;
-    background-color: #4EBBC2;
+    background-color: #1D9E75;
     color: white;
     border-radius: 5px;
     font-size: 12px;
@@ -133,7 +134,7 @@
 .gig-item .in-progress-badge {
     display: inline-block;
     padding: 5px 15px;
-    background-color: #FFA500;
+    background-color: #f59e0b;
     color: white;
     border-radius: 5px;
     font-size: 12px;
@@ -182,7 +183,7 @@
     color: black;
     background-color: white;
     border-radius: 5px;
-    border: 1px solid #4EBBC2;
+    border: 1px solid #1D9E75;
     cursor: pointer;
     outline: none;
 }
@@ -192,7 +193,7 @@
 }
 
 .gig-item .status-dropdown:focus {
-    border-color: #4EBBC2;
+    border-color: #1D9E75;
     box-shadow: 0 0 0 2px rgba(78, 187, 194, 0.1);
 }
 
@@ -344,9 +345,9 @@
 
 .review-modal h2 {
     margin: 0 0 10px 0;
-    color: #0340BE;
-    font-size: 24px;
-    font-weight: 500;
+    color: #1a1a2e;
+    font-size: 1.35rem;
+    font-weight: 700;
 }
 
 .review-modal .employer-name {
@@ -393,7 +394,7 @@
 }
 
 .review-comment:focus {
-    border-color: #4EBBC2;
+    border-color: #1D9E75;
     box-shadow: 0 0 0 2px rgba(78, 187, 194, 0.1);
 }
 
@@ -430,12 +431,12 @@
 }
 
 .modal-buttons .submit-btn {
-    background-color: #4EBBC2;
+    background-color: #1D9E75;
     color: white;
 }
 
 .modal-buttons .submit-btn:hover {
-    background-color: #3da9af;
+    background-color: #0F6E56;
 }
 
 /* Success Message */
@@ -477,7 +478,7 @@
 }
 
 .rate-employer-btn {
-    background-color: #4EBBC2;
+    background-color: #1D9E75;
     color: white;
     border: none;
     padding: 8px 16px;
@@ -488,7 +489,7 @@
     cursor: pointer;
 }
 
-.rate-employer-btn:hover { background-color: #3da9af; }
+.rate-employer-btn:hover { background-color: #0F6E56; }
 
 .rated-employer-btn {
     background-color: #D1FAE5;
@@ -539,7 +540,7 @@
 
 .my-gigs-container .comfirm-removal-container .prompt-buttons button {
     margin: 0 10px 0;
-    background-color: #4EBBC2;
+    background-color: #1D9E75;
     color: white;
     width: 103px;
     height: 30px;

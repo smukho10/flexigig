@@ -23,7 +23,7 @@
     margin: 0;
     font-size: 24px;
     font-weight: 400;
-    color: #0340BE;
+    color: #1a1a2e;
     line-height: 1.2;
 }
 
@@ -41,15 +41,15 @@
     align-items: center;
     margin: 16px 0;
     padding: 10px 20px;
-    background-color: #F0F9FF;
-    border: 1px solid #BAE6FD;
+    background-color: #e1f5ee;
+    border: 1px solid #b6e8d4;
     border-radius: 8px;
     font-size: 13px;
 }
 
 .summary-count {
     font-weight: 600;
-    color: #0369A1;
+    color: #0F6E56;
 }
 
 .summary-note {
@@ -81,20 +81,20 @@
 }
 
 .filter-btn:hover {
-    border-color: #93C5FD;
-    color: #1D4ED8;
-    background-color: #EFF6FF;
+    border-color: #1D9E75;
+    color: #0F6E56;
+    background-color: #e1f5ee;
 }
 
 .filter-btn-active {
-    background-color: #0340BE;
-    border-color: #0340BE;
+    background-color: #1D9E75;
+    border-color: #1D9E75;
     color: white;
 }
 
 .filter-btn-active:hover {
-    background-color: #0233A0;
-    border-color: #0233A0;
+    background-color: #0F6E56;
+    border-color: #0F6E56;
     color: white;
 }
 
@@ -189,7 +189,7 @@
 }
 
 .applicant-avatar--initials {
-    background-color: #4EBBC2;
+    background-color: #1D9E75;
     color: white;
     font-size: 12px;
     font-weight: 600;
@@ -288,11 +288,11 @@
     cursor: not-allowed;
 }
 
-.profile-btn { background-color: #6366F1; color: white; }
-.profile-btn:hover:not(:disabled) { background-color: #4F46E5; }
+.profile-btn { background-color: #185FA5; color: white; }
+.profile-btn:hover:not(:disabled) { background-color: #0340BE; }
 
-.accept-btn  { background-color: #10B981; color: white; }
-.accept-btn:hover:not(:disabled)  { background-color: #059669; }
+.accept-btn  { background-color: #1D9E75; color: white; }
+.accept-btn:hover:not(:disabled)  { background-color: #0F6E56; }
 
 .review-btn  { background-color: #F59E0B; color: white; }
 .review-btn:hover:not(:disabled)  { background-color: #D97706; }
@@ -315,7 +315,7 @@
 .appl-page-btn {
     background-color: white;
     color: #111827;
-    border: 1.5px solid #4EBBC2;
+    border: 1.5px solid #1D9E75;
     padding: 0 16px;
     height: 32px;
     font-family: "Poppins";
@@ -327,7 +327,7 @@
 }
 
 .appl-page-btn:hover:not(:disabled) {
-    background-color: #4EBBC2;
+    background-color: #1D9E75;
     color: white;
 }
 
@@ -397,9 +397,9 @@
 
 .review-modal h2 {
     margin: 0 0 10px 0;
-    color: #0340BE;
-    font-size: 24px;
-    font-weight: 500;
+    color: #1a1a2e;
+    font-size: 1.35rem;
+    font-weight: 700;
 }
 
 .review-modal .employer-name {
@@ -444,7 +444,7 @@
 }
 
 .review-comment:focus {
-    border-color: #4EBBC2;
+    border-color: #1D9E75;
     box-shadow: 0 0 0 2px rgba(78, 187, 194, 0.1);
 }
 
@@ -480,12 +480,12 @@
 }
 
 .modal-buttons .submit-btn {
-    background-color: #4EBBC2;
+    background-color: #1D9E75;
     color: white;
 }
 
 .modal-buttons .submit-btn:hover {
-    background-color: #3da9af;
+    background-color: #0F6E56;
 }
 
 .success-message {
@@ -524,8 +524,8 @@
         transform: scale(1);
     }
 }
-.rate-worker-btn { background-color: #4EBBC2; color: white; }
-.rate-worker-btn:hover:not(:disabled) { background-color: #3da9af; }
+.rate-worker-btn { background-color: #1D9E75; color: white; }
+.rate-worker-btn:hover:not(:disabled) { background-color: #0F6E56; }
 .rated-btn { background-color: #D1FAE5; color: #065F46; cursor: not-allowed; }
 
 
