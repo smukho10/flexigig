@@ -324,7 +324,7 @@ const fetchAllJobs = async (input = {}) => {
   const perPage = isNewShape ? input.perPage : 10;
 
   const pageNum = Number.isInteger(page) && page >= 1 ? page : 1;
-  const limitNum = [10, 20].includes(perPage) ? perPage : 10;
+  const limitNum = Number.isInteger(perPage) && perPage >= 1 && perPage <= 1000 ? perPage : 10;
   const offsetNum = (pageNum - 1) * limitNum;
 
   const SORT_COLUMNS = {

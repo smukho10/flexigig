@@ -319,6 +319,7 @@ const JobBoard = () => {
 
   const [jobDetails, setJobDetails] = useState(null);
   const [jobs, setJobs] = useState([]);
+  const [allJobs, setAllJobs] = useState([]);
   const [applyJobId, setApplyJobId] = useState(null);
   const [refresh, setRefresh] = useState(false);
 
@@ -326,8 +327,8 @@ const JobBoard = () => {
   const [workerRadius, setWorkerRadius] = useState("");
 
   const [page, setPage] = useState(1);
-  const [perPage] = useState(10);
-  const [totalPages, setTotalPages] = useState(1);
+  const perPage = 10;
+  const [totalPages] = useState(1);
 
   const [openFilter, setOpenFilter] = useState(null);
   const filterBarRef = useRef(null);
@@ -425,33 +426,18 @@ const JobBoard = () => {
     const fetchJobs = async () => {
       try {
         const { skills, experience, distanceLabel, ...restFilters } = appliedFilters;
-        const params = { page, perPage, ...restFilters };
-        if (Array.isArray(skills) && skills.length > 0) {
-          params.skills = skills;
-        }
-        if (Array.isArray(experience) && experience.length > 0) {
-          params.experience = experience;
-        }
-
-        if (user?.id && !user?.isbusiness) {
-          params.currentUserId = user.id;
-        }
-
+        const params = { page: 1, perPage: 1000, ...restFilters };
+        if (Array.isArray(skills) && skills.length > 0) params.skills = skills;
+        if (Array.isArray(experience) && experience.length > 0) params.experience = experience;
+        if (user?.id && !user?.isbusiness) params.currentUserId = user.id;
         const wantsDistanceFilter = !!appliedFilters.useDistanceFilter;
         const effectiveDistance = appliedFilters.distanceKm || "";
-
-        if (
-          wantsDistanceFilter &&
-          workerCoords?.lat != null &&
-          workerCoords?.lon != null &&
-          effectiveDistance !== ""
-        ) {
+        if (wantsDistanceFilter && workerCoords?.lat != null && workerCoords?.lon != null && effectiveDistance !== "") {
           params.originLat = workerCoords.lat;
           params.originLon = workerCoords.lon;
           params.distanceKm = effectiveDistance;
         }
 
-        // REPLACE with:
         const res = await axios.get(`/api/all-jobs`, {
           params,
           paramsSerializer: (p) => {
@@ -470,16 +456,15 @@ const JobBoard = () => {
 
         const jobsFromApi = Array.isArray(res.data?.jobs) ? res.data.jobs : [];
         setJobs(jobsFromApi);
-        setTotalPages(res.data?.pagination?.totalPages || 1);
+        setAllJobs(jobsFromApi);
       } catch (error) {
         console.error("Error fetching all jobs:", error);
         setJobs([]);
-        setTotalPages(1);
+        setAllJobs([]);
       }
     };
-
     fetchJobs();
-  }, [refresh, page, perPage, appliedFilters, workerCoords, workerRadius, user]);
+  }, [refresh, appliedFilters, workerCoords, workerRadius, user?.id]);
 
   useEffect(() => {
     if (location.state?.openJobId && jobs.length) {
@@ -633,9 +618,6 @@ const JobBoard = () => {
   const handleJobDetails = (e) =>
     setJobDetails(jobs.find((job) => job.job_id.toString() === e.target.dataset.id));
 
-  const handlePrevPage = () => setPage((p) => Math.max(1, p - 1));
-  const handleNextPage = () => setPage((p) => Math.min(totalPages, p + 1));
-
   const renderActiveTags = () => {
     const tags = [];
 
@@ -712,7 +694,7 @@ const JobBoard = () => {
     return tags.length ? <div className="active-filters-row">{tags}</div> : null;
   };
 
-  const filteredJobs = jobs
+  const allFiltered = allJobs
     .filter((job) => {
       if (searchInput.trim()) {
         const q = searchInput.trim().toLowerCase();
@@ -728,6 +710,12 @@ const JobBoard = () => {
       return true;
     })
     .sort((a, b) => new Date(b.jobposteddate) - new Date(a.jobposteddate));
+
+  const effectiveTotalPages = Math.max(1, Math.ceil(allFiltered.length / perPage));
+  const filteredJobs = allFiltered.slice((page - 1) * perPage, page * perPage);
+
+  const handlePrevPage = () => setPage((p) => Math.max(1, p - 1));
+  const handleNextPage = () => setPage((p) => Math.min(effectiveTotalPages, p + 1));
 
   const listItems =
     filteredJobs.length === 0
@@ -803,6 +791,7 @@ const JobBoard = () => {
               placeholder="Search by job title or description..."
               value={searchInput}
               onChange={(e) => { setSearchInput(e.target.value); setPage(1); }}
+
             />
           </div>
 
@@ -938,9 +927,9 @@ const JobBoard = () => {
                   Prev
                 </button>
                 <span>
-                  Page {page} of {totalPages}
+                  Page {page} of {effectiveTotalPages}
                 </span>
-                <button onClick={handleNextPage} disabled={page >= totalPages}>
+                <button onClick={handleNextPage} disabled={page >= effectiveTotalPages}>
                   Next
                 </button>
               </div>
