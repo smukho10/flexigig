@@ -24,6 +24,7 @@
     "express-session": "^1.18.1",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
+    "node-cron": "^4.2.1",
     "nodemailer": "^6.9.9",
     "nodemon": "^3.0.3",
     "passport": "^0.7.0",
@@ -37,12 +38,13 @@
   },
   "jest": {
     "testEnvironment": "node",
-    "testMatch": ["<rootDir>/test/**/*.test.js"],
+    "testMatch": [
+      "<rootDir>/test/**/*.test.js"
+    ],
     "collectCoverageFrom": [
       "src/**/*.js",
       "!src/**/connection.js",
       "!src/**/server.js"
     ]
   }
-
 }

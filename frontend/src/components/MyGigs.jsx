@@ -12,6 +12,7 @@ const MyGigs = () => {
   const { user } = useUser();
   const [approvedGigs, setApprovedGigs] = useState([]);
   const [employerPhotoUrls, setEmployerPhotoUrls] = useState({});
+  const [searchInput, setSearchInput] = useState("");
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [currentReviewGig, setCurrentReviewGig] = useState(null);
   const [rating, setRating] = useState(0);
@@ -27,8 +28,7 @@ const MyGigs = () => {
       axios.get(`/api/applied-jobs/${user.id}`, { withCredentials: true })
         .then(async res => {
           const gigs = res.data.jobs
-            .filter(job => job.application_status !== 'APPLIED')
-            .sort((a, b) => a.jobstart.localeCompare(b.jobstart));
+            .filter(job => job.application_status !== 'APPLIED');
           setApprovedGigs(gigs);
           // Fetch employer profile photos
           const uniqueEmployerIds = [...new Set(gigs.map(g => g.employer_user_id).filter(Boolean))];
@@ -49,7 +49,7 @@ const MyGigs = () => {
           console.error("Error fetching gigs:", error);
         });
     }
-  }, [user, refresh]);
+  }, [user?.id, refresh]);
 
   const openReviewModal = (gig) => {
     setCurrentReviewGig(gig);
@@ -165,18 +165,45 @@ const MyGigs = () => {
         <h1>My Gigs</h1>
         <button className="add-job-button" onClick={findJob}>+ Find a New Job</button>
       </div>
-      {approvedGigs.length === 0 ? (
-        <div className="no-gigs-message">
-          <p>You have no gigs at the moment.</p>
-          <p>Apply for jobs to see them here once they are reviewed!</p>
-        </div>
-      ) : (
+      <input
+        type="text"
+        className="mg-search-input"
+        placeholder="Search by job title..."
+        value={searchInput}
+        onChange={(e) => setSearchInput(e.target.value)}
+      />
+      {(() => {
+        const filteredGigs = approvedGigs.filter(job =>
+          !searchInput.trim() ||
+          (job.jobtitle || "").toLowerCase().includes(searchInput.trim().toLowerCase())
+        );
+
+        if (approvedGigs.length === 0) {
+          return (
+            <div className="no-gigs-message">
+              <p>You have no gigs at the moment.</p>
+              <p>Apply for jobs to see them here once they are reviewed!</p>
+            </div>
+          );
+        }
+
+        if (filteredGigs.length === 0) {
+          return <div className="no-gigs-message"><p>No gigs match your search.</p></div>;
+        }
+
+        return (
         <ul className="gigs-list">
-          {approvedGigs.map(job => {
+          {filteredGigs.map(job => {
             const isAccepted = job.application_status === 'ACCEPTED';
             const isCompleted = job.status === 'completed';
             const isWithdrawn = job.application_status === 'WITHDRAWN';
-            const alreadyRated = !!job.has_reviewed_employer;
+            const myRatingForEmployer = job.my_rating_for_employer;
+                        const employerRatingForMe = job.employer_rating_for_me;
+                        const alreadyRated = !!job.has_reviewed_employer;
+                        const renderStars = (r) =>
+                          [1, 2, 3, 4, 5].map((s) => (
+                            <span key={s} className={`gig-star ${s <= r ? 'gig-star--filled' : ''}`}>★</span>
+                          ));
 
             return (
               <li key={job.job_id} className="gig-item">
@@ -214,7 +241,7 @@ const MyGigs = () => {
                   </div>
                   <div className="top-right">
                     <button onClick={handleEmployer}>
-                      <img src={employerPhotoUrls[job.employer_user_id] || DefaultAvatar} alt="employer-avatar" width="32px" height="auto" />
+                      <img src={employerPhotoUrls[job.employer_user_id] || DefaultAvatar} alt="employer-avatar" className="employer-avatar" />
                       {job.business_name}
                     </button>
                     <button onClick={() => handleMessage(job)}>
@@ -223,6 +250,24 @@ const MyGigs = () => {
                     </button>
                   </div>
                 </div>
+
+                {isAccepted && isCompleted && (
+                  <div className="gig-ratings">
+                    <div className="gig-rating-row">
+                      <span className="gig-rating-label">Your rating for employer:</span>
+                      {myRatingForEmployer != null
+                        ? <span className="gig-rating-stars">{renderStars(myRatingForEmployer)}</span>
+                        : <span className="gig-rating-pending">Not rated yet</span>}
+                    </div>
+                    <div className="gig-rating-row">
+                      <span className="gig-rating-label">Employer's rating for you:</span>
+                      {employerRatingForMe != null
+                        ? <span className="gig-rating-stars">{renderStars(employerRatingForMe)}</span>
+                        : <span className="gig-rating-pending">Not rated yet</span>}
+                    </div>
+                  </div>
+                )}
+
                 <div className="bottom">
                   <div className="bottom-left">
                     <div className="details-div">
@@ -251,7 +296,8 @@ const MyGigs = () => {
             );
           })}
         </ul>
-      )}
+        );
+      })()}
 
       {/* Withdraw confirmation modal */}
       {withdrawing && (

@@ -80,3 +80,48 @@
     margin-top: 3%;
     width: 7%;
 }
+
+/* ════════════════════════════════════════════
+   RESPONSIVE — Tablet / Mobile (≤ 768px)
+════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    .home {
+        padding: 10% 16px;
+        box-sizing: border-box;
+    }
+
+    #welcome-flexygig-image {
+        width: 85%;
+    }
+
+    #flexygig-logo-image {
+        width: 20%;
+    }
+
+    #findgig-button,
+    #postgig-button,
+    #signin-button {
+        width: auto;
+        min-width: 180px;
+        padding: 12px 24px;
+        font-size: 15px;
+        box-sizing: border-box;
+    }
+}
+
+@media (max-width: 480px) {
+    #welcome-flexygig-image {
+        width: 100%;
+    }
+
+    #flexygig-logo-image {
+        width: 28%;
+    }
+
+    #findgig-button,
+    #postgig-button,
+    #signin-button {
+        width: 90%;
+        max-width: 320px;
+    }
+}

@@ -5,6 +5,7 @@ import axios from "axios";
 
 import ArrowBack from "../assets/images/ChevronLeft.png";
 import Arrow from "../assets/images/arrow-more.svg";
+import DefaultAvatar from "../assets/images/DefaultAvatar.png";
 import Money from "../assets/images/gigwidget-money.svg";
 import Calendar from "../assets/images/gigwidget-calendar.svg";
 import Star from "../assets/images/gigwidget-star.svg";
@@ -17,37 +18,193 @@ import "../styles/WorkerBoard.css";
 const WorkerBoard = () => {
   const { user } = useUser();
   const navigate = useNavigate();
+  const employerId = user?.id || user?.user_id;
+
   const [workers, setWorkers] = useState([]);
   const [skills, setSkills] = useState([]);
+  const [jobs, setJobs] = useState([]);
   const [selectedSkill, setSelectedSkill] = useState("");
-  const [selectedLocation, setSelectedLocation] = useState("");
   const [selectedRating, setSelectedRating] = useState("");
+
+  const [selectedDistance, setSelectedDistance] = useState("");
+  const [customDistance, setCustomDistance] = useState("");
+  const [isCustomDistance, setIsCustomDistance] = useState(false);
+  const [useCustomAddress, setUseCustomAddress] = useState(false);
+  const [customStreetAddress, setCustomStreetAddress] = useState("");
+  const [customCity, setCustomCity] = useState("");
+  const [customProvince, setCustomProvince] = useState("");
+  const [customPostalCode, setCustomPostalCode] = useState("");
+
+  const [appliedDistance, setAppliedDistance] = useState("");
+  const [appliedUseCustomAddress, setAppliedUseCustomAddress] = useState(false);
+  const [appliedCustomStreetAddress, setAppliedCustomStreetAddress] = useState("");
+  const [appliedCustomCity, setAppliedCustomCity] = useState("");
+  const [appliedCustomProvince, setAppliedCustomProvince] = useState("");
+  const [appliedCustomPostalCode, setAppliedCustomPostalCode] = useState("");
+
+  const [showLocationFilter, setShowLocationFilter] = useState(false);
+  const [workerPhotoUrls, setWorkerPhotoUrls] = useState({});
   const [loading, setLoading] = useState(true);
+  const [jobsLoading, setJobsLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const distanceOptions = [
+    { label: "10 miles", km: 16.09 },
+    { label: "20 miles", km: 32.19 },
+    { label: "30 miles", km: 48.28 },
+    { label: "50 miles", km: 80.47 },
+    { label: "75 miles", km: 120.7 },
+    { label: "100 miles", km: 160.93 }
+  ];
+
   useEffect(() => {
-    const fetchWorkerBoardData = async () => {
+    const fetchSkills = async () => {
+      try {
+        const skillsRes = await axios.get("/api/get-all-skills", { withCredentials: true });
+        setSkills(Array.isArray(skillsRes.data) ? skillsRes.data : []);
+      } catch (err) {
+        console.error("Error fetching skills:", err);
+      }
+    };
+
+    fetchSkills();
+  }, []);
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        setJobsLoading(true);
+
+        if (!employerId) {
+          setJobs([]);
+          return;
+        }
+
+        const jobsRes = await axios.get(`/api/posted-jobs/${employerId}`, { withCredentials: true });
+        const fetchedJobs = Array.isArray(jobsRes.data?.jobs) ? jobsRes.data.jobs : [];
+
+        setJobs(fetchedJobs);
+      } catch (err) {
+        console.error("Error fetching posted jobs:", err);
+        setJobs([]);
+      } finally {
+        setJobsLoading(false);
+      }
+    };
+
+    fetchJobs();
+  }, [employerId]);
+
+  const defaultOriginJob = useMemo(() => {
+    return jobs.find(
+      (job) =>
+        job.latitude !== null &&
+        job.latitude !== undefined &&
+        job.longitude !== null &&
+        job.longitude !== undefined
+    ) || null;
+  }, [jobs]);
+
+  const hasDefaultOrigin = !!defaultOriginJob;
+
+  useEffect(() => {
+    const fetchWorkers = async () => {
       try {
         setLoading(true);
         setError("");
 
-        const [workersRes, skillsRes] = await Promise.all([
-          axios.get("/api/gig-workers", { withCredentials: true }),
-          axios.get("/api/get-all-skills", { withCredentials: true })
-        ]);
+        const normalizedSkill = typeof selectedSkill === "string" ? selectedSkill.trim() : "";
+        const normalizedRating = typeof selectedRating === "string" ? selectedRating.trim() : "";
+        const normalizedDistance = typeof appliedDistance === "string" ? appliedDistance.trim() : "";
 
-        setWorkers(Array.isArray(workersRes.data) ? workersRes.data : []);
-        setSkills(Array.isArray(skillsRes.data) ? skillsRes.data : []);
+        const params = {};
+
+        if (normalizedSkill) {
+          params.skill = normalizedSkill;
+        }
+
+        if (normalizedRating) {
+          params.rating = normalizedRating;
+        }
+
+        if (normalizedDistance) {
+          params.distanceKm = normalizedDistance;
+
+          if (appliedUseCustomAddress) {
+            const streetAddress = typeof appliedCustomStreetAddress === "string" ? appliedCustomStreetAddress.trim() : "";
+            const city = typeof appliedCustomCity === "string" ? appliedCustomCity.trim() : "";
+            const province = typeof appliedCustomProvince === "string" ? appliedCustomProvince.trim() : "";
+            const postalCode = typeof appliedCustomPostalCode === "string" ? appliedCustomPostalCode.trim() : "";
+
+            if (streetAddress) params.streetAddress = streetAddress;
+            if (city) params.city = city;
+            if (province) params.province = province;
+            if (postalCode) params.postalCode = postalCode;
+          } else if (defaultOriginJob) {
+            params.originLat = defaultOriginJob.latitude;
+            params.originLon = defaultOriginJob.longitude;
+          }
+        }
+
+        const workersRes = await axios.get("/api/gig-workers", {
+          params,
+          withCredentials: true
+        });
+
+        const fetchedWorkers = Array.isArray(workersRes.data) ? workersRes.data : [];
+        setWorkers(fetchedWorkers);
+
+        // Fetch profile photos for each worker
+        const photoMap = {};
+        await Promise.all(
+          fetchedWorkers.map(async (w) => {
+            if (!w.user_id) return;
+            try {
+              const photoRes = await axios.get(`/api/profile/view-photo-url/${w.user_id}`, { withCredentials: true });
+              if (photoRes.data.viewUrl) photoMap[w.user_id] = photoRes.data.viewUrl;
+            } catch (_) {}
+          })
+        );
+        setWorkerPhotoUrls(photoMap);
       } catch (err) {
-        console.error("Error fetching worker board data:", err);
+        console.error("Error fetching workers:", err);
         setError("Failed to load workers.");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchWorkerBoardData();
-  }, []);
+    fetchWorkers();
+  }, [
+    selectedSkill,
+    selectedRating,
+    appliedDistance,
+    appliedUseCustomAddress,
+    appliedCustomStreetAddress,
+    appliedCustomCity,
+    appliedCustomProvince,
+    appliedCustomPostalCode,
+    defaultOriginJob
+  ]);
+
+  const canUseDistanceFilter = useCustomAddress
+    ? Boolean(customStreetAddress || customCity || customProvince || customPostalCode)
+    : hasDefaultOrigin;
+
+  const getDefaultOriginLabel = () => {
+    if (!defaultOriginJob) {
+      return "No saved business location found.";
+    }
+
+    const parts = [
+      defaultOriginJob.streetaddress || defaultOriginJob.streetAddress,
+      defaultOriginJob.city,
+      defaultOriginJob.province,
+      defaultOriginJob.postalcode || defaultOriginJob.postalCode
+    ].filter(Boolean);
+
+    return parts.length > 0 ? parts.join(", ") : defaultOriginJob.jobtitle || "Saved business location";
+  };
 
   const getWorkerName = (worker) => {
     return [
@@ -123,39 +280,13 @@ const WorkerBoard = () => {
     return "No location listed";
   };
 
-  const getWorkerLocationValue = (worker) => {
-    const city =
-      worker.city ||
-      worker.worker_city ||
-      worker.user_city ||
-      "";
-    const province =
-      worker.province ||
-      worker.worker_province ||
-      worker.user_province ||
-      worker.state ||
-      "";
-
-    if (city && province) {
-      return `${city}, ${province}`;
-    }
-
-    if (city) {
-      return city;
-    }
-
-    if (province) {
-      return province;
-    }
-
-    if (worker.location) {
-      return worker.location;
-    }
-
-    return "";
-  };
-
   const getWorkerRating = (worker) => {
+    const ratingsCount = Number(worker.ratings_count ?? 0);
+
+    if (ratingsCount === 0) {
+      return null;
+    }
+
     const rating =
       worker.avg_rating ??
       worker.average_rating ??
@@ -169,39 +300,37 @@ const WorkerBoard = () => {
     return Number(rating);
   };
 
-  const filteredWorkers = useMemo(() => {
-    return workers.filter((worker) => {
-      const matchesSkill =
-        !selectedSkill ||
-        (Array.isArray(worker.skills) &&
-          worker.skills.some((skill) => skill === selectedSkill));
+  const getRatingDisplay = (worker) => {
+    const rating = getWorkerRating(worker);
 
-      const workerLocation = getWorkerLocationValue(worker);
-      const matchesLocation =
-        !selectedLocation || workerLocation === selectedLocation;
+    if (rating === null) {
+      return "Not yet rated";
+    }
 
-      const workerRating = getWorkerRating(worker);
-      const matchesRating =
-        !selectedRating ||
-        (workerRating !== null && workerRating >= Number(selectedRating));
+    return `${Number(rating).toFixed(1)} stars`;
+  };
 
-      return matchesSkill && matchesLocation && matchesRating;
-    });
-  }, [workers, selectedSkill, selectedLocation, selectedRating]);
+  const getDistanceDisplay = (worker) => {
+    if (worker.distance_km == null || worker.distance_km === "") {
+      return null;
+    }
 
-  const locationOptions = useMemo(() => {
-    return [...new Set(
-      workers
-        .map((worker) => getWorkerLocationValue(worker))
-        .filter((location) => location && location.trim() !== "")
-    )].sort((a, b) => a.localeCompare(b));
-  }, [workers]);
+    const miles = Number(worker.distance_km) * 0.621371;
+    return `${miles.toFixed(1)} miles away`;
+  };
 
   const WorkerItem = ({ worker }) => {
+    const photoUrl = workerPhotoUrls[worker.user_id];
     return (
       <div id='workerboard-worker'>
         <div id='workerboard-worker-header'>
           <div id='workerboard-worker-title-wrap'>
+            <img
+              className="workerboard-avatar"
+              src={photoUrl || DefaultAvatar}
+              alt={getWorkerName(worker)}
+              onError={(e) => { e.target.src = DefaultAvatar; }}
+            />
             <h2 id='workerboard-worker-name'>{getWorkerName(worker)}</h2>
             <Link to={`/applicant-profile/${worker.id}`}>
               <img id="workerboard-arrow" src={Arrow} alt="View worker" />
@@ -225,6 +354,16 @@ const WorkerBoard = () => {
             <div id='workerboard-worker-item'>
               <img id="workerboard-icons" src={Grid} alt="Location" />
               {getLocationDisplay(worker)}
+            </div>
+            {getDistanceDisplay(worker) && (
+              <div id='workerboard-worker-item'>
+                <img id="workerboard-icons" src={Grid} alt="Distance" />
+                {getDistanceDisplay(worker)}
+              </div>
+            )}
+            <div id='workerboard-worker-item'>
+              <img id="workerboard-icons" src={Star} alt="Rating" />
+              {getRatingDisplay(worker)}
             </div>
           </div>
           <div id='workerboard-worker-actions'>
@@ -250,11 +389,263 @@ const WorkerBoard = () => {
         <h1>Find Workers</h1>
       </div>
 
-      <div id='workerboard-skill-search'>
-        <img id="workerboard-filter-icon" src={SearchFilter} alt="" />
-      </div>
-
       <div id='workerboard-extra-filters'>
+        <div id='workerboard-location-filter-wrap'>
+          <div
+            id='workerboard-location-toggle'
+            onClick={() => setShowLocationFilter(!showLocationFilter)}
+            style={{ cursor: "pointer" }}
+          >
+            <img
+              id="workerboard-filter-icon"
+              src={SearchFilter}
+              alt="Location filter"
+            />
+            <span id='workerboard-location-toggle-text'>Location</span>
+          </div>
+
+          {showLocationFilter && (
+            <div id='workerboard-location-popup'>
+              <div id='workerboard-location-popup-inner'>
+                <div id='workerboard-location-popup-title'>LOCATION</div>
+
+                {!jobsLoading && !useCustomAddress && (
+                  <div style={{ marginBottom: "12px" }}>
+                    {hasDefaultOrigin ? (
+                      <>
+                        Using saved business location:
+                        <div style={{ marginTop: "6px", fontWeight: "600" }}>
+                          {getDefaultOriginLabel()}
+                        </div>
+                      </>
+                    ) : (
+                      "No saved business location found. Enter a custom address below."
+                    )}
+                  </div>
+                )}
+
+                <div
+                  id='workerboard-distance-pill'
+                  onClick={() => setUseCustomAddress((prev) => !prev)}
+                  style={{
+                    marginBottom: "14px",
+                    cursor: "pointer",
+                    fontWeight: useCustomAddress ? "600" : "400"
+                  }}
+                >
+                  {useCustomAddress ? "Use Saved Business Location" : "Use Custom Address"}
+                </div>
+
+                {useCustomAddress && (
+                  <div style={{ marginBottom: "18px" }}>
+                    <input
+                      type="text"
+                      placeholder="Street address"
+                      value={customStreetAddress}
+                      onChange={(e) => setCustomStreetAddress(e.target.value)}
+                      style={{
+                        width: "100%",
+                        height: "40px",
+                        padding: "8px",
+                        borderRadius: "8px",
+                        border: "1px solid #7ad7df",
+                        boxSizing: "border-box",
+                        marginBottom: "10px"
+                      }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="City"
+                      value={customCity}
+                      onChange={(e) => setCustomCity(e.target.value)}
+                      style={{
+                        width: "100%",
+                        height: "40px",
+                        padding: "8px",
+                        borderRadius: "8px",
+                        border: "1px solid #7ad7df",
+                        boxSizing: "border-box",
+                        marginBottom: "10px"
+                      }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Province / State"
+                      value={customProvince}
+                      onChange={(e) => setCustomProvince(e.target.value)}
+                      style={{
+                        width: "100%",
+                        height: "40px",
+                        padding: "8px",
+                        borderRadius: "8px",
+                        border: "1px solid #7ad7df",
+                        boxSizing: "border-box",
+                        marginBottom: "10px"
+                      }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Postal / ZIP code"
+                      value={customPostalCode}
+                      onChange={(e) => setCustomPostalCode(e.target.value)}
+                      style={{
+                        width: "100%",
+                        height: "40px",
+                        padding: "8px",
+                        borderRadius: "8px",
+                        border: "1px solid #7ad7df",
+                        boxSizing: "border-box"
+                      }}
+                    />
+                  </div>
+                )}
+
+                <div style={{ marginTop: "18px", marginBottom: "10px" }}>
+                  Distance
+                </div>
+
+                <div id='workerboard-distance-buttons'>
+                  {distanceOptions.map((option) => (
+                    <div
+                      key={option.label}
+                      id='workerboard-distance-pill'
+                      onClick={() => {
+                        if (!canUseDistanceFilter) {
+                          return;
+                        }
+
+                        setSelectedDistance(String(option.km));
+                        setIsCustomDistance(false);
+                        setCustomDistance("");
+                      }}
+                      style={{
+                        cursor: canUseDistanceFilter ? "pointer" : "not-allowed",
+                        opacity: canUseDistanceFilter ? 1 : 0.5,
+                        fontWeight: String(selectedDistance) === String(option.km) ? "600" : "400"
+                      }}
+                    >
+                      {option.label}
+                    </div>
+                  ))}
+
+                  <div
+                    id='workerboard-distance-pill'
+                    onClick={() => {
+                      if (!canUseDistanceFilter) {
+                        return;
+                      }
+
+                      setIsCustomDistance(true);
+                      setSelectedDistance("");
+                    }}
+                    style={{
+                      cursor: canUseDistanceFilter ? "pointer" : "not-allowed",
+                      opacity: canUseDistanceFilter ? 1 : 0.5,
+                      fontWeight: isCustomDistance ? "600" : "400"
+                    }}
+                  >
+                    Custom
+                  </div>
+                </div>
+
+                {isCustomDistance && (
+                  <div style={{ marginTop: "12px" }}>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="Enter miles"
+                      value={customDistance}
+                      onChange={(e) => {
+                        const cleaned = e.target.value.replace(/[^0-9.]/g, "");
+                        const parts = cleaned.split(".");
+                        const normalized =
+                          parts.length > 2
+                            ? `${parts[0]}.${parts.slice(1).join("")}`
+                            : cleaned;
+                        setCustomDistance(normalized);
+                      }}
+                      style={{
+                        width: "100%",
+                        height: "40px",
+                        padding: "8px",
+                        borderRadius: "8px",
+                        border: "1px solid #7ad7df",
+                        boxSizing: "border-box"
+                      }}
+                    />
+                  </div>
+                )}
+
+                {!canUseDistanceFilter && (
+                  <div style={{ marginTop: "12px" }}>
+                    {useCustomAddress
+                      ? "Enter an address to use distance filtering."
+                      : "No saved business location is available yet. Switch to custom address to filter by distance."}
+                  </div>
+                )}
+
+                <div id='workerboard-location-popup-actions'>
+                  <div
+                    id='workerboard-location-clear'
+                    onClick={() => {
+                      setSelectedDistance("");
+                      setCustomDistance("");
+                      setIsCustomDistance(false);
+                      setUseCustomAddress(false);
+                      setCustomStreetAddress("");
+                      setCustomCity("");
+                      setCustomProvince("");
+                      setCustomPostalCode("");
+                      setAppliedDistance("");
+                      setAppliedUseCustomAddress(false);
+                      setAppliedCustomStreetAddress("");
+                      setAppliedCustomCity("");
+                      setAppliedCustomProvince("");
+                      setAppliedCustomPostalCode("");
+                    }}
+                    style={{ cursor: "pointer" }}
+                  >
+                    Clear
+                  </div>
+
+                  <div
+                    id='workerboard-location-apply'
+                    onClick={() => {
+                      let nextDistance = selectedDistance;
+
+                      if (isCustomDistance) {
+                        if (customDistance) {
+                          const miles = Number(customDistance);
+                          if (!Number.isNaN(miles) && miles > 0) {
+                            const km = miles * 1.60934;
+                            nextDistance = String(km);
+                          } else {
+                            nextDistance = "";
+                          }
+                        } else {
+                          nextDistance = "";
+                        }
+                      }
+
+                      setAppliedDistance(nextDistance);
+                      setAppliedUseCustomAddress(useCustomAddress);
+                      setAppliedCustomStreetAddress(customStreetAddress);
+                      setAppliedCustomCity(customCity);
+                      setAppliedCustomProvince(customProvince);
+                      setAppliedCustomPostalCode(customPostalCode);
+                      setSelectedDistance(nextDistance);
+                      setShowLocationFilter(false);
+                    }}
+                    style={{ cursor: "pointer" }}
+                  >
+                    Apply
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
         <select
           id='workerboard-filter-select'
           value={selectedSkill}
@@ -270,36 +661,36 @@ const WorkerBoard = () => {
 
         <select
           id='workerboard-filter-select'
-          value={selectedLocation}
-          onChange={(e) => setSelectedLocation(e.target.value)}
-        >
-          <option value="">All Locations</option>
-          {locationOptions.map((location) => (
-            <option key={location} value={location}>
-              {location}
-            </option>
-          ))}
-        </select>
-
-        <select
-          id='workerboard-filter-select'
           value={selectedRating}
           onChange={(e) => setSelectedRating(e.target.value)}
         >
           <option value="">All Ratings</option>
-          <option value="5">5+ Stars</option>
-          <option value="4">4+ Stars</option>
-          <option value="3">3+ Stars</option>
-          <option value="2">2+ Stars</option>
-          <option value="1">1+ Stars</option>
+          <option value="5">5 Stars</option>
+          <option value="4">4 Stars</option>
+          <option value="3">3 Stars</option>
+          <option value="2">2 Stars</option>
+          <option value="1">1 Stars</option>
         </select>
 
         <div
           id='workerboard-clear-filters'
           onClick={() => {
             setSelectedSkill("");
-            setSelectedLocation("");
             setSelectedRating("");
+            setSelectedDistance("");
+            setCustomDistance("");
+            setIsCustomDistance(false);
+            setUseCustomAddress(false);
+            setCustomStreetAddress("");
+            setCustomCity("");
+            setCustomProvince("");
+            setCustomPostalCode("");
+            setAppliedDistance("");
+            setAppliedUseCustomAddress(false);
+            setAppliedCustomStreetAddress("");
+            setAppliedCustomCity("");
+            setAppliedCustomProvince("");
+            setAppliedCustomPostalCode("");
           }}
           style={{ cursor: "pointer" }}
         >
@@ -312,10 +703,10 @@ const WorkerBoard = () => {
           <div>Loading workers...</div>
         ) : error ? (
           <div>{error}</div>
-        ) : filteredWorkers.length === 0 ? (
+        ) : workers.length === 0 ? (
           <div>No workers found.</div>
         ) : (
-          filteredWorkers.map((worker) => (
+          workers.map((worker) => (
             <WorkerItem key={worker.id} worker={worker} />
           ))
         )}

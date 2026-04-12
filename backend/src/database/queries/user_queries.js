@@ -495,12 +495,11 @@ const markMessagesAsRead = async (receiverId, senderId) => {
 
 const getUnreadCount = async (userId) => {
   try {
-    const query = `
+    const result = await db.query(`
       SELECT COUNT(*) AS unread_count
-      FROM messages
+      FROM notifications
       WHERE receiver_id = $1 AND is_read = FALSE;
-    `;
-    const result = await db.query(query, [userId]);
+    `, [userId]);
     return parseInt(result.rows[0].unread_count, 10);
   } catch (error) {
     console.error('Error fetching unread count:', error);
@@ -571,6 +570,68 @@ const checkApplicationInReview = async (jobId, userId1, userId2) => {
   return result.rows.length > 0;
 };
 
+const insertNotification = async (senderId, receiverId, content, jobId) => {
+  try {
+    const result = await db.query(`
+      INSERT INTO notifications (sender_id, receiver_id, content, job_id)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (receiver_id, job_id) DO NOTHING
+      RETURNING *;
+    `, [senderId, receiverId, content, jobId || null]);
+    return result.rows[0];
+  } catch (error) {
+    console.error('Error inserting notification:', error);
+    throw error;
+  }
+};
+
+const getNotifications = async (userId) => {
+  try {
+    const query = `
+      SELECT
+        n.notification_id,
+        n.sender_id,
+        n.content,
+        n.created_at AS timestamp,
+        n.job_id,
+        jp.jobtitle AS job_title,
+        CASE
+          WHEN w.user_id IS NOT NULL THEN CONCAT(w.first_name, ' ', w.last_name)
+          ELSE b.business_name
+        END AS sender_name,
+        u.profile_photo_key AS sender_photo_key
+      FROM notifications n
+      LEFT JOIN jobPostings jp ON n.job_id = jp.job_id
+      LEFT JOIN users u ON n.sender_id = u.id
+      LEFT JOIN workers w ON n.sender_id = w.user_id
+      LEFT JOIN businesses b ON n.sender_id = b.user_id
+      WHERE n.receiver_id = $1
+      ORDER BY n.created_at DESC
+      LIMIT 10;
+    `;
+    const result = await db.query(query, [userId]);
+    return result.rows;
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    throw error;
+  }
+};
+
+const markAllNotificationsAsRead = async (userId) => {
+  try {
+    const result = await db.query(`
+      UPDATE notifications
+      SET is_read = TRUE
+      WHERE receiver_id = $1 AND is_read = FALSE
+      RETURNING *;
+    `, [userId]);
+    return result.rows;
+  } catch (error) {
+    console.error('Error marking all notifications as read:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   addUser,
   addWorker,
@@ -598,6 +659,9 @@ module.exports = {
   getUnreadCount,
   getUserDetails,
   checkApplicationInReview,
+  insertNotification,
+  getNotifications,
+  markAllNotificationsAsRead,
 
   //NEW EXPORTS
   setCurrentSession,

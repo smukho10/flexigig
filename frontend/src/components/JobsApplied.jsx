@@ -15,11 +15,15 @@ const JobsApplied = () => {
   const [refresh, setRefresh] = useState();
   const [withdrawing, setWithdrawing] = useState();
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchInput, setSearchInput] = useState("");
   const navigate = useNavigate();
 
   const ITEMS_PER_PAGE = 5;
-  const totalPages = Math.ceil(appliedJobs.length / ITEMS_PER_PAGE);
-  const visibleJobs = appliedJobs.slice(
+  const filteredJobs = appliedJobs.filter(job =>
+    !searchInput.trim() || job.jobtitle?.toLowerCase().includes(searchInput.trim().toLowerCase())
+  );
+  const totalPages = Math.ceil(filteredJobs.length / ITEMS_PER_PAGE);
+  const visibleJobs = filteredJobs.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
@@ -30,8 +34,7 @@ const JobsApplied = () => {
         try {
           const res = await axios.get(`/api/applied-jobs/${user.id}`, { withCredentials: true });
           const sorted = [...res.data.jobs]
-            .filter(job => ['APPLIED', 'IN_REVIEW'].includes(job.application_status))
-            .sort((a, b) => a.jobstart.localeCompare(b.jobstart));
+            .filter(job => ['APPLIED', 'IN_REVIEW'].includes(job.application_status));
           setAppliedJobs(sorted);
           setCurrentPage(1);
           // Fetch employer profile photos
@@ -54,7 +57,7 @@ const JobsApplied = () => {
       }
     };
     fetchAppliedJobs();
-  }, [user, refresh]);
+  }, [user?.id, refresh]);
 
   const handleWithdraw = async (e) => {
     const jobId = e.target.value;
@@ -119,6 +122,13 @@ const JobsApplied = () => {
         <h1>Jobs Applied</h1>
         <button className="add-job-button" onClick={findJob}>+ Find a New Job</button>
       </div>
+      <input
+        type="text"
+        className="ja-search-input"
+        placeholder="Search by job title..."
+        value={searchInput}
+        onChange={(e) => { setSearchInput(e.target.value); setCurrentPage(1); }}
+      />
       <ul className="jobs-list">
         {visibleJobs.map(job => (
           <li key={job.job_id} className="job-item">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import "../styles/DashboardHeader.scss";
 import flexygig from "../assets/images/gigs.png";
@@ -10,7 +10,7 @@ import { useWorker } from './WorkerContext';
 import { useBusiness } from './BusinessContext';
 import { useNavigate } from "react-router-dom";
 
-const DashboardHeader = () => {
+const DashboardHeader = ({ onMenuToggle }) => {
 
     const { user } = useUser();
     const { worker } = useWorker();
@@ -19,6 +19,7 @@ const DashboardHeader = () => {
 
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [profilePhotoUrl, setProfilePhotoUrl] = useState(null);
+    const [unreadCount, setUnreadCount] = useState(0);
 
     const toggleDropdown = () => {
         setIsDropdownOpen(!isDropdownOpen);
@@ -43,6 +44,32 @@ const DashboardHeader = () => {
         }
     };
 
+    // Fetch unread count for bell badge
+    const fetchUnreadCount = useCallback(() => {
+        if (!user?.id) return;
+        axios
+            .get(`/api/unread-count/${user.id}`, { withCredentials: true })
+            .then((res) => setUnreadCount(res.data.unreadCount || 0))
+            .catch(() => setUnreadCount(0));
+    }, [user?.id]);
+
+    // Poll unread count every 30 seconds
+    useEffect(() => {
+        fetchUnreadCount();
+        const interval = setInterval(fetchUnreadCount, 30000);
+        return () => clearInterval(interval);
+    }, [fetchUnreadCount]);
+
+    // Listen for notificationsRead event to refresh badge
+    useEffect(() => {
+        const handleNotificationsRead = () => {
+            setUnreadCount(0);
+            // Re-fetch after a brief delay to sync with backend
+            setTimeout(fetchUnreadCount, 500);
+        };
+        window.addEventListener("notificationsRead", handleNotificationsRead);
+        return () => window.removeEventListener("notificationsRead", handleNotificationsRead);
+    }, [fetchUnreadCount]);
 
     useEffect(() => {
         const fetchProfilePhoto = async () => {
@@ -68,6 +95,10 @@ const DashboardHeader = () => {
 
     return (
         <div className="dashboard-header">
+            <button className="hamburger-btn" onClick={onMenuToggle} aria-label="Open navigation menu">
+                <span></span><span></span><span></span>
+            </button>
+
             <div className="header-section left">
                 <div className="logo">
                     <img src={flexygig} alt="Flexygig Logo" className="logo-img" />
@@ -76,16 +107,6 @@ const DashboardHeader = () => {
                         <span className="gig">GIG</span>
                     </h1>
                 </div>
-            </div>
-
-            <div className="header-section center">
-                <input type="text"
-                    className="search-bar"
-                    placeholder="Search"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onKeyDown={handleSearchKeyDown}
-                />
             </div>
 
             <div className="header-section right">
@@ -108,8 +129,11 @@ const DashboardHeader = () => {
                 )}
             </div>
 
-            <Link to="/notifications" className="notification-btn">
+            <Link to="/notifications" className="notification-btn" id="notification-bell">
                 <img src={NotificationIcon} alt="Notifications" className="notification-icon" />
+                {unreadCount > 0 && (
+                    <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+                )}
             </Link>
         </div>
     );

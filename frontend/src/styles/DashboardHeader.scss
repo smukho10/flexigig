@@ -22,6 +22,10 @@
   .header-section {
     display: flex;
 
+    &.left {
+        flex: 1;
+    }
+
     &.logo {
         display: flex;
         align-items: center;
@@ -164,6 +168,7 @@
     border-radius: 50%;
     background: transparent;
     cursor: pointer;
+    position: relative;
   
     &:hover {
       background-color: rgba(0, 0, 0, 0.1);
@@ -174,6 +179,95 @@
     width: 22px;
     height: 24px;
   }
+
+  .notification-badge {
+    position: absolute;
+    top: -2px;
+    right: -4px;
+    background-color: #e74c3c;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'Poppins', sans-serif;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    line-height: 1;
+    box-shadow: 0 2px 6px rgba(231, 76, 60, 0.4);
+    border: 2px solid #ffffff;
+    animation: badge-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes badge-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+
+/* ── Hamburger button (mobile only) ── */
+.hamburger-btn {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 6px;
+
+  span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background-color: #273240;
+    border-radius: 2px;
+    transition: background-color 0.2s;
+  }
+
+  &:hover span {
+    background-color: #4EBBC2;
+  }
+}
+
+/* ── Mobile / Tablet (≤ 768px) ── */
+@media (max-width: 768px) {
+  .hamburger-btn {
+    display: flex;
+  }
+
+  .dashboard-header {
+    padding: 8px 12px;
+  }
+
+  .header-section.center {
+    display: none;
+  }
+
+  .logo-name {
+    font-size: 1.3rem;
+  }
+
+  .header-section.right {
+    max-width: none;
+    margin-right: 4px;
+  }
+
+  .user-name {
+    display: none;
+  }
+
+  .dropdown-menu {
+    right: 0;
+  }
+}
   
   .dropdown-menu {
     .logout-button {

@@ -27,6 +27,19 @@ jest.mock("../../src/database/queries/job_queries.js", () => ({
 
 const jobQueries = require("../../src/database/queries/job_queries.js");
 
+// Mock user_queries for notification functionality
+jest.mock("../../src/database/queries/user_queries.js", () => ({
+  getUserDetails: jest.fn(),
+  insertNotification: jest.fn(),
+}));
+
+jest.mock("../../src/database/connection.js", () => ({
+  query: jest.fn(),
+}));
+
+const userQueries = require("../../src/database/queries/user_queries.js");
+const db = require("../../src/database/connection.js");
+
 // Mount the router onto a fresh express app for testing
 const app = express();
 app.use(express.json());
@@ -93,5 +106,41 @@ describe("Job Routes", () => {
       expect(res.body).toHaveProperty("error", "Database connection error");
     });
 
+  });
+  describe("PATCH /api/applications/:applicationId/status", () => {
+    test("sends an acceptance notification when status is ACCEPTED", async () => {
+      // Mock db queries
+      const updatedApplication = {
+        application_id: 1,
+        job_id: 10,
+        employer_id: 100,
+        worker_profile_id: 200,
+        status: "ACCEPTED"
+      };
+
+      jobQueries.updateGigApplicationStatus.mockResolvedValueOnce(updatedApplication);
+      
+      db.query.mockResolvedValueOnce({ rows: [{ user_id: 201 }] }); // Worker user ID
+      db.query.mockResolvedValueOnce({ rows: [{ jobtitle: "Software Engineer" }] }); // Job title
+      
+      userQueries.getUserDetails.mockResolvedValueOnce({
+        type: "business",
+        businessName: "Tech Corp",
+      });
+
+      const res = await request(app)
+        .patch("/api/applications/1/status")
+        .send({ status: "ACCEPTED" });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.message).toBe("Application status updated");
+      expect(userQueries.insertNotification).toHaveBeenCalledTimes(1);
+      expect(userQueries.insertNotification).toHaveBeenCalledWith(
+        100, // employer_id
+        201, // worker user_id
+        'Congratulations, your application has been accepted for "Software Engineer"!', // content
+        10 // job_id
+      );
+    });
   });
 });

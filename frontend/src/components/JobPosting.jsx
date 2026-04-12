@@ -5,7 +5,7 @@ import ChevronLeft from "../assets/images/ChevronLeft.png";
 import DollarSign from "../assets/images/DollarSign.png";
 import PlusSign from "../assets/images/PlusSign.png";
 import { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useUser } from "./UserContext";
 import JobPostingForm from "./JobPostingForm";
 
@@ -40,8 +40,14 @@ const NEXT_STATUS_LABEL = {
 const JobPosting = () => {
     const { user } = useUser();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [jobs, setJobs] = useState([]);
-    const [activeTab, setActiveTab] = useState(JOB_STATUS.OPEN);
+
+    // Derive active tab from URL (?tab=open|draft|in-review|completed), fallback to OPEN
+    const tabParam = searchParams.get("tab");
+    const activeTab = Object.values(JOB_STATUS).includes(tabParam) ? tabParam : JOB_STATUS.OPEN;
+    const setActiveTab = (tab) => setSearchParams({ tab }, { replace: true });
+    const [searchInput, setSearchInput] = useState("");
     const [createJob, setCreateJob] = useState(false);
     const [editJob, setEditJob] = useState(false);
     const [removeJob, setRemoveJob] = useState(false);
@@ -59,9 +65,7 @@ const JobPosting = () => {
         if (user && user.id) {
             try {
                 const response = await axios.get(`/api/posted-jobs/${user.id}`, { withCredentials: true });
-                setJobs(
-                    response.data.jobs.sort((a, b) => a.jobtitle.localeCompare(b.jobtitle))
-                );
+                setJobs(response.data.jobs);
             } catch (error) {
                 console.error("Error fetching posted jobs:", error);
             }
@@ -92,7 +96,7 @@ const JobPosting = () => {
     const handleCancelRemove = () => setRemoveJob(false);
 
     const handleViewApplicants = (job) => {
-        navigate(`/my-jobs/${job.job_id}/applicants`, { state: { job } });
+        navigate(`/my-jobs/${job.job_id}/applicants`, { state: { job, fromTab: activeTab } });
     };
 
     const handleEdit = async (e) => {
@@ -210,7 +214,9 @@ const JobPosting = () => {
     const getJobStatus = (job) =>
         localStatusOverrides[job.job_id] ?? job.status ?? JOB_STATUS.OPEN;
 
-    const tabJobs = jobs.filter(j => getJobStatus(j) === activeTab);
+    const tabJobs = jobs
+        .filter(j => getJobStatus(j) === activeTab)
+        .filter(j => !searchInput.trim() || j.jobtitle?.toLowerCase().includes(searchInput.trim().toLowerCase()));
     const tabConfig = TAB_CONFIG.find(t => t.key === activeTab);
 
     // Badge counts per tab
@@ -315,6 +321,16 @@ const JobPosting = () => {
                         <span>Create New</span>
                         <img src={PlusSign} alt="create-new" width="13px" height="auto" />
                     </button>
+
+                    <div className="jp-search-row">
+                        <input
+                            type="text"
+                            className="jp-search-input"
+                            placeholder="Search by job title..."
+                            value={searchInput}
+                            onChange={(e) => setSearchInput(e.target.value)}
+                        />
+                    </div>
 
                     {/* ── Status Tabs ── */}
                     <div className="status-tabs">

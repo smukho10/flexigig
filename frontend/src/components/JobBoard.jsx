@@ -292,6 +292,26 @@ const ExperienceDropdown = ({ selected, onUpdate, onClear, onApply }) => (
   </div>
 );
 
+const RatingDropdown = ({ selected, onChange, onClear, onApply }) => (
+  <div className="filter-dropdown">
+    <h4>Rating</h4>
+    <select
+      className="rating-select"
+      value={selected ?? ""}
+      onChange={(e) => onChange(e.target.value === "" ? null : Number(e.target.value))}
+    >
+      <option value="">Any rating</option>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <option key={star} value={star}>{star}+</option>
+      ))}
+    </select>
+    <div className="filter-actions">
+      <button className="filter-clear-btn" onClick={onClear}>Clear</button>
+      <button className="filter-apply-btn" onClick={onApply}>Apply</button>
+    </div>
+  </div>
+);
+
 const JobBoard = () => {
   const { user } = useUser();
   const location = useLocation();
@@ -311,6 +331,10 @@ const JobBoard = () => {
 
   const [openFilter, setOpenFilter] = useState(null);
   const filterBarRef = useRef(null);
+
+  const [searchInput, setSearchInput] = useState("");
+  const [minRating, setMinRating] = useState(null);
+  const [pendingRating, setPendingRating] = useState(null);
 
   const [pendingFilters, setPendingFilters] = useState({
     city: "",
@@ -395,14 +419,13 @@ const JobBoard = () => {
     };
 
     fetchWorkerLocation();
-  }, [user]);
+  }, [user?.id]);
 
   useEffect(() => {
     const fetchJobs = async () => {
       try {
         const { skills, experience, distanceLabel, ...restFilters } = appliedFilters;
         const params = { page, perPage, ...restFilters };
-        // REPLACE with:
         if (Array.isArray(skills) && skills.length > 0) {
           params.skills = skills;
         }
@@ -689,10 +712,27 @@ const JobBoard = () => {
     return tags.length ? <div className="active-filters-row">{tags}</div> : null;
   };
 
+  const filteredJobs = jobs
+    .filter((job) => {
+      if (searchInput.trim()) {
+        const q = searchInput.trim().toLowerCase();
+        if (
+          !(job.jobtitle || "").toLowerCase().includes(q) &&
+          !(job.jobdescription || "").toLowerCase().includes(q)
+        ) return false;
+      }
+      if (minRating !== null) {
+        const rating = parseFloat(job.employer_avg_rating);
+        if (isNaN(rating) || Math.floor(rating) !== minRating) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => new Date(b.jobposteddate) - new Date(a.jobposteddate));
+
   const listItems =
-    jobs.length === 0
+    filteredJobs.length === 0
       ? null
-      : jobs.map((job) => (
+      : filteredJobs.map((job) => (
           <li key={job.job_id}>
             <div className="left">
               <h2>{job.jobtitle}</h2>
@@ -756,6 +796,16 @@ const JobBoard = () => {
         <div>
           <h1>Job Board</h1>
 
+          <div className="jb-search-row">
+            <input
+              type="text"
+              className="jb-search-input"
+              placeholder="Search by job title or description..."
+              value={searchInput}
+              onChange={(e) => { setSearchInput(e.target.value); setPage(1); }}
+            />
+          </div>
+
           <div className="filter-bar" ref={filterBarRef}>
             <img src={FiltersIcon} alt="filters" width="24px" height="auto" />
 
@@ -800,6 +850,13 @@ const JobBoard = () => {
               onClick={() => toggleFilter("experience")}
             >
               Experience{appliedFilters.experience?.length ? ` · ${appliedFilters.experience.length}` : ""}
+            </button>
+
+            <button
+              className={`filter-btn ${openFilter === "rating" ? "active" : ""} ${minRating !== null ? "has-value" : ""}`}
+              onClick={() => toggleFilter("rating")}
+            >
+                 Rating{minRating !== null ? ` · ${minRating}+` : ""}
             </button>
 
             {openFilter === "location" && (
@@ -858,6 +915,15 @@ const JobBoard = () => {
                 onUpdate={updatePending}
                 onClear={() => clearFilter(experienceKeys)}
                 onApply={() => applyFilter(experienceKeys)}
+              />
+            )}
+
+            {openFilter === "rating" && (
+              <RatingDropdown
+                selected={pendingRating}
+                onChange={setPendingRating}
+                onClear={() => { setPendingRating(null); setMinRating(null); setOpenFilter(null); }}
+                onApply={() => { setMinRating(pendingRating); setOpenFilter(null); }}
               />
             )}
           </div>

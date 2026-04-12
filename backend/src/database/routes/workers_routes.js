@@ -2,10 +2,98 @@ const express = require('express');
 const router = express.Router();
 const workers_queries = require("../queries/workers_queries.js");
 const db = require('../connection.js');
+const { geocodeAddress } = require("../../services/geocodingService");
+
+const buildFullAddress = ({ streetAddress, city, province, postalCode }) => {
+  const parts = [streetAddress, city, province, postalCode]
+    .map(part => typeof part === 'string' ? part.trim() : part)
+    .filter(Boolean);
+  return parts.length > 0 ? parts.join(', ') : null;
+};
+
+const parseIntegerOrNull = (value) => {
+  if (value === undefined || value === null || value === '') return null;
+  const parsed = parseInt(value, 10);
+  return Number.isNaN(parsed) ? null : parsed;
+};
+
+const parseFloatOrNull = (value) => {
+  if (value === undefined || value === null || value === '') return null;
+  const parsed = parseFloat(value);
+  return Number.isNaN(parsed) ? null : parsed;
+};
+
+const parseStringOrNull = (value) => {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed === '' ? null : trimmed;
+};
 
 router.get('/gig-workers', async (req, res) => {
   try {
-    const workers = await workers_queries.fetchWorkers();
+    const {
+      jobId,
+      distanceKm,
+      skill,
+      rating,
+      originLat,
+      originLon,
+      streetAddress,
+      city,
+      province,
+      postalCode
+    } = req.query;
+
+    const normalizedJobId = parseIntegerOrNull(jobId);
+    const normalizedDistanceKm = parseFloatOrNull(distanceKm);
+    const normalizedSkill = parseStringOrNull(skill);
+    const normalizedRating = parseFloatOrNull(rating);
+
+    let parsedOriginLat = parseFloatOrNull(originLat);
+    let parsedOriginLon = parseFloatOrNull(originLon);
+
+    if (
+      (parsedOriginLat === null || parsedOriginLon === null) &&
+      (parseStringOrNull(streetAddress) || parseStringOrNull(city) || parseStringOrNull(province) || parseStringOrNull(postalCode))
+    ) {
+      const fullAddress = buildFullAddress({
+        streetAddress,
+        city,
+        province,
+        postalCode
+      });
+
+      if (fullAddress) {
+        const geocoded = await geocodeAddress(fullAddress);
+        if (geocoded) {
+          parsedOriginLat = parseFloatOrNull(geocoded.latitude);
+          parsedOriginLon = parseFloatOrNull(geocoded.longitude);
+        }
+      }
+    }
+
+    const hasBoardFilters =
+      normalizedJobId !== null ||
+      normalizedDistanceKm !== null ||
+      normalizedSkill !== null ||
+      normalizedRating !== null ||
+      (parsedOriginLat !== null && parsedOriginLon !== null);
+
+    let workers;
+
+    if (hasBoardFilters) {
+      workers = await workers_queries.fetchWorkersForBoard({
+        jobId: normalizedJobId,
+        distanceKm: normalizedDistanceKm,
+        skill: normalizedSkill,
+        rating: normalizedRating,
+        originLat: parsedOriginLat,
+        originLon: parsedOriginLon
+      });
+    } else {
+      workers = await workers_queries.fetchWorkers();
+    }
+
     console.log(workers);
     res.json(workers);
     return;
