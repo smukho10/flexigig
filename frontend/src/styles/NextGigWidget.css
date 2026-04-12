@@ -4,13 +4,15 @@
 }
 
 .nextgig-container {
-  color: #0340BE;
+  color: #1a1a2e;
   background: #ffffff;
-  padding: 20px;
-  border-radius: 20px;
-  width: 750px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  width: 100%;
   height: fit-content;
-  box-shadow: 0 6px 4px 0 #00000025, 0 8px 20px 0 #0000002a;
+  border: 1px solid #e8ecf0;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.07);
+  box-sizing: border-box;
 }
 
 .nextgig-date-time {

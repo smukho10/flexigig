@@ -33,8 +33,10 @@
 
 .chat-container h1 {
     flex-shrink: 1;
-    font-size: 2vw;
-    font-weight: 600;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    letter-spacing: -0.1px;
 }
 
 .person-list {
@@ -71,14 +73,15 @@
 
 .person-item {
     padding: 10px;
-    margin: 5px 0;
-    border-radius: 5px;
+    margin: 2px 0;
+    border-radius: 8px;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 10px;
-    background-color: #f9f9f9;
-    transition: background-color 0.3s ease;
+    background-color: transparent;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background-color 0.12s ease;
 }
 
 .person-item-avatar {
@@ -90,7 +93,7 @@
 }
 
 .person-item:hover {
-    background-color: #e0e0e0;
+    background-color: #f9fafb;
 }
 
 .person-item.active {
@@ -194,9 +197,10 @@
 }
 
 .no-chats {
-    font-size: 1.5rem;
+    font-size: 0.875rem;
     text-align: center;
-    color: #888;
+    color: #9ca3af;
+    font-weight: 500;
     margin: auto;
 }
 
@@ -269,7 +273,7 @@
     }
 
     .chat-container h1 {
-        font-size: 5vw;
+        font-size: 0.95rem;
     }
 
     .chat-input input {

@@ -27,14 +27,15 @@
   background-color: #fff;
   margin-bottom: 20px;
   padding: 20px;
-  border: 2px solid #007bff;
-  border-radius: 15px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border: 1px solid #e8ecf0;
+  border-radius: 16px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.07);
   transition: box-shadow 0.3s ease;
 }
 
 .job-item:hover {
-  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
 }
 
 .job-info h1 {
