@@ -312,8 +312,8 @@ router.get("/all-jobs", async (req, res) => {
       return res.status(400).json({ message: "page must be an integer >= 1" });
     }
 
-    if (!Number.isInteger(perPage) || ![10, 20].includes(perPage)) {
-      return res.status(400).json({ message: "perPage must be either 10 or 20" });
+    if (!Number.isInteger(perPage) || perPage < 1 || perPage > 1000) {
+      return res.status(400).json({ message: "perPage must be between 1 and 1000" });
     }
 
     const distanceKm =
