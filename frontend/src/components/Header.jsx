@@ -7,7 +7,7 @@ import "../styles/Header.scss";
 const Header = () => {
   const [active, setactive] = useState(false);
   const [active1, setactive1] = useState(false);
-  const { user, setUser } = useUser();
+  const { user, logout } = useUser();
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -21,10 +21,8 @@ const Header = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    setUser(null);
-    // Redirect to the landing page or sign-in page
+  const handleLogout = async () => {
+    await logout();
     navigate("/signin");
   };
 
