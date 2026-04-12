@@ -26,6 +26,7 @@ import WorkerBoard from "./components/WorkerBoard";
 // Custom
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoutes";
+import PublicOnlyRoute from "./components/PublicOnlyRoute";
 import AccountSelection from './components/AccountSelection';
 import AuthCallback from './components/AuthCallback';
 import CompleteProfile from './components/CompleteProfile';
@@ -59,9 +60,9 @@ const App = () => {
           <Router>
             <Routes>
               {/* Public Routes */}
-              <Route path="/" element={<LandingPage />} />
+              <Route path="/" element={<PublicOnlyRoute><LandingPage /></PublicOnlyRoute>} />
               <Route path="/register" element={<Register />} />
-              <Route path="/signin" element={<SignIn />} />
+              <Route path="/signin" element={<PublicOnlyRoute><SignIn /></PublicOnlyRoute>} />
               <Route path="/account-selection" element={<AccountSelection />} />
               <Route path="/verify/:token" element={<VerifyEmailPage />} />
               <Route path="/initiate-password-reset" element={<PasswordResetInitiation />} />

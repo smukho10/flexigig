@@ -27,9 +27,8 @@ const DashboardHeader = ({ onMenuToggle }) => {
 
     const navigate = useNavigate();
     const handleSignOut = async () => {
-
         await logout();
-        navigate("/", { replace: true });
+        navigate("/signin", { replace: true });
     };
 
     const [searchTerm, setSearchTerm] = useState("");
