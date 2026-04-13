@@ -34,7 +34,7 @@ router.get('/gig-workers', async (req, res) => {
     const {
       jobId,
       distanceKm,
-      skill,
+      skills,
       rating,
       originLat,
       originLon,
@@ -46,7 +46,9 @@ router.get('/gig-workers', async (req, res) => {
 
     const normalizedJobId = parseIntegerOrNull(jobId);
     const normalizedDistanceKm = parseFloatOrNull(distanceKm);
-    const normalizedSkill = parseStringOrNull(skill);
+    const normalizedSkills = typeof skills === 'string' && skills.trim() !== ''
+      ? skills.split(',').map(s => s.trim()).filter(s => s !== '')
+      : null;
     const normalizedRating = parseFloatOrNull(rating);
 
     let parsedOriginLat = parseFloatOrNull(originLat);
@@ -75,7 +77,7 @@ router.get('/gig-workers', async (req, res) => {
     const hasBoardFilters =
       normalizedJobId !== null ||
       normalizedDistanceKm !== null ||
-      normalizedSkill !== null ||
+      normalizedSkills !== null ||
       normalizedRating !== null ||
       (parsedOriginLat !== null && parsedOriginLon !== null);
 
@@ -85,7 +87,7 @@ router.get('/gig-workers', async (req, res) => {
       workers = await workers_queries.fetchWorkersForBoard({
         jobId: normalizedJobId,
         distanceKm: normalizedDistanceKm,
-        skill: normalizedSkill,
+        skills: normalizedSkills,
         rating: normalizedRating,
         originLat: parsedOriginLat,
         originLon: parsedOriginLon
