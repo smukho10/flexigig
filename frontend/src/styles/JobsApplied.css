@@ -4,9 +4,12 @@
     max-width: 100%;
     border: none;
     margin: 0;
-    padding: 0;
+    padding: 24px 28px 40px;
+    min-height: 100%;
     box-shadow: none;
-    font-family: "Poppins";
+    background: #f5f7fa;
+    box-sizing: border-box;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
 }
 
 .jobs-applied-container .header-container {

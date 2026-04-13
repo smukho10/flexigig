@@ -1,10 +1,13 @@
 #workerboard-content {
     width: 100%;
-    max-width: 1400px;
+    max-width: 100%;
     margin: 0 auto;
-    padding: 24px 32px 32px 32px;
+    padding: 24px 28px 40px;
+    min-height: 100%;
+    background: #f5f7fa;
     box-sizing: border-box;
     position: relative;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
 }
 
 #workerboard-header {

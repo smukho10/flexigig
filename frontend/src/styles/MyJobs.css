@@ -2,8 +2,11 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  margin-top: 20px;
+  padding: 24px 28px 40px;
+  min-height: 100%;
+  background: #f5f7fa;
+  box-sizing: border-box;
+  font-family: 'Quicksand', 'Poppins', sans-serif;
 }
 
 .add-job-button {

@@ -66,17 +66,24 @@ select {
 }
 
 .job-posting-form-container button {
-  padding: 0;
-  margin: 0;
-  width: 103px;
-  height: 30px;
-  font-family: "Poppins";
-  font-size: 12px;
-  font-weight: 400;
-  color: white;
-  background-color: #1D9E75;
-  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  font-family: 'Quicksand', 'Poppins', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #fff;
+  background: #1D9E75;
+  border-radius: 10px;
   border: none;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.12s;
+}
+
+.job-posting-form-container button:hover {
+  background: #0F6E56;
+  transform: translateY(-1px);
 }
 
 .job-posting-form-container .bottom {
@@ -144,15 +151,15 @@ select {
 }
 
 .job-posting-form-container .template-btn {
-  width: auto;
-  padding: 0 14px;
-  background-color: white;
-  color: #1D9E75;
+  background: #fff !important;
+  color: #1D9E75 !important;
   border: 1.5px solid #1D9E75 !important;
+  transform: none !important;
 }
 
 .job-posting-form-container .template-btn:hover {
-  background-color: #f0fbfc;
+  background: #e8f5f0 !important;
+  transform: none !important;
 }
 
 .template-saved-msg {
