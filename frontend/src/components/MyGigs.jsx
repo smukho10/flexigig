@@ -161,6 +161,14 @@ const MyGigs = () => {
     return <span className={`status-badge status-${cssKey}`}>{label}</span>;
   };
 
+  const filteredGigs = approvedGigs.filter(job =>
+    !searchInput.trim() ||
+    (job.jobtitle || "").toLowerCase().includes(searchInput.trim().toLowerCase())
+  );
+  const totalPages = Math.max(1, Math.ceil(filteredGigs.length / ITEMS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const pagedGigs = filteredGigs.slice((safePage - 1) * ITEMS_PER_PAGE, safePage * ITEMS_PER_PAGE);
+
   return (
     <div className="my-gigs-container">
       <div className="header-container">
@@ -174,28 +182,15 @@ const MyGigs = () => {
         value={searchInput}
         onChange={(e) => { setSearchInput(e.target.value); setCurrentPage(1); }}
       />
-      {(() => {
-        const filteredGigs = approvedGigs.filter(job =>
-          !searchInput.trim() ||
-          (job.jobtitle || "").toLowerCase().includes(searchInput.trim().toLowerCase())
-        );
-        const totalPages = Math.max(1, Math.ceil(filteredGigs.length / ITEMS_PER_PAGE));
-        const pagedGigs = filteredGigs.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
-        if (approvedGigs.length === 0) {
-          return (
-            <div className="no-gigs-message">
-              <p>You have no gigs at the moment.</p>
-              <p>Apply for jobs to see them here once they are reviewed!</p>
-            </div>
-          );
-        }
-
-        if (filteredGigs.length === 0) {
-          return <div className="no-gigs-message"><p>No gigs match your search.</p></div>;
-        }
-
-        return (
+      {approvedGigs.length === 0 ? (
+        <div className="no-gigs-message">
+          <p>You have no gigs at the moment.</p>
+          <p>Apply for jobs to see them here once they are reviewed!</p>
+        </div>
+      ) : filteredGigs.length === 0 ? (
+        <div className="no-gigs-message"><p>No gigs match your search.</p></div>
+      ) : (
         <>
         <ul className="gigs-list">
           {pagedGigs.map(job => {
@@ -309,8 +304,7 @@ const MyGigs = () => {
           </div>
         )}
         </>
-        );
-      })()}
+      )}
 
       {/* Withdraw confirmation modal */}
       {withdrawing && (
