@@ -67,7 +67,7 @@ const fetchWorkers = () => {
     });
 }
 
-const fetchWorkersForBoard = ({ jobId, distanceKm, skill, rating, originLat, originLon }) => {
+const fetchWorkersForBoard = ({ jobId, distanceKm, skills, rating, originLat, originLon }) => {
   const conditions = [];
   const params = [];
   let paramIndex = 1;
@@ -82,9 +82,9 @@ const fetchWorkersForBoard = ({ jobId, distanceKm, skill, rating, originLat, ori
       ? parseFloat(distanceKm)
       : null;
 
-  const normalizedSkill =
-    typeof skill === 'string' && skill.trim() !== ''
-      ? skill.trim()
+  const normalizedSkills =
+    Array.isArray(skills) && skills.length > 0
+      ? skills.map(s => s.trim()).filter(s => s !== '')
       : null;
 
   const normalizedRating =
@@ -131,17 +131,17 @@ const fetchWorkersForBoard = ({ jobId, distanceKm, skill, rating, originLat, ori
     conditions.push(`jp.job_id = $${jobIdParamIndex}`);
   }
 
-  if (normalizedSkill !== null) {
+  if (normalizedSkills !== null) {
     conditions.push(`
       EXISTS (
         SELECT 1
         FROM workers_skills ws_filter
         INNER JOIN skills s_filter ON ws_filter.skill_id = s_filter.skill_id
         WHERE ws_filter.workers_id = w.id
-          AND LOWER(TRIM(s_filter.skill_name)) = LOWER(TRIM($${paramIndex}))
+          AND LOWER(TRIM(s_filter.skill_name)) = ANY(SELECT LOWER(TRIM(unnest($${paramIndex}::text[]))))
       )
     `);
-    params.push(normalizedSkill);
+    params.push(normalizedSkills);
     paramIndex++;
   }
 
