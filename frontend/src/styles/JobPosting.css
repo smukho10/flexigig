@@ -98,8 +98,9 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: 10px 20px;
-    font-size: 0.875rem;
+    padding: 9px 16px;
+    min-width: 80px;
+    font-size: 0.8rem;
     font-weight: 700;
     border-radius: 10px;
     border: none;
@@ -297,9 +298,11 @@
 /* Card action buttons group */
 .card-actions {
     display: flex;
-    flex-direction: column;
-    gap: 7px;
-    align-items: flex-end;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end;
 }
 
 /* Advance-status button (Publish / Mark In Review / etc.) */
@@ -309,8 +312,9 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: 10px 20px;
-    font-size: 0.875rem;
+    padding: 9px 16px;
+    min-width: 120px;
+    font-size: 0.8rem;
     font-weight: 700;
     border-radius: 10px;
     border: none;
@@ -662,8 +666,9 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: 10px 20px;
-    font-size: 0.875rem;
+    padding: 9px 16px;
+    min-width: 120px;
+    font-size: 0.8rem;
     font-weight: 700;
     border-radius: 10px;
     cursor: pointer;
@@ -752,18 +757,9 @@
         gap: 8px;
     }
 
-    .card-actions {
-        flex-direction: row;
-        flex-wrap: wrap;
-        align-items: flex-start;
-        gap: 6px;
-    }
-
     .view-applicants-btn,
     .advance-btn,
     .job-posting-container ul li .right button {
-        width: auto !important;
-        min-width: 100px !important;
         flex: 1 1 auto;
     }
 
