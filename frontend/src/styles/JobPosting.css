@@ -64,7 +64,7 @@
     box-shadow: 0 4px 18px rgba(0,0,0,0.07);
     margin-bottom: 17px;
     display: flex;
-    width: 1114px;
+    width: 100%;
     min-height: 250px;
     height: auto;
     box-sizing: border-box;
@@ -94,16 +94,19 @@
 .job-posting-container ul li .right button {
     background-color: #1D9E75;
     color: white;
-    width: 140px;
-    height: 30px;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
-    font-weight: 500;
-    border-radius: 5px;
+    gap: 6px;
+    padding: 10px 20px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    border-radius: 10px;
     border: none;
     cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.18s, transform 0.12s;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
 }
 
 .job-posting-container ul li .right #remove-btn {
@@ -115,25 +118,26 @@
 }
 
 .job-posting-container .create-new-btn {
-    display: flex;
-    background-color: white;
-    color: black;
-    border: 0.5px solid #1D9E75;
-    justify-content: space-between;
+    display: inline-flex;
     align-items: center;
-    padding: 0 17px;
+    gap: 6px;
+    background-color: #1D9E75;
+    color: white;
+    border: none;
+    padding: 10px 20px;
     margin: 20px 0 24px;
-    border-radius: 5px;
-    width: 142px;
-    height: 30px;
-    font-size: 12px;
-    font-weight: 500;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    font-weight: 700;
     cursor: pointer;
+    white-space: nowrap;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
+    transition: background 0.18s, transform 0.12s;
 }
 
 .job-posting-container .create-new-btn:hover {
-    background-color: #1D9E75;
-    color: white;
+    background-color: #0F6E56;
+    transform: translateY(-1px);
 }
 
 .job-posting-container #back-btn {
@@ -159,8 +163,9 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    border-radius: 19px;
-    padding: 10px;
+    border-radius: 16px;
+    padding: 28px 32px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
 }
 
 .job-posting-container .remove-job-container .prompt-text {
@@ -176,19 +181,21 @@
 }
 
 .job-posting-container .remove-job-container .prompt-buttons button {
-    margin: 0 10px 0;
+    margin: 0 6px;
     background-color: #1D9E75;
     color: white;
-    width: 103px;
-    height: 30px;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
-    font-weight: 500;
-    border-radius: 5px;
+    padding: 10px 20px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    border-radius: 10px;
     border: none;
     cursor: pointer;
+    white-space: nowrap;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
+    transition: background 0.18s;
 }
 
 .job-posting-container .remove-job-container .prompt-buttons .remove-btn {
@@ -298,16 +305,19 @@
 /* Advance-status button (Publish / Mark In Review / etc.) */
 .advance-btn {
     color: white;
-    width: 140px !important;
-    height: 30px;
-    padding: 0 14px;
-    font-size: 12px;
-    font-weight: 500;
-    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 20px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    border-radius: 10px;
     border: none;
     cursor: pointer;
-    font-family: "Poppins";
-    transition: opacity 0.15s ease;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
+    white-space: nowrap;
+    transition: opacity 0.15s ease, transform 0.12s;
 }
 
 .advance-btn:disabled {
@@ -323,11 +333,11 @@
     align-items: center;
     justify-content: center;
     height: 120px;
-    border-radius: 19px;
+    border-radius: 16px;
     border: 1.5px dashed #D0D5DD;
     color: #9CA3AF;
     font-size: 15px;
-    width: 1114px;
+    width: 100%;
     box-sizing: border-box;
 }
 
@@ -351,7 +361,7 @@
     box-shadow: 0 4px 18px rgba(0,0,0,0.07);
     font-family: 'Quicksand', 'Poppins', sans-serif;
     overflow: hidden;
-    width: 1114px;
+    width: 100%;
 }
 
 .job-posting-form-container form {
@@ -549,7 +559,7 @@
 
 .draft-prompt {
     background-color: white;
-    border-radius: 19px;
+    border-radius: 16px;
     padding: 32px 36px;
     max-width: 460px;
     width: 90%;
@@ -580,14 +590,14 @@
 }
 
 .draft-prompt-buttons button {
-    height: 34px;
-    padding: 0 18px;
-    border-radius: 5px;
+    padding: 10px 20px;
+    border-radius: 10px;
     border: none;
-    font-family: "Poppins";
-    font-size: 13px;
-    font-weight: 500;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 700;
     cursor: pointer;
+    white-space: nowrap;
 }
 
 .draft-prompt-cancel {
@@ -645,22 +655,26 @@
 /* ── View Applicants button ─────────────────── */
 
 .view-applicants-btn {
-    background-color: rgba(59, 130, 246, 0.12) !important;
-    color: #1D4ED8 !important;
-    border: 1.5px solid #3B82F6 !important;
-    width: 140px !important;
-    height: 30px;
-    padding: 0 14px;
-    font-size: 12px;
-    font-weight: 500;
-    border-radius: 5px;
+    background-color: white !important;
+    color: #1D9E75 !important;
+    border: 1.5px solid #1D9E75 !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 20px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    border-radius: 10px;
     cursor: pointer;
-    font-family: "Poppins";
-    transition: background-color 0.15s ease;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
+    white-space: nowrap;
+    transition: background 0.18s, transform 0.12s;
 }
 
 .view-applicants-btn:hover {
-    background-color: rgba(59, 130, 246, 0.22) !important;
+    background-color: #e8f5f0 !important;
+    transform: translateY(-1px);
 }
 
 /* ── Applicant Count display ─────────────────── */

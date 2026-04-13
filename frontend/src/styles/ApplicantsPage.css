@@ -25,7 +25,7 @@
 .applicants-page-title {
     margin: 0;
     font-size: 24px;
-    font-weight: 400;
+    font-weight: 700;
     color: #1a1a2e;
     line-height: 1.2;
 }
@@ -274,15 +274,17 @@
 }
 
 .action-btn {
-    height: 28px;
-    padding: 0 12px;
-    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 14px;
+    border-radius: 10px;
     border: none;
-    font-family: "Poppins";
-    font-size: 11px;
-    font-weight: 500;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
     cursor: pointer;
-    transition: opacity 0.15s ease;
+    transition: opacity 0.15s ease, transform 0.12s;
     white-space: nowrap;
 }
 
@@ -291,8 +293,8 @@
     cursor: not-allowed;
 }
 
-.profile-btn { background-color: #185FA5; color: white; }
-.profile-btn:hover:not(:disabled) { background-color: #0340BE; }
+.profile-btn { background-color: #1D9E75; color: white; }
+.profile-btn:hover:not(:disabled) { background-color: #0F6E56; transform: translateY(-1px); }
 
 .accept-btn  { background-color: #1D9E75; color: white; }
 .accept-btn:hover:not(:disabled)  { background-color: #0F6E56; }
@@ -303,8 +305,8 @@
 .reject-btn  { background-color: #EF4444; color: white; }
 .reject-btn:hover:not(:disabled)  { background-color: #DC2626; }
 
-.message-btn { background-color: #3B82F6; color: white; }
-.message-btn:hover:not(:disabled) { background-color: #2563EB; }
+.message-btn { background-color: white; color: #1D9E75; border: 1.5px solid #1D9E75; }
+.message-btn:hover:not(:disabled) { background-color: #e8f5f0; transform: translateY(-1px); }
 
 /* Pagination */
 .applicants-pagination {
@@ -316,15 +318,17 @@
 }
 
 .appl-page-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     background-color: white;
-    color: #111827;
+    color: #1D9E75;
     border: 1.5px solid #1D9E75;
-    padding: 0 16px;
-    height: 32px;
-    font-family: "Poppins";
-    font-size: 12px;
-    font-weight: 500;
-    border-radius: 6px;
+    padding: 8px 20px;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 700;
+    border-radius: 10px;
     cursor: pointer;
     transition: background-color 0.15s ease, color 0.15s ease;
 }
@@ -367,8 +371,8 @@
     flex-direction: column;
     align-items: center;
     padding: 40px;
-    border-radius: 19px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
     min-width: 450px;
     max-width: 500px;
     font-family: "Poppins";
@@ -463,11 +467,14 @@
 }
 
 .modal-buttons button {
-    padding: 12px 30px;
-    font-family: "Poppins";
-    font-size: 14px;
-    font-weight: 500;
-    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 24px;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 700;
+    border-radius: 10px;
     border: none;
     cursor: pointer;
     transition: all 0.2s ease;

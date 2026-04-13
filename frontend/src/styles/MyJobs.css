@@ -10,10 +10,27 @@
 }
 
 .add-job-button {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  background-color: #1D9E75;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-family: 'Quicksand', 'Poppins', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.18s, transform 0.12s;
+  margin-bottom: 16px;
+  align-self: flex-start;
+}
+
+.add-job-button:hover {
+  background-color: #0F6E56;
+  transform: translateY(-1px);
 }
 
 .jobs-list {
@@ -71,8 +88,27 @@
 }
 
 .job-actions button {
-  margin: 0 10px;
-} 
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  background-color: #1D9E75;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-family: 'Quicksand', 'Poppins', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.18s, transform 0.12s;
+  margin: 0 6px;
+}
+
+.job-actions button:hover {
+  background-color: #0F6E56;
+  transform: translateY(-1px);
+}
 
 .tab {
 
