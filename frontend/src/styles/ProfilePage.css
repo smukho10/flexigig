@@ -8,6 +8,7 @@
   gap: 20px;
   background-color: #f5f7fa;
   box-sizing: border-box;
+  font-family: 'Quicksand', 'Poppins', sans-serif;
 }
 
 /* ============ HEADER BANNER ============ */
@@ -197,16 +198,17 @@
 
 .profile-card {
   background-color: #fff;
-  border-radius: 15px;
+  border-radius: 16px;
   border: 1px solid #e8ecf0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.07);
   overflow: hidden;
-  transition: box-shadow 0.3s ease;
+  transition: box-shadow 0.18s, transform 0.15s;
   min-width: 0;
 }
 
 .profile-card:hover {
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
 }
 
 .profile-card-full {
@@ -221,9 +223,10 @@
 }
 
 .profile-card-header h2 {
-  font-size: 18px;
+  font-size: 0.95rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: #1a1a2e;
+  letter-spacing: -0.1px;
   margin: 0;
 }
 
@@ -279,9 +282,9 @@
   width: 100%;
   background-color: #fff;
   padding: 24px;
-  border-radius: 15px;
+  border-radius: 16px;
   border: 1px solid #e8ecf0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.07);
 }
 
 .business-profile .profile-section {
@@ -289,7 +292,7 @@
 }
 
 .business-profile .profile-section h2 {
-  color: #2c3e50;
+  color: #1a1a2e;
   font-size: 18px;
   font-weight: 700;
   margin-bottom: 10px;
@@ -306,9 +309,9 @@
 .user-profile-form {
   background-color: #fff;
   padding: 30px;
-  border-radius: 15px;
+  border-radius: 16px;
   border: 1px solid #e8ecf0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.07);
   margin-top: 20px;
 }
 
@@ -472,7 +475,7 @@
 .resume-section h2 {
   font-size: 18px;
   font-weight: 700;
-  color: #2c3e50;
+  color: #1a1a2e;
   margin-bottom: 14px;
 }
 
@@ -480,7 +483,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: #f0fbfc;
+  background-color: #e8f5f0;
   border: 1px solid #b6e8d4;
   border-radius: 10px;
   padding: 12px 16px;
@@ -502,19 +505,20 @@
 }
 
 .btn-resume-view {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   padding: 8px 18px;
-  background-color: #2196F3;
+  background: #1D9E75;
   color: #fff;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 700;
   text-decoration: none;
-  transition: background-color 0.2s ease;
+  transition: background 0.18s;
 }
 
 .btn-resume-view:hover {
-  background-color: #1976D2;
+  background: #0F6E56;
 }
 
 .btn-resume-delete {
@@ -561,19 +565,19 @@
 
 .btn-resume-upload {
   padding: 8px 20px;
-  background-color: #4CAF50;
+  background: #1D9E75;
   color: #fff;
   border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
-  transition: background-color 0.2s ease;
+  transition: background 0.18s;
 }
 
 .btn-resume-upload:hover:not(:disabled) {
-  background-color: #388E3C;
+  background: #0F6E56;
 }
 
 .btn-resume-upload:disabled {
@@ -676,7 +680,7 @@
 .business-rating-value {
   font-weight: 700;
   font-size: 18px;
-  color: #2c3e50;
+  color: #1a1a2e;
 }
 
 .business-rating-count {
