@@ -31,7 +31,7 @@
 }
 
 .register-container button {
-  background-color: #4EBBC2;
+  background-color: #1D9E75;
   width: 125px;
   height: 40px;
   border: none;
@@ -42,10 +42,10 @@
 }
 
 .register-container button:hover {
-  background-color: #3EABB2;
+  background-color: #0F6E56;
 }
 
 .register-container button:focus {
-  outline: 2px solid #0340BE;
+  outline: 2px solid #1D9E75;
   outline-offset: 2px;
 }

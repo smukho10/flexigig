@@ -45,7 +45,7 @@
 }
 
 .modal-icon-info {
-  background-color: #4EBBC2;
+  background-color: #1D9E75;
 }
 
 .modal-title {
@@ -76,7 +76,7 @@
 }
 
 .modal-input:focus {
-  border-color: #4EBBC2;
+  border-color: #1D9E75;
   box-shadow: 0 0 0 3px rgba(78, 187, 194, 0.15);
 }
 
@@ -130,12 +130,12 @@
 }
 
 .modal-btn-info {
-  background-color: #4EBBC2;
+  background-color: #1D9E75;
   color: #fff;
 }
 
 .modal-btn-info:hover {
-  background-color: #3ca8af;
+  background-color: #0F6E56;
 }
 
 @keyframes fadeIn {

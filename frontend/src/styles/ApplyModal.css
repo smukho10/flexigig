@@ -101,13 +101,13 @@
 }
 
 .apply-profile-option:hover {
-    border-color: #4c9be8;
-    background: #ebf4ff;
+    border-color: #1D9E75;
+    background: #e8f5f0;
 }
 
 .apply-profile-option.selected {
-    border-color: #2b7de9;
-    background: #ebf4ff;
+    border-color: #1D9E75;
+    background: #e8f5f0;
 }
 
 .apply-profile-radio {
@@ -123,14 +123,14 @@
 }
 
 .apply-profile-option.selected .apply-profile-radio {
-    border-color: #2b7de9;
+    border-color: #1D9E75;
 }
 
 .apply-profile-radio-dot {
     width: 9px;
     height: 9px;
     border-radius: 50%;
-    background: #2b7de9;
+    background: #1D9E75;
     opacity: 0;
     transition: opacity 0.2s;
 }
@@ -183,7 +183,7 @@
     padding: 12px;
     border-radius: 10px;
     border: none;
-    background: linear-gradient(135deg, #2b7de9, #1a5cbf);
+    background: #1D9E75;
     color: #fff;
     font-weight: 700;
     font-size: 0.9rem;

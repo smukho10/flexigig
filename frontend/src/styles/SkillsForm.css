@@ -72,12 +72,12 @@
 }
 
 .skills-form-container .skills-form-skill-button:hover {
-    background: #e3f2fd !important;
+    background: #e8f5f0 !important;
 }
 
 .skills-form-container .skills-form-skill-button.selected {
-    background: #cce5ff !important;
-    border-color: #a3c4fd;
+    background: #d1f5ea !important;
+    border-color: #1D9E75;
     color: black;
 }
 
@@ -92,7 +92,7 @@
 }
 
 .skills-form-selected-skill {
-    background: #007bff;
+    background: #1D9E75;
     color: white;
     padding: 8px 12px;
     border-radius: 20px;
