@@ -94,12 +94,12 @@
 .job-posting-container ul li .right button {
     background-color: #1D9E75;
     color: white;
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
     padding: 9px 16px;
-    min-width: 80px;
+    width: 100%;
     font-size: 0.8rem;
     font-weight: 700;
     border-radius: 10px;
@@ -298,22 +298,21 @@
 /* Card action buttons group */
 .card-actions {
     display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 8px;
-    align-items: center;
-    justify-content: flex-end;
+    align-items: stretch;
+    width: 140px;
 }
 
 /* Advance-status button (Publish / Mark In Review / etc.) */
 .advance-btn {
     color: white;
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
     padding: 9px 16px;
-    min-width: 120px;
+    width: 100%;
     font-size: 0.8rem;
     font-weight: 700;
     border-radius: 10px;
@@ -662,12 +661,12 @@
     background-color: white !important;
     color: #1D9E75 !important;
     border: 1.5px solid #1D9E75 !important;
-    display: inline-flex !important;
+    display: flex !important;
     align-items: center;
     justify-content: center;
     gap: 6px;
     padding: 9px 16px;
-    min-width: 120px;
+    width: 100%;
     font-size: 0.8rem;
     font-weight: 700;
     border-radius: 10px;
@@ -757,10 +756,8 @@
         gap: 8px;
     }
 
-    .view-applicants-btn,
-    .advance-btn,
-    .job-posting-container ul li .right button {
-        flex: 1 1 auto;
+    .card-actions {
+        width: 100%;
     }
 
     /* Search input full width */
