@@ -28,20 +28,31 @@ const Messages = () => {
         }
     }, [messageHistory]);
 
+    const fetchConversationPartners = () => {
+        if (!user) return;
+        axios
+            .get(`/api/conversation-partners/${user.id}`, { withCredentials: true })
+            .then((response) => {
+                const partners = response.data.partners;
+                setConversationPartners(partners);
+                fetchPartnerDetails(partners.map(p => p.partner_id));
+            })
+            .catch((error) => {
+                console.error("Error fetching conversation partners:", error);
+            });
+    };
+
     // Fetch conversation partners on mount
     useEffect(() => {
-        if (user) {
-            axios
-                .get(`/api/conversation-partners/${user.id}`, { withCredentials: true })
-                .then((response) => {
-                    setConversationPartners(response.data.partners);
-                    fetchPartnerDetails(response.data.partners.map(p => p.partner_id));
-                })
-                .catch((error) => {
-                    console.error("Error fetching conversation partners:", error);
-                });
-        }
-    }, [user]);
+        fetchConversationPartners();
+    }, [user?.id]);
+
+    // Poll conversation partners list every 10s to pick up new threads and reorder
+    useEffect(() => {
+        if (!user?.id) return;
+        const interval = setInterval(fetchConversationPartners, 10000);
+        return () => clearInterval(interval);
+    }, [user?.id]);
 
     // Add new partner from location state (navigating from a job listing or profile)
     useEffect(() => {
@@ -196,12 +207,14 @@ const Messages = () => {
                                 const partnerName = partnerDetails[conv.partner_id]?.name || "";
                                 return partnerName.toLowerCase().includes(search.toLowerCase());
                             })
-                            .map((conv) => {
+                            .map((conv, index) => {
                                 const partner = partnerDetails[conv.partner_id];
+                                const isLatest = index === 0;
+                                const isActive = selectedPartner?.partner_id === conv.partner_id && selectedPartner?.job_id === conv.job_id;
                                 return (
                                     <li
                                         key={`${conv.partner_id}-${conv.job_id || 'direct'}`}
-                                        className={`person-item ${selectedPartner?.partner_id === conv.partner_id && selectedPartner?.job_id === conv.job_id ? "active" : ""}`}
+                                        className={`person-item ${isActive ? "active" : ""} ${isLatest && !isActive ? "latest-conversation" : ""}`}
                                         onClick={() => fetchMessageHistory(conv.partner_id, conv.job_id)}
                                     >
                                         <img
@@ -209,8 +222,10 @@ const Messages = () => {
                                             src={partner?.userImage || DefaultAvatar}
                                             alt="avatar"
                                         />
-                                        <span>{partner?.name || "Loading..."}</span>
-                                        {conv.job_title && <span className="job-thread-label">{conv.job_title}</span>}
+                                        <div className="person-item-text">
+                                            <span className={isLatest ? "person-item-name bold" : "person-item-name"}>{partner?.name || "Loading..."}</span>
+                                            {conv.job_title && <span className="job-thread-label">{conv.job_title}</span>}
+                                        </div>
                                     </li>
                                 );
                             })}
