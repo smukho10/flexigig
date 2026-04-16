@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Calendar, dateFnsLocalizer } from "react-big-calendar";
+import { Calendar, dateFnsLocalizer, Views } from "react-big-calendar";
 import format from "date-fns/format";
 import parse from "date-fns/parse";
 import startOfWeek from "date-fns/startOfWeek";
@@ -24,6 +24,8 @@ const ApplicantProfileView = () => {
     const [profilePhotoUrl, setProfilePhotoUrl] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
+    const [calendarView, setCalendarView] = useState(Views.WEEK);
+    const [calendarDate, setCalendarDate] = useState(new Date());
 
     useEffect(() => {
         axios
@@ -186,15 +188,22 @@ const ApplicantProfileView = () => {
                 ) : (
                     <div className="apv-calendar-wrapper">
                         <Calendar
+                            key={calendarDate.toString() + calendarView + workerId}
                             localizer={localizer}
                             events={calendarEvents}
                             startAccessor={(e) => new Date(e.start)}
                             endAccessor={(e) => new Date(e.end)}
                             style={{ height: 500 }}
                             views={["week", "day"]}
+                            view={calendarView}
+                            date={calendarDate}
+                            onView={setCalendarView}
+                            onNavigate={setCalendarDate}
                             defaultView="week"
                             scrollToTime={new Date(1970, 1, 1, 0, 0, 0)}
                             enableAutoScroll={false}
+                            min={new Date(1970, 1, 1, 0, 0, 0)}
+                            max={new Date(1970, 1, 1, 23, 59, 59)}
                         />
                     </div>
                 )}
