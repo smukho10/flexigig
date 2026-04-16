@@ -19,6 +19,7 @@ const Messages = () => {
     const [newMessage, setNewMessage] = useState("");
 
     const chatAreaRef = useRef(null);
+    const selectedPartnerRef = useRef(null);
 
     // Scroll to the bottom of the chat area whenever messageHistory changes
     useEffect(() => {
@@ -104,6 +105,29 @@ const Messages = () => {
                 console.error("Error fetching message history:", error);
             });
     };
+
+    // Keep ref in sync so polling always reads the latest selectedPartner
+    useEffect(() => {
+        selectedPartnerRef.current = selectedPartner;
+    }, [selectedPartner]);
+
+    // Poll for new messages every 1s while a conversation is open
+    useEffect(() => {
+        if (!selectedPartner) return;
+
+        const interval = setInterval(() => {
+            const partner = selectedPartnerRef.current;
+            if (!partner) return;
+            const params = { senderId: user.id, receiverId: partner.partner_id };
+            if (partner.job_id) params.jobId = partner.job_id;
+            axios
+                .get(`/api/message-history`, { params, withCredentials: true })
+                .then((res) => setMessageHistory(res.data.messages || []))
+                .catch(() => {});
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [selectedPartner?.partner_id, selectedPartner?.job_id, user?.id]);
 
     // Send a typed message
     const handleSendMessage = () => {
