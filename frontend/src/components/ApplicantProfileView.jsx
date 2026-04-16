@@ -191,8 +191,10 @@ const ApplicantProfileView = () => {
                             startAccessor={(e) => new Date(e.start)}
                             endAccessor={(e) => new Date(e.end)}
                             style={{ height: 500 }}
-                            views={["week", "day", "agenda"]}
+                            views={["week", "day"]}
                             defaultView="week"
+                            scrollToTime={new Date(1970, 1, 1, 0, 0, 0)}
+                            enableAutoScroll={false}
                         />
                     </div>
                 )}
