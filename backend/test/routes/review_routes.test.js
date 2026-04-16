@@ -252,3 +252,233 @@ describe("GET /api/reviews/:userId/summary", () => {
     expect(res.body.total_reviews).toBe(0);
   });
 });
+
+// ══════════════════════════════════════════════════════════════════════
+// POST /api/reviews/employer-to-worker  (NEW)
+// ══════════════════════════════════════════════════════════════════════
+describe("POST /api/reviews/employer-to-worker", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  test("400 when reviewer_id is missing", async () => {
+    const res = await request(app).post("/api/reviews/employer-to-worker").send({ reviewee_id: 7, job_id: 5, rating: 3 });
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/reviewer_id.*reviewee_id.*job_id are required/i);
+    expect(reviewQueries.createReview).not.toHaveBeenCalled();
+  });
+
+  test("400 when reviewee_id is missing", async () => {
+    const res = await request(app).post("/api/reviews/employer-to-worker").send({ reviewer_id: 10, job_id: 5, rating: 3 });
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/reviewer_id.*reviewee_id.*job_id are required/i);
+    expect(reviewQueries.createReview).not.toHaveBeenCalled();
+  });
+
+  test("400 when job_id is missing", async () => {
+    const res = await request(app).post("/api/reviews/employer-to-worker").send({ reviewer_id: 10, reviewee_id: 7, rating: 3 });
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/reviewer_id.*reviewee_id.*job_id are required/i);
+    expect(reviewQueries.createReview).not.toHaveBeenCalled();
+  });
+
+  test("400 when reviewer === reviewee (self-review)", async () => {
+    const res = await request(app).post("/api/reviews/employer-to-worker").send({ reviewer_id: 10, reviewee_id: 10, job_id: 5, rating: 3 });
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/cannot review yourself/i);
+  });
+
+  test("400 when rating is 0 (below minimum)", async () => {
+    const res = await request(app).post("/api/reviews/employer-to-worker").send({ reviewer_id: 10, reviewee_id: 7, job_id: 5, rating: 0 });
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/rating must be an integer between 1 and 5/i);
+  });
+
+  test("400 when rating is 7 (above maximum)", async () => {
+    const res = await request(app).post("/api/reviews/employer-to-worker").send({ reviewer_id: 10, reviewee_id: 7, job_id: 5, rating: 7 });
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/rating must be an integer between 1 and 5/i);
+  });
+
+  test("400 when neither rating nor review_text provided", async () => {
+    const res = await request(app).post("/api/reviews/employer-to-worker").send({ reviewer_id: 10, reviewee_id: 7, job_id: 5 });
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/provide rating or review_text/i);
+  });
+
+  test("403 when job is not completed (validation returns 0 rows)", async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+    const res = await request(app).post("/api/reviews/employer-to-worker").send({ reviewer_id: 10, reviewee_id: 7, job_id: 5, rating: 4 });
+    expect(res.statusCode).toBe(403);
+    expect(res.body.message).toMatch(/employer can review worker only after the accepted gig is completed/i);
+    expect(reviewQueries.createReview).not.toHaveBeenCalled();
+  });
+
+  test("403 when reviewer is not the job's employer", async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+    const res = await request(app).post("/api/reviews/employer-to-worker").send({ reviewer_id: 99, reviewee_id: 7, job_id: 5, rating: 3 });
+    expect(res.statusCode).toBe(403);
+    expect(reviewQueries.createReview).not.toHaveBeenCalled();
+  });
+
+  test("403 when reviewee is not an accepted worker for the job", async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+    const res = await request(app).post("/api/reviews/employer-to-worker").send({ reviewer_id: 10, reviewee_id: 999, job_id: 5, rating: 3 });
+    expect(res.statusCode).toBe(403);
+    expect(reviewQueries.createReview).not.toHaveBeenCalled();
+  });
+
+  test("201 with rating only (rating = 1, minimum boundary)", async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ application_id: 55 }] });
+    reviewQueries.createReview.mockResolvedValueOnce({ id: 30, reviewer_id: 10, reviewee_id: 7, job_id: 5, rating: 1, review_text: null });
+    const res = await request(app).post("/api/reviews/employer-to-worker").send({ reviewer_id: 10, reviewee_id: 7, job_id: 5, rating: 1 });
+    expect(res.statusCode).toBe(201);
+    expect(res.body.rating).toBe(1);
+    expect(res.body.review_text).toBeNull();
+  });
+
+  test("201 with rating only (rating = 5, maximum boundary)", async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ application_id: 55 }] });
+    reviewQueries.createReview.mockResolvedValueOnce({ id: 31, reviewer_id: 10, reviewee_id: 7, job_id: 5, rating: 5, review_text: null });
+    const res = await request(app).post("/api/reviews/employer-to-worker").send({ reviewer_id: 10, reviewee_id: 7, job_id: 5, rating: 5 });
+    expect(res.statusCode).toBe(201);
+    expect(res.body.rating).toBe(5);
+  });
+
+  test("201 with review_text only", async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ application_id: 55 }] });
+    reviewQueries.createReview.mockResolvedValueOnce({ id: 32, reviewer_id: 10, reviewee_id: 7, job_id: 5, rating: null, review_text: "Hard worker." });
+    const res = await request(app).post("/api/reviews/employer-to-worker").send({ reviewer_id: 10, reviewee_id: 7, job_id: 5, review_text: "Hard worker." });
+    expect(res.statusCode).toBe(201);
+    expect(res.body.rating).toBeNull();
+    expect(res.body.review_text).toBe("Hard worker.");
+  });
+
+  test("201 with both rating and review_text, correct job_id forwarded", async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ application_id: 55 }] });
+    reviewQueries.createReview.mockResolvedValueOnce({ id: 33, reviewer_id: 10, reviewee_id: 7, job_id: 5, rating: 3, review_text: "Decent." });
+    const res = await request(app).post("/api/reviews/employer-to-worker").send({ reviewer_id: 10, reviewee_id: 7, job_id: 5, rating: 3, review_text: "Decent." });
+    expect(res.statusCode).toBe(201);
+    expect(reviewQueries.createReview).toHaveBeenCalledWith({ reviewer_id: 10, reviewee_id: 7, rating: 3, review_text: "Decent.", job_id: 5 });
+  });
+
+  test("400 on duplicate review (23505)", async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ application_id: 55 }] });
+    const dupError = new Error("duplicate key"); dupError.code = "23505";
+    reviewQueries.createReview.mockRejectedValueOnce(dupError);
+    const res = await request(app).post("/api/reviews/employer-to-worker").send({ reviewer_id: 10, reviewee_id: 7, job_id: 5, rating: 4 });
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/already reviewed this user/i);
+  });
+
+  test("500 on unexpected database error", async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ application_id: 55 }] });
+    reviewQueries.createReview.mockRejectedValueOnce(new Error("Unexpected crash"));
+    const res = await request(app).post("/api/reviews/employer-to-worker").send({ reviewer_id: 10, reviewee_id: 7, job_id: 5, rating: 3 });
+    expect(res.statusCode).toBe(500);
+    expect(res.body.message).toMatch(/internal server error/i);
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// POST /api/reviews/worker-to-employer  (NEW)
+// ══════════════════════════════════════════════════════════════════════════════
+describe("POST /api/reviews/worker-to-employer", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  test("400 when reviewer_id is missing", async () => {
+    const res = await request(app).post("/api/reviews/worker-to-employer").send({ reviewee_id: 10, job_id: 5, rating: 4 });
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/reviewer_id.*reviewee_id.*job_id are required/i);
+    expect(reviewQueries.createReview).not.toHaveBeenCalled();
+  });
+
+  test("400 when reviewee_id is missing", async () => {
+    const res = await request(app).post("/api/reviews/worker-to-employer").send({ reviewer_id: 7, job_id: 5, rating: 4 });
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/reviewer_id.*reviewee_id.*job_id are required/i);
+    expect(reviewQueries.createReview).not.toHaveBeenCalled();
+  });
+
+  test("400 when job_id is missing", async () => {
+    const res = await request(app).post("/api/reviews/worker-to-employer").send({ reviewer_id: 7, reviewee_id: 10, rating: 4 });
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/reviewer_id.*reviewee_id.*job_id are required/i);
+    expect(reviewQueries.createReview).not.toHaveBeenCalled();
+  });
+
+  test("400 when reviewer === reviewee (self-review)", async () => {
+    const res = await request(app).post("/api/reviews/worker-to-employer").send({ reviewer_id: 7, reviewee_id: 7, job_id: 5, rating: 3 });
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/cannot review yourself/i);
+  });
+
+  test("400 when rating is below 1", async () => {
+    const res = await request(app).post("/api/reviews/worker-to-employer").send({ reviewer_id: 7, reviewee_id: 10, job_id: 5, rating: 0 });
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/rating must be/i);
+  });
+
+  test("400 when rating is above 5", async () => {
+    const res = await request(app).post("/api/reviews/worker-to-employer").send({ reviewer_id: 7, reviewee_id: 10, job_id: 5, rating: 6 });
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/rating must be/i);
+  });
+
+  test("400 when neither rating nor review_text provided", async () => {
+    const res = await request(app).post("/api/reviews/worker-to-employer").send({ reviewer_id: 7, reviewee_id: 10, job_id: 5 });
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/provide rating or review_text/i);
+  });
+
+  test("403 when worker was not ACCEPTED on this job", async () => {
+    db.query.mockResolvedValueOnce({ rows: [] });
+    const res = await request(app).post("/api/reviews/worker-to-employer").send({ reviewer_id: 7, reviewee_id: 10, job_id: 5, rating: 4 });
+    expect(res.statusCode).toBe(403);
+    expect(res.body.message).toMatch(/worker can only review an employer for a job they were accepted on/i);
+    expect(reviewQueries.createReview).not.toHaveBeenCalled();
+  });
+
+  test("201 with rating only", async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ application_id: 99 }] });
+    reviewQueries.createReview.mockResolvedValueOnce({ id: 20, reviewer_id: 7, reviewee_id: 10, job_id: 5, rating: 4, review_text: null });
+    const res = await request(app).post("/api/reviews/worker-to-employer").send({ reviewer_id: 7, reviewee_id: 10, job_id: 5, rating: 4 });
+    expect(res.statusCode).toBe(201);
+    expect(res.body.rating).toBe(4);
+    expect(res.body.review_text).toBeNull();
+    expect(reviewQueries.createReview).toHaveBeenCalledWith({ reviewer_id: 7, reviewee_id: 10, rating: 4, review_text: null, job_id: 5 });
+  });
+
+  test("201 with review_text only (null rating)", async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ application_id: 99 }] });
+    reviewQueries.createReview.mockResolvedValueOnce({ id: 21, reviewer_id: 7, reviewee_id: 10, job_id: 5, rating: null, review_text: "Great employer." });
+    const res = await request(app).post("/api/reviews/worker-to-employer").send({ reviewer_id: 7, reviewee_id: 10, job_id: 5, review_text: "Great employer." });
+    expect(res.statusCode).toBe(201);
+    expect(res.body.rating).toBeNull();
+    expect(res.body.review_text).toBe("Great employer.");
+  });
+
+  test("201 with both rating and review_text", async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ application_id: 99 }] });
+    reviewQueries.createReview.mockResolvedValueOnce({ id: 22, reviewer_id: 7, reviewee_id: 10, job_id: 5, rating: 5, review_text: "Would work again!" });
+    const res = await request(app).post("/api/reviews/worker-to-employer").send({ reviewer_id: 7, reviewee_id: 10, job_id: 5, rating: 5, review_text: "Would work again!" });
+    expect(res.statusCode).toBe(201);
+    expect(res.body.rating).toBe(5);
+    expect(res.body.review_text).toBe("Would work again!");
+  });
+
+  test("400 on duplicate review (23505)", async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ application_id: 99 }] });
+    const dupError = new Error("duplicate key"); dupError.code = "23505";
+    reviewQueries.createReview.mockRejectedValueOnce(dupError);
+    const res = await request(app).post("/api/reviews/worker-to-employer").send({ reviewer_id: 7, reviewee_id: 10, job_id: 5, rating: 2 });
+    expect(res.statusCode).toBe(400);
+    expect(res.body.message).toMatch(/already reviewed/i);
+  });
+
+  test("500 on unexpected database error", async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ application_id: 99 }] });
+    reviewQueries.createReview.mockRejectedValueOnce(new Error("DB crash"));
+    const res = await request(app).post("/api/reviews/worker-to-employer").send({ reviewer_id: 7, reviewee_id: 10, job_id: 5, rating: 3 });
+    expect(res.statusCode).toBe(500);
+    expect(res.body.message).toMatch(/internal server error/i);
+  });
+});
