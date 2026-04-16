@@ -396,16 +396,19 @@ const getUserById = async (id) => {
 const getConversationPartners = async (userId) => {
   try {
     const query = `
-      SELECT DISTINCT
+      SELECT
         CASE
           WHEN m.sender_id = $1 THEN m.receiver_id
           WHEN m.receiver_id = $1 THEN m.sender_id
         END AS partner_id,
         m.job_id,
-        jp.jobtitle AS job_title
+        jp.jobtitle AS job_title,
+        MAX(m.timestamp) AS latest_message_at
       FROM messages m
       LEFT JOIN jobPostings jp ON m.job_id = jp.job_id
-      WHERE m.sender_id = $1 OR m.receiver_id = $1;
+      WHERE m.sender_id = $1 OR m.receiver_id = $1
+      GROUP BY partner_id, m.job_id, jp.jobtitle
+      ORDER BY latest_message_at DESC;
     `;
 
     const result = await db.query(query, [userId]);

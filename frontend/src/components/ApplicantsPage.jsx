@@ -332,8 +332,7 @@ const ApplicantsPage = () => {
                                                             jobTitle: jobTitle,
                                                         }
                                                     })}
-                                                    disabled={a.application_status !== "IN_REVIEW"}
-                                                    title={a.application_status !== "IN_REVIEW" ? "Only available when application is In Review" : ""}
+                                                    disabled={a.application_status === "WITHDRAWN"}
                                                 >
                                                     Message
                                                 </button>
