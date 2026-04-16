@@ -1086,7 +1086,18 @@ const ProfilePage = () => {
         <div className="profile-container">
           <div className="business-profile">
             <div className="profile-section" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h2>{user.business_name || "My Business"}</h2>
+              <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                <div className="profile-avatar">
+                  {photoUrl ? (
+                    <img src={photoUrl} alt="Profile" />
+                  ) : (
+                    <div className="profile-avatar-placeholder">
+                      {(user.business_name || "B").charAt(0)}
+                    </div>
+                  )}
+                </div>
+                <h2>{user.business_name || "My Business"}</h2>
+              </div>
               <button className="btn-primary" onClick={toggleEdit}>Edit Profile</button>
             </div>
             <div className="profile-section">
