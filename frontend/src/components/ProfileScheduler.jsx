@@ -270,7 +270,7 @@ export default function ProfileScheduler({ selectedProfileId, profiles }) {
           startAccessor="start"
           endAccessor="end"
           style={{ height: 1200 }}
-          views={["week", "day"]}
+          views={["month", "week", "day"]}
           view={view}
           date={date}
           onView={setView}

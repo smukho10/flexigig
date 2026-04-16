@@ -194,7 +194,7 @@ const ApplicantProfileView = () => {
                             startAccessor={(e) => new Date(e.start)}
                             endAccessor={(e) => new Date(e.end)}
                             style={{ height: 500 }}
-                            views={["week", "day"]}
+                            views={["month", "week", "day"]}
                             view={calendarView}
                             date={calendarDate}
                             onView={setCalendarView}
