@@ -270,7 +270,7 @@ export default function ProfileScheduler({ selectedProfileId, profiles }) {
           startAccessor="start"
           endAccessor="end"
           style={{ height: 1200 }}
-          views={["week", "day", "agenda"]}
+          views={["week", "day"]}
           view={view}
           date={date}
           onView={setView}
@@ -284,6 +284,8 @@ export default function ProfileScheduler({ selectedProfileId, profiles }) {
           timeslots={2}
           min={new Date(1970, 1, 1, 0, 0, 0)}
           max={new Date(1970, 1, 1, 23, 59, 59)}
+          scrollToTime={new Date(1970, 1, 1, 0, 0, 0)}
+          enableAutoScroll={false}
         />
       </div>
 
