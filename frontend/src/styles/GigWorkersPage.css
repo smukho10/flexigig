@@ -1,3 +1,4 @@
+/* ── Page Container ───────────────────────────────────────────────────────────── */
 .workers-container {
   position: relative;
   display: flex;
@@ -9,120 +10,100 @@
   font-family: 'Quicksand', 'Poppins', sans-serif;
 }
 
+/* ── Page Heading ─────────────────────────────────────────────────────────────── */
+.workers-container > h1 {
+  margin: 0 0 20px 0;
+  color: #1a1a2e;
+  font-size: 1.35rem;
+  font-weight: 700;
+  font-family: 'Quicksand', 'Poppins', sans-serif;
+}
+
+/* ── Workers List ─────────────────────────────────────────────────────────────── */
 .workers-list {
   list-style-type: none;
   padding: 0;
+  margin: 0;
   width: 100%;
   max-width: 1200px;
 }
 
+/* ── Worker Card ──────────────────────────────────────────────────────────────── */
 .workers-item {
   display: flex;
   flex-direction: row;
-  align-items: center;
-  justify-content:space-between;
-  background-color: #fff;
-  margin-bottom: 20px;
-  padding: 20px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  background-color: #ffffff;
+  margin-bottom: 18px;
+  padding: 22px 24px;
   border: 1px solid #e8ecf0;
   border-radius: 16px;
-  box-shadow: 0 4px 18px rgba(0,0,0,0.07);
-  transition: box-shadow 0.3s ease;
-}
-
-.workers-item:hover {
-  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-}
-
-.workers-info h1 {
-  text-align: center;
-  font-size: 24px;
-  margin: 10px 0;
-}
-
-.workers-info h2 {
-  text-align: center;
-  font-size: 20px;
-  margin: 10px 0;
-}
-
-.workers-info h3 {
-  font-weight: bold;
-  font-size: 18px;
-  margin: 10px 0;
-}
-
-.react-calendar__tile.highlight-day {
-  background-color: #00FF00;
-  color: white;
-}
-
-.no-highlight-day {
-  background-color: #f44336;
-  color: white;
-  border-radius: 50%;
-  padding: 3px;
-}
-
-.highlight-day {
-  background-color: #00FF00;
-  color: white;
-}
-
-.highlight-date {
-  font-weight: bold;
-}
-
-
-.react-calendar {
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-
-
-.react-calendar__tile {
-  background-color: #d3d3d3a8;
-  color: black;
-  border-radius: 0;
-}
-
-
-.react-calendar__tile.highlight-day {
-  background-color: #00FF00;
-  color: black;
-}
-
-
-.react-calendar {
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-
-.react-calendar__navigation button {
-  color: black;
-}
-
-
-
-.react-calendar__tile:hover,
-.react-calendar__tile--now:hover,
-.react-calendar__tile--active:hover {
-  background-color: inherit;
-}
-
-.react-calendar__month-view__weekdays__weekday {
-  color: black;
-}
-
-
-.react-calendar__tile--now {
-  color: black
-}
-
-.workers-item {
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.07);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  box-sizing: border-box;
   position: relative;
 }
 
+.workers-item:hover {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+/* ── Worker Info (left column) ────────────────────────────────────────────────── */
+.workers-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.workers-info h1 {
+  text-align: left;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 12px 0;
+}
+
+.workers-info h2 {
+  text-align: left;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 12px 0;
+}
+
+.workers-info h3 {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #667085;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 10px 0 2px 0;
+}
+
+.workers-info p {
+  font-size: 0.9rem;
+  color: #273240;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Availability Calendar (middle column) ────────────────────────────────────── */
+.availability-container {
+  flex-shrink: 0;
+}
+
+.availability-container h3 {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 10px 0;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* ── Contact Button ───────────────────────────────────────────────────────────── */
 .contact-button {
   display: inline-flex;
   align-items: center;
@@ -138,9 +119,78 @@
   cursor: pointer;
   transition: background 0.18s, transform 0.12s;
   white-space: nowrap;
+  align-self: flex-start;
 }
 
 .contact-button:hover {
   background: #0F6E56;
   transform: translateY(-1px);
+}
+
+/* ── React Calendar Overrides ─────────────────────────────────────────────────── */
+.react-calendar {
+  font-family: 'Quicksand', 'Poppins', sans-serif;
+  border: 1px solid #e8ecf0;
+  border-radius: 10px;
+  overflow: hidden;
+  font-size: 13px;
+}
+
+.react-calendar__tile {
+  background-color: #f9fafb;
+  color: #273240;
+  border-radius: 0;
+}
+
+.react-calendar__navigation button {
+  color: #1a1a2e;
+  font-weight: 600;
+}
+
+.react-calendar__month-view__weekdays__weekday {
+  color: #667085;
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.react-calendar__tile--now {
+  background-color: #e1f5ee;
+  color: #1a1a2e;
+}
+
+.react-calendar__tile:hover,
+.react-calendar__tile--now:hover,
+.react-calendar__tile--active:hover {
+  background-color: #e1f5ee;
+}
+
+/* Available days — teal (replaces #00FF00) */
+.react-calendar__tile.highlight-day,
+.highlight-day {
+  background-color: #1D9E75;
+  color: #ffffff;
+}
+
+/* Unavailable days — neutral grey (replaces #f44336 red) */
+.no-highlight-day {
+  background-color: #f5f7fa;
+  color: #9ca3af;
+  border-radius: 0;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .workers-item {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .availability-container {
+    width: 100%;
+  }
+
+  .contact-button {
+    width: 100%;
+    justify-content: center;
+  }
 }
