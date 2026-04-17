@@ -358,7 +358,8 @@ describe("Google OAuth Authentication Routes", () => {
         "test@example.com",
         "google123",
         false,
-        "https://example.com/pic.jpg"
+        "https://example.com/pic.jpg",
+        undefined // phoneNumber not provided
       );
       expect(user_queries.addWorker).toHaveBeenCalledWith(
         1,
@@ -400,7 +401,13 @@ describe("Google OAuth Authentication Routes", () => {
       expect(user_queries.addBusiness).toHaveBeenCalledWith(
         2,
         "Test Business",
-        "A test business"
+        "A test business",
+        {
+          businessEmail: "test@example.com",
+          businessPhoneNumber: undefined,
+          contactFirstName: "Test", // falls back to pendingOAuth.firstName
+          contactLastName: "User",  // falls back to pendingOAuth.lastName
+        }
       );
     });
 

@@ -109,7 +109,6 @@ describe("Job Routes", () => {
   });
   describe("PATCH /api/applications/:applicationId/status", () => {
     test("sends an acceptance notification when status is ACCEPTED", async () => {
-      // Mock db queries
       const updatedApplication = {
         application_id: 1,
         job_id: 10,
@@ -119,10 +118,9 @@ describe("Job Routes", () => {
       };
 
       jobQueries.updateGigApplicationStatus.mockResolvedValueOnce(updatedApplication);
-      
       db.query.mockResolvedValueOnce({ rows: [{ user_id: 201 }] }); // Worker user ID
       db.query.mockResolvedValueOnce({ rows: [{ jobtitle: "Software Engineer" }] }); // Job title
-      
+
       userQueries.getUserDetails.mockResolvedValueOnce({
         type: "business",
         businessName: "Tech Corp",
@@ -136,11 +134,170 @@ describe("Job Routes", () => {
       expect(res.body.message).toBe("Application status updated");
       expect(userQueries.insertNotification).toHaveBeenCalledTimes(1);
       expect(userQueries.insertNotification).toHaveBeenCalledWith(
-        100, // employer_id
-        201, // worker user_id
-        'Congratulations, your application has been accepted for "Software Engineer"!', // content
-        10 // job_id
+        100,
+        201,
+        'Congratulations, your application has been accepted for "Software Engineer"!',
+        10
       );
+    });
+
+    // ── Input validation ───────────────────────────────────────────────────────
+
+    test("returns 400 when applicationId is not a valid integer", async () => {
+      const res = await request(app)
+        .patch("/api/applications/abc/status")
+        .send({ status: "ACCEPTED" });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.message).toBe("Invalid applicationId");
+      expect(jobQueries.updateGigApplicationStatus).not.toHaveBeenCalled();
+    });
+
+    test("returns 400 when status is missing from the request body", async () => {
+      const res = await request(app)
+        .patch("/api/applications/1/status")
+        .send({});
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.message).toMatch(/invalid status/i);
+      expect(jobQueries.updateGigApplicationStatus).not.toHaveBeenCalled();
+    });
+
+    test("returns 400 when status is APPLIED (not an allowed transition)", async () => {
+      const res = await request(app)
+        .patch("/api/applications/1/status")
+        .send({ status: "APPLIED" });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.message).toMatch(/invalid status/i);
+      expect(jobQueries.updateGigApplicationStatus).not.toHaveBeenCalled();
+    });
+
+    test("returns 400 when status is an arbitrary unknown value", async () => {
+      const res = await request(app)
+        .patch("/api/applications/1/status")
+        .send({ status: "HIRED" });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.message).toMatch(/invalid status/i);
+    });
+
+    // ── Not found ──────────────────────────────────────────────────────────────
+
+    test("returns 404 when the application does not exist", async () => {
+      jobQueries.updateGigApplicationStatus.mockResolvedValueOnce(null);
+
+      const res = await request(app)
+        .patch("/api/applications/999/status")
+        .send({ status: "REJECTED" });
+
+      expect(res.statusCode).toBe(404);
+      expect(res.body.message).toBe("Application not found");
+    });
+
+    // ── Successful non-ACCEPTED transitions ───────────────────────────────────
+
+    test("returns 200 and updated application when status is IN_REVIEW", async () => {
+      const updatedApplication = {
+        application_id: 1,
+        job_id: 10,
+        employer_id: 100,
+        worker_profile_id: 200,
+        status: "IN_REVIEW",
+      };
+      jobQueries.updateGigApplicationStatus.mockResolvedValueOnce(updatedApplication);
+
+      const res = await request(app)
+        .patch("/api/applications/1/status")
+        .send({ status: "IN_REVIEW" });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.message).toBe("Application status updated");
+      expect(res.body.application.status).toBe("IN_REVIEW");
+    });
+
+    test("returns 200 and updated application when status is REJECTED", async () => {
+      const updatedApplication = {
+        application_id: 1,
+        job_id: 10,
+        employer_id: 100,
+        worker_profile_id: 200,
+        status: "REJECTED",
+      };
+      jobQueries.updateGigApplicationStatus.mockResolvedValueOnce(updatedApplication);
+
+      const res = await request(app)
+        .patch("/api/applications/1/status")
+        .send({ status: "REJECTED" });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.message).toBe("Application status updated");
+      expect(res.body.application.status).toBe("REJECTED");
+    });
+
+    test("returns 200 and updated application when status is WITHDRAWN", async () => {
+      const updatedApplication = {
+        application_id: 1,
+        job_id: 10,
+        employer_id: 100,
+        worker_profile_id: 200,
+        status: "WITHDRAWN",
+      };
+      jobQueries.updateGigApplicationStatus.mockResolvedValueOnce(updatedApplication);
+
+      const res = await request(app)
+        .patch("/api/applications/1/status")
+        .send({ status: "WITHDRAWN" });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.message).toBe("Application status updated");
+      expect(res.body.application.status).toBe("WITHDRAWN");
+    });
+
+    // ── Notification is NOT sent for non-ACCEPTED transitions ─────────────────
+
+    test("does NOT send a notification when status is IN_REVIEW", async () => {
+      jobQueries.updateGigApplicationStatus.mockResolvedValueOnce({
+        application_id: 1, job_id: 10, employer_id: 100, worker_profile_id: 200, status: "IN_REVIEW",
+      });
+
+      await request(app).patch("/api/applications/1/status").send({ status: "IN_REVIEW" });
+
+      expect(userQueries.insertNotification).not.toHaveBeenCalled();
+    });
+
+    test("does NOT send a notification when status is REJECTED", async () => {
+      jobQueries.updateGigApplicationStatus.mockResolvedValueOnce({
+        application_id: 1, job_id: 10, employer_id: 100, worker_profile_id: 200, status: "REJECTED",
+      });
+
+      await request(app).patch("/api/applications/1/status").send({ status: "REJECTED" });
+
+      expect(userQueries.insertNotification).not.toHaveBeenCalled();
+    });
+
+    test("does NOT send a notification when status is WITHDRAWN", async () => {
+      jobQueries.updateGigApplicationStatus.mockResolvedValueOnce({
+        application_id: 1, job_id: 10, employer_id: 100, worker_profile_id: 200, status: "WITHDRAWN",
+      });
+
+      await request(app).patch("/api/applications/1/status").send({ status: "WITHDRAWN" });
+
+      expect(userQueries.insertNotification).not.toHaveBeenCalled();
+    });
+
+    // ── Database error ─────────────────────────────────────────────────────────
+
+    test("returns 500 when the database throws an error", async () => {
+      jobQueries.updateGigApplicationStatus.mockRejectedValueOnce(new Error("DB connection lost"));
+
+      const res = await request(app)
+        .patch("/api/applications/1/status")
+        .send({ status: "REJECTED" });
+
+      expect(res.statusCode).toBe(500);
+      expect(res.body.message).toBe("Error updating application status");
+      expect(res.body.error).toBe("DB connection lost");
     });
   });
 });

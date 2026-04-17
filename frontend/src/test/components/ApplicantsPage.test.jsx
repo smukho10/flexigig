@@ -359,6 +359,217 @@ describe("ApplicantsPage — Review submission", () => {
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
+describe("ApplicantsPage — status switch buttons", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  // Helper: render an open job with a single applicant at the given status
+  const setupOpenJob = (statusOverride = "APPLIED") => {
+    axios.get.mockImplementation((url) => {
+      if (url.includes("/api/job-applicants/"))
+        return Promise.resolve({
+          data: { applicants: [makeApplicant({ application_status: statusOverride })] },
+        });
+      if (url.includes("/api/edit-job/"))
+        return Promise.resolve({ data: { status: "open" } });
+      return Promise.resolve({ data: {} });
+    });
+  };
+
+  // ── Button click dispatches correct PATCH call ────────────────────────────
+
+  test("clicking Accept calls PATCH with status ACCEPTED", async () => {
+    setupOpenJob("APPLIED");
+    axios.patch.mockResolvedValueOnce({});
+    render(<ApplicantsPage />);
+
+    await waitFor(() =>
+      expect(document.querySelector("button.accept-btn")).toBeInTheDocument()
+    );
+    fireEvent.click(document.querySelector("button.accept-btn"));
+
+    await waitFor(() =>
+      expect(axios.patch).toHaveBeenCalledWith(
+        "/api/applications/201/status",
+        { status: "ACCEPTED" },
+        { withCredentials: true }
+      )
+    );
+  });
+
+  test("clicking In Review calls PATCH with status IN_REVIEW", async () => {
+    setupOpenJob("APPLIED");
+    axios.patch.mockResolvedValueOnce({});
+    render(<ApplicantsPage />);
+
+    await waitFor(() =>
+      expect(document.querySelector("button.review-btn")).toBeInTheDocument()
+    );
+    fireEvent.click(document.querySelector("button.review-btn"));
+
+    await waitFor(() =>
+      expect(axios.patch).toHaveBeenCalledWith(
+        "/api/applications/201/status",
+        { status: "IN_REVIEW" },
+        { withCredentials: true }
+      )
+    );
+  });
+
+  test("clicking Reject calls PATCH with status REJECTED", async () => {
+    setupOpenJob("APPLIED");
+    axios.patch.mockResolvedValueOnce({});
+    render(<ApplicantsPage />);
+
+    await waitFor(() =>
+      expect(document.querySelector("button.reject-btn")).toBeInTheDocument()
+    );
+    fireEvent.click(document.querySelector("button.reject-btn"));
+
+    await waitFor(() =>
+      expect(axios.patch).toHaveBeenCalledWith(
+        "/api/applications/201/status",
+        { status: "REJECTED" },
+        { withCredentials: true }
+      )
+    );
+  });
+
+  // ── Accept button disabled states ─────────────────────────────────────────
+
+  test("Accept button is disabled when applicant status is ACCEPTED", async () => {
+    setupOpenJob("ACCEPTED");
+    render(<ApplicantsPage />);
+    await waitFor(() =>
+      expect(document.querySelector("button.accept-btn")).toBeInTheDocument()
+    );
+    expect(document.querySelector("button.accept-btn")).toBeDisabled();
+  });
+
+  test("Accept button is disabled when applicant status is WITHDRAWN", async () => {
+    setupOpenJob("WITHDRAWN");
+    render(<ApplicantsPage />);
+    await waitFor(() =>
+      expect(document.querySelector("button.accept-btn")).toBeInTheDocument()
+    );
+    expect(document.querySelector("button.accept-btn")).toBeDisabled();
+  });
+
+  test("Accept button is enabled when applicant status is APPLIED", async () => {
+    setupOpenJob("APPLIED");
+    render(<ApplicantsPage />);
+    await waitFor(() =>
+      expect(document.querySelector("button.accept-btn")).toBeInTheDocument()
+    );
+    expect(document.querySelector("button.accept-btn")).not.toBeDisabled();
+  });
+
+  test("Accept button is enabled when applicant status is IN_REVIEW", async () => {
+    setupOpenJob("IN_REVIEW");
+    render(<ApplicantsPage />);
+    await waitFor(() =>
+      expect(document.querySelector("button.accept-btn")).toBeInTheDocument()
+    );
+    expect(document.querySelector("button.accept-btn")).not.toBeDisabled();
+  });
+
+  // ── In Review button disabled states ──────────────────────────────────────
+
+  test("In Review button is disabled when applicant status is IN_REVIEW", async () => {
+    setupOpenJob("IN_REVIEW");
+    render(<ApplicantsPage />);
+    await waitFor(() =>
+      expect(document.querySelector("button.review-btn")).toBeInTheDocument()
+    );
+    expect(document.querySelector("button.review-btn")).toBeDisabled();
+  });
+
+  test("In Review button is disabled when applicant status is ACCEPTED", async () => {
+    setupOpenJob("ACCEPTED");
+    render(<ApplicantsPage />);
+    await waitFor(() =>
+      expect(document.querySelector("button.review-btn")).toBeInTheDocument()
+    );
+    expect(document.querySelector("button.review-btn")).toBeDisabled();
+  });
+
+  test("In Review button is disabled when applicant status is REJECTED", async () => {
+    setupOpenJob("REJECTED");
+    render(<ApplicantsPage />);
+    await waitFor(() =>
+      expect(document.querySelector("button.review-btn")).toBeInTheDocument()
+    );
+    expect(document.querySelector("button.review-btn")).toBeDisabled();
+  });
+
+  test("In Review button is disabled when applicant status is WITHDRAWN", async () => {
+    setupOpenJob("WITHDRAWN");
+    render(<ApplicantsPage />);
+    await waitFor(() =>
+      expect(document.querySelector("button.review-btn")).toBeInTheDocument()
+    );
+    expect(document.querySelector("button.review-btn")).toBeDisabled();
+  });
+
+  test("In Review button is enabled when applicant status is APPLIED", async () => {
+    setupOpenJob("APPLIED");
+    render(<ApplicantsPage />);
+    await waitFor(() =>
+      expect(document.querySelector("button.review-btn")).toBeInTheDocument()
+    );
+    expect(document.querySelector("button.review-btn")).not.toBeDisabled();
+  });
+
+  // ── Reject button disabled states ─────────────────────────────────────────
+
+  test("Reject button is disabled when applicant status is REJECTED", async () => {
+    setupOpenJob("REJECTED");
+    render(<ApplicantsPage />);
+    await waitFor(() =>
+      expect(document.querySelector("button.reject-btn")).toBeInTheDocument()
+    );
+    expect(document.querySelector("button.reject-btn")).toBeDisabled();
+  });
+
+  test("Reject button is disabled when applicant status is ACCEPTED", async () => {
+    setupOpenJob("ACCEPTED");
+    render(<ApplicantsPage />);
+    await waitFor(() =>
+      expect(document.querySelector("button.reject-btn")).toBeInTheDocument()
+    );
+    expect(document.querySelector("button.reject-btn")).toBeDisabled();
+  });
+
+  test("Reject button is disabled when applicant status is WITHDRAWN", async () => {
+    setupOpenJob("WITHDRAWN");
+    render(<ApplicantsPage />);
+    await waitFor(() =>
+      expect(document.querySelector("button.reject-btn")).toBeInTheDocument()
+    );
+    expect(document.querySelector("button.reject-btn")).toBeDisabled();
+  });
+
+  test("Reject button is enabled when applicant status is APPLIED", async () => {
+    setupOpenJob("APPLIED");
+    render(<ApplicantsPage />);
+    await waitFor(() =>
+      expect(document.querySelector("button.reject-btn")).toBeInTheDocument()
+    );
+    expect(document.querySelector("button.reject-btn")).not.toBeDisabled();
+  });
+
+  // ── Status switch buttons absent on completed jobs ────────────────────────
+
+  test("Accept / In Review / Reject buttons are not rendered on a completed job", async () => {
+    setupCompletedJob({ application_status: "ACCEPTED" });
+    render(<ApplicantsPage />);
+    await waitFor(() => expect(screen.getByText("Alice Smith")).toBeInTheDocument());
+    expect(document.querySelector("button.accept-btn")).not.toBeInTheDocument();
+    expect(document.querySelector("button.review-btn")).not.toBeInTheDocument();
+    expect(document.querySelector("button.reject-btn")).not.toBeInTheDocument();
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
 describe("ApplicantsPage — General UI", () => {
   beforeEach(() => jest.clearAllMocks());
 
