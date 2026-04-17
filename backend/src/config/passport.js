@@ -2,6 +2,7 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const db = require('../database/connection.js');
 const user_queries = require('../database/queries/user_queries.js');
+const { getGoogleProfileDetails } = require('../services/googleProfileService');
 
 passport.serializeUser((user, done) => {
   done(null, user.id);
@@ -44,9 +45,11 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       try {
         const googleId = profile.id;
         const email = profile.emails[0].value;
-        const picture = profile.photos?.[0]?.value || null;
-        const firstName = profile.name?.givenName || '';
-        const lastName = profile.name?.familyName || '';
+        const googleProfile = await getGoogleProfileDetails(accessToken);
+        const picture = googleProfile.picture || profile.photos?.[0]?.value || null;
+        const firstName = googleProfile.firstName || profile.name?.givenName || '';
+        const lastName = googleProfile.lastName || profile.name?.familyName || '';
+        const phoneNumber = googleProfile.phoneNumber || null;
 
         // Check if user exists by google_id
         let user = await user_queries.getUserByGoogleId(googleId);
@@ -61,7 +64,10 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 
         if (user) {
           // Link Google to existing local account
-          await user_queries.linkGoogleAccount(user.id, googleId);
+          await user_queries.linkGoogleAccount(user.id, googleId, {
+            userImage: picture,
+            phoneNumber
+          });
           user = await user_queries.getUserById(user.id);
           return done(null, user);
         }
@@ -84,6 +90,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           picture,
           firstName,
           lastName,
+          phoneNumber,
           needsAccountType: true
         };
 

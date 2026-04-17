@@ -110,7 +110,14 @@ CREATE TABLE businesses (
      business_name VARCHAR(100),
      business_description TEXT,
      business_email VARCHAR(100),
-     business_website VARCHAR(255)
+     business_website VARCHAR(255),
+     business_phone_number VARCHAR(25),
+     business_street_address VARCHAR(255),
+     business_city VARCHAR(255),
+     business_province VARCHAR(255),
+     business_postal_code VARCHAR(20),
+     contact_first_name VARCHAR(255),
+     contact_last_name VARCHAR(255)
 );
 
 CREATE TABLE jobPostings (

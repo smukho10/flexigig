@@ -60,15 +60,18 @@ const getBusinessProfile = (user_id) => {
     businesses.business_description,
     businesses.business_email,
     businesses.business_website,
-    locations.streetaddress AS street_address,
-    locations.city,
-    locations.province,
-    locations.postalcode AS postal_code,
+    businesses.business_phone_number,
+    businesses.contact_first_name,
+    businesses.contact_last_name,
+    COALESCE(businesses.business_street_address, locations.streetaddress) AS street_address,
+    COALESCE(businesses.business_city, locations.city) AS city,
+    COALESCE(businesses.business_province, locations.province) AS province,
+    COALESCE(businesses.business_postal_code, locations.postalcode) AS postal_code,
     locations.latitude,
     locations.longitude
     FROM users
     JOIN businesses ON users.id = businesses.user_id
-    JOIN locations ON users.user_address = locations.location_id
+    LEFT JOIN locations ON users.user_address = locations.location_id
     WHERE users.id = $1;`;
 
   return db
@@ -312,7 +315,7 @@ const getProfile = (userId) => {
     locations.longitude
     FROM users
     JOIN workers ON users.id = workers.user_id
-    JOIN locations ON users.user_address = locations.location_id
+    LEFT JOIN locations ON users.user_address = locations.location_id
     WHERE users.id = $1;`;
 
   return db
@@ -357,7 +360,7 @@ const getProfileByWorkerId = (workerId) => {
     locations.longitude
     FROM users
     JOIN workers ON users.id = workers.user_id
-    JOIN locations ON users.user_address = locations.location_id
+    LEFT JOIN locations ON users.user_address = locations.location_id
     WHERE workers.id = $1;`;
 
   return db.query(query, [workerId]).then((r) => r.rows[0]);

@@ -379,14 +379,14 @@ const ProfilePage = () => {
       );
       setPhotoUrl(res.data.viewUrl);
     } catch (error) {
-      console.log("No profile photo found");
-      setPhotoUrl(null);
+      console.log("No uploaded profile photo found, falling back to account image");
+      setPhotoUrl(user?.userImage || null);
     }
   };
 
   useEffect(() => {
     fetchProfilePhoto();
-  }, [user?.id]);
+  }, [user?.id, user?.userImage]);
 
   // FIX 1: Auto-upload immediately on file select — no separate Upload button needed.
   // File is passed directly so we don't depend on async state from setResumeFile.
@@ -1107,7 +1107,8 @@ const ProfilePage = () => {
             <div className="profile-section">
               <h2>Business Information</h2>
               <p><strong>Name:</strong> {user.business_name}</p>
-              <p><strong>Phone:</strong> {user.phone_number}</p>
+              <p><strong>Contact Name:</strong> {[user.contact_first_name, user.contact_last_name].filter(Boolean).join(" ") || "Not provided"}</p>
+              <p><strong>Phone:</strong> {user.business_phone_number || user.phone_number || "Not provided"}</p>
               <p><strong>Email:</strong> {user.email}</p>
               <p><strong>Address:</strong> {user.street_address} {user.city} {user.province} {user.postal_code}</p>
               <p><strong>Website:</strong> {user.business_website}</p>

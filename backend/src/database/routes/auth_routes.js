@@ -50,7 +50,13 @@ router.get('/auth/google', (req, res, next) => {
   if (accountType === 'Worker' || accountType === 'Employer') {
     req.session.pendingAccountType = accountType;
   }
-  passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
+  passport.authenticate('google', {
+    scope: [
+      'profile',
+      'email',
+      'https://www.googleapis.com/auth/user.phonenumbers.read'
+    ]
+  })(req, res, next);
 });
 
 // Google OAuth callback
@@ -81,6 +87,7 @@ router.get(
           picture: userData.picture,
           firstName: userData.firstName,
           lastName: userData.lastName,
+          phoneNumber: userData.phoneNumber,
           preSelectedAccountType: accountType || null
         });
 
@@ -140,7 +147,7 @@ router.get('/auth/google/exchange', async (req, res) => {
             id: user.id,
             email: user.email,
             isbusiness: user.isbusiness,
-            userImage: user.userimage
+            userImage: user.userImage || user.userimage || null
           }
         });
       });
@@ -152,7 +159,8 @@ router.get('/auth/google/exchange', async (req, res) => {
         email: data.email,
         picture: data.picture,
         firstName: data.firstName,
-        lastName: data.lastName
+        lastName: data.lastName,
+        phoneNumber: data.phoneNumber
       };
 
       return res.json({
@@ -161,6 +169,7 @@ router.get('/auth/google/exchange', async (req, res) => {
         email: data.email,
         firstName: data.firstName,
         lastName: data.lastName,
+        phoneNumber: data.phoneNumber || null,
         preSelectedAccountType: data.preSelectedAccountType || null
       });
     }
@@ -197,7 +206,8 @@ router.post('/auth/google/complete', async (req, res) => {
       pendingOAuth.email,
       pendingOAuth.googleId,
       isBusiness,
-      pendingOAuth.picture
+      pendingOAuth.picture,
+      pendingOAuth.phoneNumber
     );
 
     let workerId = null;
@@ -208,7 +218,12 @@ router.post('/auth/google/complete', async (req, res) => {
       const worker = await user_queries.addWorker(user.id, workerFirstName, workerLastName);
       workerId = worker?.id ?? null;
     } else {
-      await user_queries.addBusiness(user.id, businessName || '', businessDescription || '');
+      await user_queries.addBusiness(user.id, businessName || '', businessDescription || '', {
+        businessEmail: pendingOAuth.email,
+        businessPhoneNumber: pendingOAuth.phoneNumber,
+        contactFirstName: firstName || pendingOAuth.firstName || null,
+        contactLastName: lastName || pendingOAuth.lastName || null
+      });
     }
 
     delete req.session.pendingOAuth;
@@ -226,7 +241,7 @@ router.post('/auth/google/complete', async (req, res) => {
         id: user.id,
         email: user.email,
         isbusiness: user.isbusiness,
-        userImage: user.userimage
+        userImage: user.userImage || user.userimage || null
       };
       if (workerId) userResponse.workerId = workerId;
 
@@ -251,6 +266,7 @@ router.get('/auth/google/pending', (req, res) => {
       email: req.session.pendingOAuth.email,
       firstName: req.session.pendingOAuth.firstName,
       lastName: req.session.pendingOAuth.lastName,
+      phoneNumber: req.session.pendingOAuth.phoneNumber,
       picture: req.session.pendingOAuth.picture
     });
   } else {
