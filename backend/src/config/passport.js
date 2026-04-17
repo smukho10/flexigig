@@ -2,7 +2,6 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const db = require('../database/connection.js');
 const user_queries = require('../database/queries/user_queries.js');
-const { getGoogleProfileDetails } = require('../services/googleProfileService');
 
 passport.serializeUser((user, done) => {
   done(null, user.id);
@@ -45,11 +44,10 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       try {
         const googleId = profile.id;
         const email = profile.emails[0].value;
-        const googleProfile = await getGoogleProfileDetails(accessToken);
-        const picture = googleProfile.picture || profile.photos?.[0]?.value || null;
-        const firstName = googleProfile.firstName || profile.name?.givenName || '';
-        const lastName = googleProfile.lastName || profile.name?.familyName || '';
-        const phoneNumber = googleProfile.phoneNumber || null;
+        const picture = profile.photos?.[0]?.value || null;
+        const firstName = profile.name?.givenName || '';
+        const lastName = profile.name?.familyName || '';
+        const phoneNumber = null;
 
         // Check if user exists by google_id
         let user = await user_queries.getUserByGoogleId(googleId);

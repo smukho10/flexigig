@@ -53,8 +53,7 @@ router.get('/auth/google', (req, res, next) => {
   passport.authenticate('google', {
     scope: [
       'profile',
-      'email',
-      'https://www.googleapis.com/auth/user.phonenumbers.read'
+      'email'
     ]
   })(req, res, next);
 });
