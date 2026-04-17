@@ -203,16 +203,20 @@
 
 .job-board-container .comfirm-application-container .prompt-buttons button {
   margin: 0 8px;
-  background: #C2554E;
-  color: #fff;
+  background: #ffffff;
+  color: #1D9E75;
+  border: 1.5px solid #1D9E75;
   padding: 10px 20px;
   font-size: 0.875rem;
   font-weight: 700;
   font-family: 'Quicksand', 'Poppins', sans-serif;
   border-radius: 10px;
-  border: none;
   cursor: pointer;
-  transition: background 0.18s;
+  transition: background 0.18s, color 0.18s;
+}
+
+.job-board-container .comfirm-application-container .prompt-buttons button:hover {
+  background: #e1f5ee;
 }
 
 .job-board-container .comfirm-application-container .prompt-buttons .apply-btn {

@@ -116,13 +116,14 @@
 .btn-primary {
   background-color: #fff;
   color: #1D9E75;
-  border: none;
+  border: 1.5px solid rgba(255, 255, 255, 0.6);
   padding: 8px 20px;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-family: 'Quicksand', 'Poppins', sans-serif;
+  transition: background 0.18s, transform 0.12s;
 }
 
 .btn-primary:hover {
@@ -505,11 +506,15 @@
 
 .tag {
   padding: 6px 14px;
-  border: 1px solid #ccc;
+  border: 1.5px solid #e8ecf0;
   border-radius: 20px;
   user-select: none;
   cursor: pointer;
   font-size: 13px;
+  font-weight: 500;
+  color: #273240;
+  background: #f9fafb;
+  transition: all 0.15s;
 }
 
 .tag.selected {
@@ -520,10 +525,11 @@
 
 /* ============ RESUME SECTION ============ */
 .resume-section h2 {
-  font-size: 18px;
+  font-size: 0.95rem;
   font-weight: 700;
   color: #1a1a2e;
   margin-bottom: 14px;
+  font-family: 'Quicksand', 'Poppins', sans-serif;
 }
 
 .resume-current {
@@ -569,19 +575,23 @@
 }
 
 .btn-resume-delete {
+  display: inline-flex;
+  align-items: center;
   padding: 8px 18px;
-  background-color: #e53935;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  background-color: #ffffff;
+  color: #C2554E;
+  border: 1.5px solid #C2554E;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-family: 'Quicksand', 'Poppins', sans-serif;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background 0.18s, color 0.18s;
 }
 
 .btn-resume-delete:hover {
-  background-color: #c62828;
+  background-color: #C2554E;
+  color: #fff;
 }
 
 .resume-empty-text {
