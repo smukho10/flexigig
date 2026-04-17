@@ -131,45 +131,51 @@
 }
 
 .btn-danger {
-  background-color: rgba(255, 99, 71, 0.9);
+  background-color: #C2554E;
   color: #fff;
   border: none;
   padding: 8px 16px;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-family: 'Quicksand', 'Poppins', sans-serif;
+  transition: background 0.18s, transform 0.12s;
 }
 
 .btn-danger:hover {
-  background-color: #FF6347;
+  background-color: #a8392d;
+  transform: translateY(-1px);
 }
 
 .btn-danger:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+  transform: none;
 }
 
 .btn-success {
-  background-color: rgba(76, 175, 80, 0.9);
+  background-color: #1D9E75;
   color: #fff;
   border: none;
   padding: 8px 16px;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-family: 'Quicksand', 'Poppins', sans-serif;
+  transition: background 0.18s, transform 0.12s;
 }
 
 .btn-success:hover {
-  background-color: #4CAF50;
+  background-color: #0F6E56;
+  transform: translateY(-1px);
 }
 
 .btn-success:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+  transform: none;
 }
 
 .btn-icon {
@@ -236,19 +242,35 @@
 
 .profile-card-body p {
   margin: 6px 0;
-  font-size: 15px;
-  color: #555;
-  line-height: 1.6;
+  font-size: 0.875rem;
+  color: #273240;
+  line-height: 1.65;
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  border-bottom: 1px solid #f3f4f6;
+  padding-bottom: 5px;
+}
+
+.profile-card-body p:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
 .profile-card-body strong {
-  color: #333;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  min-width: 80px;
+  flex-shrink: 0;
 }
 
 .profile-card-address {
-  margin-top: 8px;
-  font-size: 15px;
-  color: #555;
+  margin-top: 6px;
+  font-size: 0.875rem;
+  color: #273240;
   line-height: 1.6;
 }
 
@@ -288,21 +310,35 @@
 }
 
 .business-profile .profile-section {
-  margin-bottom: 20px;
+  margin-bottom: 0;
+  padding: 14px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.business-profile .profile-section:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.business-profile .profile-section:first-child {
+  padding-top: 0;
 }
 
 .business-profile .profile-section h2 {
-  color: #1a1a2e;
-  font-size: 18px;
+  color: #667085;
+  font-size: 0.72rem;
   font-weight: 700;
-  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 8px 0;
 }
 
 .business-profile .profile-section p {
-  margin: 5px 0;
+  margin: 4px 0;
   line-height: 1.6;
-  font-size: 15px;
-  color: #555;
+  font-size: 0.9rem;
+  color: #273240;
+  font-weight: 500;
 }
 
 /* ============ EDIT FORM STYLES ============ */
@@ -323,27 +359,32 @@
 
 .form-label {
   display: block;
-  font-size: 14px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 6px;
-  margin-top: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #667085;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 5px;
+  margin-top: 14px;
+  font-family: 'Quicksand', 'Poppins', sans-serif;
 }
 
 .input-text {
   width: 100%;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 1rem;
+  padding: 9px 12px;
+  border: 1.5px solid #e8ecf0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: 'Quicksand', 'Poppins', sans-serif;
+  color: #273240;
   background-color: #fff;
-  transition: border-color 0.2s ease;
+  transition: border-color 0.15s, box-shadow 0.15s;
   box-sizing: border-box;
 }
 
 .input-text:focus {
   border-color: #1D9E75;
-  box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.15);
+  box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.1);
   outline: none;
 }
 
@@ -357,13 +398,14 @@
 }
 
 .form-button {
-  padding: 10px 24px;
+  padding: 10px 20px;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
-  font-size: 15px;
-  font-weight: 600;
-  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-family: 'Quicksand', 'Poppins', sans-serif;
+  transition: background 0.18s, transform 0.12s;
 }
 
 .form-button[type="submit"] {
@@ -373,15 +415,17 @@
 
 .form-button[type="submit"]:hover {
   background-color: #0F6E56;
+  transform: translateY(-1px);
 }
 
 .form-button[type="button"] {
-  background-color: #e0e0e0;
-  color: #555;
+  background-color: #f3f4f6;
+  color: #4b5563;
+  border: 1.5px solid #e5e7eb;
 }
 
 .form-button[type="button"]:hover {
-  background-color: #ccc;
+  background-color: #e5e7eb;
 }
 
 .edit-button {
@@ -390,13 +434,16 @@
   border: none;
   padding: 10px 20px;
   cursor: pointer;
-  border-radius: 8px;
-  font-weight: 600;
-  transition: all 0.2s ease;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-family: 'Quicksand', 'Poppins', sans-serif;
+  transition: background 0.18s, transform 0.12s;
 }
 
 .edit-button:hover {
   background-color: #0F6E56;
+  transform: translateY(-1px);
 }
 
 /* ============ SKILL/TRAIT/EXP EDIT FORM ============ */
