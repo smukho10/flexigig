@@ -43,7 +43,7 @@ const ApplicantProfileView = () => {
                         .catch(() => setProfilePhotoUrl(null));
 
                     axios
-                        .get(`/api/my-calendar/${p.id}`, { withCredentials: true })
+                        .get(`/api/my-calendar/availability/${p.id}`, { withCredentials: true })
                         .then((calRes) => {
                             const formatted = calRes.data.map((event) => ({
                                 id: event.id,
