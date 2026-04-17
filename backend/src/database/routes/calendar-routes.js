@@ -34,6 +34,20 @@ router.post("/my-calendar/worker", (req, res) => {
     });
 });
 
+// Fetch only availability slots for a user (no accepted job shifts) — for employer view
+router.get("/my-calendar/availability/:user_id", (req, res) => {
+  const user_id = req.params.user_id;
+
+  calendar_queries.getAvailabilityByUserId(user_id)
+    .then((schedule) => {
+      res.status(200).json(schedule);
+    })
+    .catch((error) => {
+      console.error('Error fetching availability:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    });
+});
+
 // Fetch schedule for a specific user
 router.get("/my-calendar/:user_id", (req, res) => {
   const user_id = req.params.user_id;
