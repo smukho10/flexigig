@@ -151,8 +151,9 @@
 #workerboard-items {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 18px;
+    gap: 14px;
     width: 100%;
+    max-width: 960px;
 }
 
 #workerboard-items > div {
@@ -209,16 +210,18 @@
 }
 
 #workerboard-worker-details {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 210px;
-    gap: 16px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
     align-items: center;
+    gap: 16px;
 }
 
 #workerboard-worker-info {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 7px 24px;
+    grid-template-columns: repeat(2, minmax(0, 220px));
+    gap: 7px 20px;
+    flex-shrink: 1;
 }
 
 #workerboard-worker-item {
@@ -236,6 +239,7 @@
     align-items: center;
     justify-content: flex-end;
     gap: 14px;
+    flex-shrink: 0;
 }
 
 #workerboard-actions-link {
@@ -507,7 +511,8 @@
 
 @media (max-width: 1100px) {
     #workerboard-worker-details {
-        grid-template-columns: 1fr;
+        flex-direction: column;
+        align-items: flex-start;
     }
 
     #workerboard-worker-actions {
