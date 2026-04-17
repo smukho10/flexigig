@@ -94,22 +94,15 @@
     margin: 0 10px 0 0;
 }
 
-.job-posting-container ul li .right {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: flex-end;
-}
-
-.job-posting-container ul li .right button {
+.job-posting-container ul li .card-actions button {
     background-color: #1D9E75;
     color: white;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
     padding: 9px 16px;
-    width: 100%;
+    width: auto;
     font-size: 0.875rem;
     font-weight: 700;
     border-radius: 10px;
@@ -120,18 +113,18 @@
     font-family: 'Quicksand', 'Poppins', sans-serif;
 }
 
-.job-posting-container ul li .right button:hover:not(#remove-btn) {
+.job-posting-container ul li .card-actions button:hover:not(#remove-btn) {
     background-color: #0F6E56;
     transform: translateY(-1px);
 }
 
-.job-posting-container ul li .right #remove-btn {
+.job-posting-container #remove-btn {
     background-color: #ffffff;
     color: #C2554E;
     border: 1.5px solid #C2554E;
 }
 
-.job-posting-container ul li .right #remove-btn:hover {
+.job-posting-container #remove-btn:hover {
     background-color: #C2554E;
     color: #fff;
     transform: translateY(-1px);
@@ -325,32 +318,34 @@
     white-space: nowrap;
 }
 
-/* Card action buttons group */
+/* Card action buttons group — flex ROW */
 .card-actions {
     display: flex;
-    flex-direction: column;
-    gap: 6px;
-    align-items: stretch;
-    width: 148px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end;
+    width: auto;
 }
 
 /* Advance-status button (Publish / Mark In Review / etc.) */
 .advance-btn {
     color: white;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
     padding: 9px 16px;
-    width: 100%;
-    font-size: 0.8rem;
+    width: auto;
+    font-size: 0.875rem;
     font-weight: 700;
     border-radius: 10px;
     border: none;
     cursor: pointer;
     font-family: 'Quicksand', 'Poppins', sans-serif;
     white-space: nowrap;
-    transition: opacity 0.15s ease, transform 0.12s;
+    transition: background 0.18s, transform 0.12s;
 }
 
 .advance-btn:disabled {
@@ -688,16 +683,16 @@
 /* ── View Applicants button ─────────────────── */
 
 .view-applicants-btn {
-    background-color: white !important;
-    color: #1D9E75 !important;
-    border: 1.5px solid #1D9E75 !important;
-    display: flex !important;
+    background-color: #ffffff;
+    color: #1D9E75;
+    border: 1.5px solid #1D9E75;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
     padding: 9px 16px;
-    width: 100%;
-    font-size: 0.8rem;
+    width: auto;
+    font-size: 0.875rem;
     font-weight: 700;
     border-radius: 10px;
     cursor: pointer;
@@ -779,15 +774,9 @@
         padding: 20px 16px;
     }
 
-    .job-posting-container ul li .right {
-        align-items: flex-start;
-        flex-direction: row;
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-
     .card-actions {
         width: 100%;
+        justify-content: flex-start;
     }
 
     /* Search input full width */

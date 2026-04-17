@@ -256,54 +256,52 @@ const JobPosting = () => {
                     </div>
                 </div>
 
-                <div className="right">
-                    <div className="card-actions">
-                        {/* View Applicants — shown for open, in-review, and completed jobs */}
-                        {[JOB_STATUS.OPEN, JOB_STATUS.IN_REVIEW, JOB_STATUS.COMPLETED].includes(status) && (
-                            <button
-                                className="view-applicants-btn"
-                                onClick={() => handleViewApplicants(job)}
-                            >
-                                {status === JOB_STATUS.COMPLETED ? "View Applicants / Rate" : "View Applicants"}
-                            </button>
-                        )}
-
-                        {/* Reopen — shown for in-review jobs */}
-                        {status === JOB_STATUS.IN_REVIEW && (
-                            <button
-                                className="advance-btn"
-                                style={{ backgroundColor: TAB_CONFIG.find(t => t.key === JOB_STATUS.OPEN)?.color }}
-                                disabled={isLoading}
-                                onClick={() => handleReopenJob(job)}
-                            >
-                                {isLoading ? "..." : "Reopen"}
-                            </button>
-                        )}
-
-                        {/* Advance status button (not shown for completed) */}
-                        {nextStatus && (
-                            <button
-                                className="advance-btn"
-                                style={{ backgroundColor: TAB_CONFIG.find(t => t.key === nextStatus)?.color }}
-                                disabled={isLoading}
-                                onClick={() => handleStatusChange(job, nextStatus)}
-                            >
-                                {isLoading ? "..." : nextLabel}
-                            </button>
-                        )}
-
-                        {/* Edit — shown for draft and open jobs */}
-                        {(status === JOB_STATUS.DRAFT || status === JOB_STATUS.OPEN) && (
-                            <button id="edit-btn" value={job.job_id} onClick={handleEdit}>
-                                Edit
-                            </button>
-                        )}
-
-                        {/* Remove — always available */}
-                        <button id="remove-btn" value={job.job_id} onClick={handleRemove}>
-                            Remove
+                <div className="card-actions">
+                    {/* View Applicants — shown for open, in-review, and completed jobs */}
+                    {[JOB_STATUS.OPEN, JOB_STATUS.IN_REVIEW, JOB_STATUS.COMPLETED].includes(status) && (
+                        <button
+                            className="view-applicants-btn"
+                            onClick={() => handleViewApplicants(job)}
+                        >
+                            {status === JOB_STATUS.COMPLETED ? "View Applicants / Rate" : "View Applicants"}
                         </button>
-                    </div>
+                    )}
+
+                    {/* Reopen — shown for in-review jobs */}
+                    {status === JOB_STATUS.IN_REVIEW && (
+                        <button
+                            className="advance-btn"
+                            style={{ backgroundColor: TAB_CONFIG.find(t => t.key === JOB_STATUS.OPEN)?.color }}
+                            disabled={isLoading}
+                            onClick={() => handleReopenJob(job)}
+                        >
+                            {isLoading ? "..." : "Reopen"}
+                        </button>
+                    )}
+
+                    {/* Advance status button (not shown for completed) */}
+                    {nextStatus && (
+                        <button
+                            className="advance-btn"
+                            style={{ backgroundColor: TAB_CONFIG.find(t => t.key === nextStatus)?.color }}
+                            disabled={isLoading}
+                            onClick={() => handleStatusChange(job, nextStatus)}
+                        >
+                            {isLoading ? "..." : nextLabel}
+                        </button>
+                    )}
+
+                    {/* Edit — shown for draft and open jobs */}
+                    {(status === JOB_STATUS.DRAFT || status === JOB_STATUS.OPEN) && (
+                        <button id="edit-btn" value={job.job_id} onClick={handleEdit}>
+                            Edit
+                        </button>
+                    )}
+
+                    {/* Remove — always available */}
+                    <button id="remove-btn" value={job.job_id} onClick={handleRemove}>
+                        Remove
+                    </button>
                 </div>
             </li>
         );
