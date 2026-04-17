@@ -18,6 +18,8 @@ const MyGigs = () => {
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [withdrawing, setWithdrawing] = useState(null);
   const [refresh, setRefresh] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -167,13 +169,15 @@ const MyGigs = () => {
         className="mg-search-input"
         placeholder="Search by job title..."
         value={searchInput}
-        onChange={(e) => setSearchInput(e.target.value)}
+        onChange={(e) => { setSearchInput(e.target.value); setCurrentPage(1); }}
       />
       {(() => {
         const filteredGigs = approvedGigs.filter(job =>
           !searchInput.trim() ||
           (job.jobtitle || "").toLowerCase().includes(searchInput.trim().toLowerCase())
         );
+        const totalPages = Math.max(1, Math.ceil(filteredGigs.length / ITEMS_PER_PAGE));
+        const pagedGigs = filteredGigs.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
         if (approvedGigs.length === 0) {
           return (
@@ -189,8 +193,9 @@ const MyGigs = () => {
         }
 
         return (
-        <ul className="mg-list">
-          {filteredGigs.map(job => {
+        <>
+        <ul className="gigs-list">
+          {pagedGigs.map(job => {
             const isAccepted = job.application_status === 'ACCEPTED';
             const isCompleted = job.status === 'completed';
             const isWithdrawn = job.application_status === 'WITHDRAWN';
@@ -262,6 +267,14 @@ const MyGigs = () => {
             );
           })}
         </ul>
+        {totalPages > 1 && (
+          <div className="pagination">
+            <button className="page-btn" onClick={() => setCurrentPage(p => p - 1)} disabled={currentPage === 1}>&lt; Prev</button>
+            <span className="page-indicator">{currentPage} / {totalPages}</span>
+            <button className="page-btn" onClick={() => setCurrentPage(p => p + 1)} disabled={currentPage === totalPages}>Next &gt;</button>
+          </div>
+        )}
+        </>
         );
       })()}
 

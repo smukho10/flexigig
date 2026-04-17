@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useUser } from "./UserContext";
 import axios from "axios";
 
@@ -18,12 +18,18 @@ import "../styles/WorkerBoard.css";
 const WorkerBoard = () => {
   const { user } = useUser();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const employerId = user?.id || user?.user_id;
+
+  const initialSkills = searchParams.get("skills")
+    ? searchParams.get("skills").split(",").filter(s => s !== "")
+    : [];
 
   const [workers, setWorkers] = useState([]);
   const [skills, setSkills] = useState([]);
   const [jobs, setJobs] = useState([]);
-  const [selectedSkill, setSelectedSkill] = useState("");
+  const [selectedSkills, setSelectedSkills] = useState(initialSkills);
+  const [showSkillsDropdown, setShowSkillsDropdown] = useState(false);
   const [selectedRating, setSelectedRating] = useState("");
 
   const [selectedDistance, setSelectedDistance] = useState("");
@@ -56,6 +62,18 @@ const WorkerBoard = () => {
     { label: "75 miles", km: 120.7 },
     { label: "100 miles", km: 160.93 }
   ];
+
+  useEffect(() => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (selectedSkills.length > 0) {
+        next.set("skills", selectedSkills.join(","));
+      } else {
+        next.delete("skills");
+      }
+      return next;
+    }, { replace: true });
+  }, [selectedSkills]);
 
   useEffect(() => {
     const fetchSkills = async () => {
@@ -113,14 +131,14 @@ const WorkerBoard = () => {
         setLoading(true);
         setError("");
 
-        const normalizedSkill = typeof selectedSkill === "string" ? selectedSkill.trim() : "";
+        const normalizedSkills = Array.isArray(selectedSkills) && selectedSkills.length > 0 ? selectedSkills.join(",") : "";
         const normalizedRating = typeof selectedRating === "string" ? selectedRating.trim() : "";
         const normalizedDistance = typeof appliedDistance === "string" ? appliedDistance.trim() : "";
 
         const params = {};
 
-        if (normalizedSkill) {
-          params.skill = normalizedSkill;
+        if (normalizedSkills) {
+          params.skills = normalizedSkills;
         }
 
         if (normalizedRating) {
@@ -176,7 +194,7 @@ const WorkerBoard = () => {
 
     fetchWorkers();
   }, [
-    selectedSkill,
+    selectedSkills,
     selectedRating,
     appliedDistance,
     appliedUseCustomAddress,
@@ -318,6 +336,15 @@ const WorkerBoard = () => {
     const miles = Number(worker.distance_km) * 0.621371;
     return `${miles.toFixed(1)} miles away`;
   };
+
+  const sortedWorkers = useMemo(() => {
+    if (selectedSkills.length === 0) return workers;
+    return [...workers].sort((a, b) => {
+      const aMatches = Array.isArray(a.skills) ? a.skills.filter(s => selectedSkills.includes(s)).length : 0;
+      const bMatches = Array.isArray(b.skills) ? b.skills.filter(s => selectedSkills.includes(s)).length : 0;
+      return bMatches - aMatches;
+    });
+  }, [workers, selectedSkills]);
 
   const WorkerItem = ({ worker }) => {
     const photoUrl = workerPhotoUrls[worker.user_id];
@@ -646,18 +673,37 @@ const WorkerBoard = () => {
           )}
         </div>
 
-        <select
-          id='workerboard-filter-select'
-          value={selectedSkill}
-          onChange={(e) => setSelectedSkill(e.target.value)}
-        >
-          <option value="">All Skills</option>
-          {skills.map((skill) => (
-            <option key={skill.skill_id} value={skill.skill_name}>
-              {skill.skill_name}
-            </option>
-          ))}
-        </select>
+        <div id='workerboard-skills-multi-wrap'>
+          <div
+            id='workerboard-skills-multi-toggle'
+            onClick={() => setShowSkillsDropdown(!showSkillsDropdown)}
+          >
+            {selectedSkills.length === 0
+              ? "All Skills"
+              : `${selectedSkills.length} Skill${selectedSkills.length > 1 ? "s" : ""} Selected`}
+            <span id='workerboard-skills-multi-arrow'>{showSkillsDropdown ? "\u25B2" : "\u25BC"}</span>
+          </div>
+          {showSkillsDropdown && (
+            <div id='workerboard-skills-dropdown'>
+              {skills.map((skill) => (
+                <label key={skill.skill_id} id='workerboard-skills-dropdown-item'>
+                  <input
+                    type="checkbox"
+                    checked={selectedSkills.includes(skill.skill_name)}
+                    onChange={() => {
+                      setSelectedSkills((prev) =>
+                        prev.includes(skill.skill_name)
+                          ? prev.filter((s) => s !== skill.skill_name)
+                          : [...prev, skill.skill_name]
+                      );
+                    }}
+                  />
+                  {skill.skill_name}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
 
         <select
           id='workerboard-filter-select'
@@ -675,7 +721,8 @@ const WorkerBoard = () => {
         <div
           id='workerboard-clear-filters'
           onClick={() => {
-            setSelectedSkill("");
+            setSelectedSkills([]);
+            setShowSkillsDropdown(false);
             setSelectedRating("");
             setSelectedDistance("");
             setCustomDistance("");
@@ -703,10 +750,10 @@ const WorkerBoard = () => {
           <div>Loading workers...</div>
         ) : error ? (
           <div>{error}</div>
-        ) : workers.length === 0 ? (
+        ) : sortedWorkers.length === 0 ? (
           <div>No workers found.</div>
         ) : (
-          workers.map((worker) => (
+          sortedWorkers.map((worker) => (
             <WorkerItem key={worker.id} worker={worker} />
           ))
         )}

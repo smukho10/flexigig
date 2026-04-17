@@ -95,7 +95,7 @@ export default function ProfileScheduler({ selectedProfileId, profiles }) {
   const [modalMode, setModalMode] = useState("add"); // 'add' | 'edit' | 'delete'
   const [currentEvent, setCurrentEvent] = useState({
     id: null,
-    title: "",
+    title: "Shift",
     start: new Date(),
     end: new Date(),
   });
@@ -133,12 +133,12 @@ export default function ProfileScheduler({ selectedProfileId, profiles }) {
         );
         setShowModal(true);
         setModalMode("add");
-        setCurrentEvent({ id: null, title: "", start, end });
+        setCurrentEvent({ id: null, title: "Shift", start, end });
         return;
       }
       setOverlapError("");
       setModalMode("add");
-      setCurrentEvent({ id: null, title: "", start, end });
+      setCurrentEvent({ id: null, title: "Shift", start, end });
       setShowModal(true);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -154,10 +154,6 @@ export default function ProfileScheduler({ selectedProfileId, profiles }) {
 
   // Save new or updated event to the database
   const handleSave = () => {
-    if (!currentEvent.title.trim()) {
-      setOverlapError("Please enter a shift title.");
-      return;
-    }
     if (currentEvent.end <= currentEvent.start) {
       setOverlapError("End time must be after start time.");
       return;
@@ -223,27 +219,7 @@ export default function ProfileScheduler({ selectedProfileId, profiles }) {
     }
   };
 
-  const handleDeleteClick = () => {
-    setModalMode("delete");
-  };
 
-  const handleConfirmDelete = () => {
-    setSaving(true);
-    axios
-      .delete(`/api/my-calendar/${currentEvent.id}`, { withCredentials: true })
-      .then(() => {
-        fetchEvents();
-        setShowModal(false);
-      })
-      .catch((err) => {
-        console.error("Error deleting event:", err);
-        alert("Failed to delete event. Please try again.");
-      })
-      .finally(() => setSaving(false));
-  };
-
-  const handleTitleChange = (e) =>
-    setCurrentEvent({ ...currentEvent, title: e.target.value });
 
   const toDateTimeLocal = (date) => {
     if (!date) return "";
@@ -272,7 +248,6 @@ export default function ProfileScheduler({ selectedProfileId, profiles }) {
   const getModalTitle = () => {
     if (modalMode === "add") return "Add Shift";
     if (modalMode === "edit") return "Edit Shift";
-    if (modalMode === "delete") return "Confirm Delete";
     return "";
   };
 
@@ -295,7 +270,7 @@ export default function ProfileScheduler({ selectedProfileId, profiles }) {
           startAccessor="start"
           endAccessor="end"
           style={{ height: 1200 }}
-          views={{ month: true, week: true, day: true }}
+          views={["month", "week", "day"]}
           view={view}
           date={date}
           onView={setView}
@@ -309,6 +284,8 @@ export default function ProfileScheduler({ selectedProfileId, profiles }) {
           timeslots={2}
           min={new Date(1970, 1, 1, 0, 0, 0)}
           max={new Date(1970, 1, 1, 23, 59, 59)}
+          scrollToTime={new Date(1970, 1, 1, 0, 0, 0)}
+          enableAutoScroll={false}
         />
       </div>
 
@@ -331,97 +308,43 @@ export default function ProfileScheduler({ selectedProfileId, profiles }) {
                   <span className="shift-overlap-icon">⚠️</span> {overlapError}
                 </div>
               )}
-              {modalMode !== "delete" && (
-                <>
-                  <div className="form-group">
-                    <label>Shift Title</label>
-                    <input
-                      type="text"
-                      placeholder="Enter shift name"
-                      value={currentEvent.title}
-                      onChange={handleTitleChange}
-                      autoFocus
-                    />
-                  </div>
 
-                  <div className="form-group">
-                    <label>Start Time</label>
-                    <input
-                      type="datetime-local"
-                      value={toDateTimeLocal(currentEvent.start)}
-                      onChange={handleStartChange}
-                    />
-                  </div>
+              <div className="form-group">
+                <label>Start Time</label>
+                <input
+                  type="datetime-local"
+                  value={toDateTimeLocal(currentEvent.start)}
+                  onChange={handleStartChange}
+                />
+              </div>
 
-                  <div className="form-group">
-                    <label>End Time</label>
-                    <input
-                      type="datetime-local"
-                      value={toDateTimeLocal(currentEvent.end)}
-                      onChange={handleEndChange}
-                    />
-                  </div>
-                </>
-              )}
+              <div className="form-group">
+                <label>End Time</label>
+                <input
+                  type="datetime-local"
+                  value={toDateTimeLocal(currentEvent.end)}
+                  onChange={handleEndChange}
+                />
+              </div>
             </div>
 
             <div className="modal-footer">
-              {modalMode === "delete" ? (
-                <div
-                  className="modal-footer-right"
-                  style={{
-                    width: "100%",
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    gap: "10px",
-                  }}
+              <div className="modal-footer-right">
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => setShowModal(false)}
+                  disabled={saving}
                 >
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => setModalMode("edit")}
-                    disabled={saving}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    className="btn btn-danger"
-                    onClick={handleConfirmDelete}
-                    disabled={saving}
-                  >
-                    {saving ? "Deleting..." : "Confirm Delete"}
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div className="modal-footer-left">
-                    {modalMode === "edit" && (
-                      <button
-                        className="btn btn-danger"
-                        onClick={handleDeleteClick}
-                        disabled={saving}
-                      >
-                        Delete
-                      </button>
-                    )}
-                  </div>
-                  <div className="modal-footer-right">
-                    <button
-                      className="btn btn-secondary"
-                      onClick={() => setShowModal(false)}
-                      disabled={saving}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      className="btn btn-primary"
-                      onClick={handleSave}
-                      disabled={saving}
-                    >
-                      {saving ? "Saving..." : "Save Changes"}
-                    </button>
-                  </div>
-                </>
-              )}
+                  Cancel
+                </button>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleSave}
+                  disabled={saving}
+                >
+                  {saving ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

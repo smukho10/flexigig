@@ -99,10 +99,35 @@ const setWorkerSchedule = (user_id, worker_id, startDate, endDate, startTime, en
     });
 };
 
+// Fetch only availability slots (worker_id IS NULL) for a user — shown to employers
+const getAvailabilityByUserId = (user_id) => {
+  const query = `
+    SELECT
+      id,
+      to_char(startDate, 'YYYY-MM-DD') AS startDate,
+      to_char(endDate, 'YYYY-MM-DD') AS endDate,
+      startTime,
+      endTime,
+      title
+    FROM schedule
+    WHERE user_id = $1
+      AND worker_id IS NULL;
+  `;
+
+  return db
+    .query(query, [user_id])
+    .then((result) => result.rows)
+    .catch((err) => {
+      console.error('Error fetching availability:', err);
+      throw err;
+    });
+};
+
 module.exports = {
   getScheduleByUserId,
   setSchedule,
   deleteEvent,
   getScheduleByWorkerId,
   setWorkerSchedule,
+  getAvailabilityByUserId,
 };

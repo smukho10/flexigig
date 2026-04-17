@@ -123,6 +123,77 @@
     border-color: #1D9E75;
 }
 
+#workerboard-skills-multi-wrap {
+    position: relative;
+    display: inline-block;
+}
+
+#workerboard-skills-multi-toggle {
+    border: 1px solid #7ad7df;
+    border-radius: 10px;
+    min-width: 180px;
+    height: 42px;
+    padding: 6px 14px;
+    box-sizing: border-box;
+    font-size: 14px;
+    color: #273240;
+    background-color: #ffffff;
+    cursor: pointer;
+    outline: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#workerboard-skills-multi-toggle:hover {
+    border-color: #4EBBC2;
+    box-shadow: 0 0 0 3px rgba(78, 187, 194, 0.14);
+}
+
+#workerboard-skills-multi-arrow {
+    font-size: 10px;
+    color: #273240;
+}
+
+#workerboard-skills-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    min-width: 220px;
+    max-height: 250px;
+    overflow-y: auto;
+    background-color: #ffffff;
+    border: 1px solid #e6eef5;
+    border-radius: 10px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+    z-index: 20;
+    padding: 8px 0;
+}
+
+#workerboard-skills-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    font-size: 14px;
+    color: #273240;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+#workerboard-skills-dropdown-item:hover {
+    background-color: #f0fafb;
+}
+
+#workerboard-skills-dropdown-item input[type="checkbox"] {
+    accent-color: #4EBBC2;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
 #workerboard-clear-filters {
     border: 0.5px solid #1D9E75;
     border-radius: 5px;

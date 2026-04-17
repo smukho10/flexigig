@@ -628,19 +628,6 @@ router.post('/send-message', async (req, res) => {
     return res.status(400).json({ success: false, message: 'Missing senderId, receiverId, or content' });
   }
 
-  // Messaging is only allowed when the application is IN_REVIEW (unless it's a system message)
-  if (jobId && !isSystem) {
-    try {
-      const allowed = await user_queries.checkApplicationInReview(jobId, senderId, receiverId);
-      if (!allowed) {
-        return res.status(403).json({ success: false, message: 'Messaging is only available when the application is In Review.' });
-      }
-    } catch (error) {
-      console.error('Error checking application status for messaging:', error);
-      return res.status(500).json({ success: false, message: 'Internal Server Error' });
-    }
-  }
-
   try {
     const message = await user_queries.sendMessage(senderId, receiverId, content, jobId || null, isSystem || false);
     res.status(200).json({ success: true, message });

@@ -201,6 +201,25 @@
 }
 
 /* Divider — replaced by border-right */
+.person-item.latest-conversation {
+    background-color: #f0faf0;
+    border-left: 3px solid #4EBBC2;
+}
+
+.person-item-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.person-item-name {
+    font-size: 14px;
+}
+
+.person-item-name.bold {
+    font-weight: 700;
+}
+
 .chat-divider {
     display: none;
 }

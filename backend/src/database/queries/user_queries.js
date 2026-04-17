@@ -21,11 +21,16 @@ const getUserByGoogleId = async (googleId) => {
 };
 
 // Link Google account to existing user
-const linkGoogleAccount = async (userId, googleId) => {
+const linkGoogleAccount = async (userId, googleId, profile = {}) => {
   try {
     await db.query(
-      `UPDATE users SET google_id = $1, auth_provider = 'google' WHERE id = $2`,
-      [googleId, userId]
+      `UPDATE users
+       SET google_id = $1,
+           auth_provider = 'google',
+           userimage = COALESCE(userimage, $3),
+           user_phone_number = COALESCE(user_phone_number, $4)
+       WHERE id = $2`,
+      [googleId, userId, profile.userImage || null, profile.phoneNumber || null]
     );
     return true;
   } catch (err) {
@@ -35,13 +40,13 @@ const linkGoogleAccount = async (userId, googleId) => {
 };
 
 // Create new OAuth user (no password)
-const createOAuthUser = async (email, googleId, isBusiness, userImage) => {
+const createOAuthUser = async (email, googleId, isBusiness, userImage, phoneNumber) => {
   try {
     const result = await db.query(
-      `INSERT INTO users (email, password, google_id, auth_provider, isbusiness, userimage, active)
-       VALUES ($1, NULL, $2, 'google', $3, $4, TRUE)
+      `INSERT INTO users (email, password, google_id, auth_provider, isbusiness, userimage, user_phone_number, active)
+       VALUES ($1, NULL, $2, 'google', $3, $4, $5, TRUE)
        RETURNING *`,
-      [email, googleId, isBusiness, userImage]
+      [email, googleId, isBusiness, userImage, phoneNumber || null]
     );
     return result.rows[0];
   } catch (err) {
@@ -83,12 +88,28 @@ const addWorker = (userId, firstName, lastName) => {
 };
 
 // Adds a new business from registration
-const addBusiness = (userId, businessName, businessDescription) => {
-  const query = `INSERT INTO businesses (user_id, business_name, business_description) VALUES ($1, $2, $3) RETURNING *;`;
+const addBusiness = (userId, businessName, businessDescription, options = {}) => {
+  const query = `INSERT INTO businesses (
+      user_id,
+      business_name,
+      business_description,
+      business_email,
+      business_phone_number,
+      contact_first_name,
+      contact_last_name
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;`;
   console.log("addBusiness() called:", userId, businessName, businessDescription);
 
   return db
-    .query(query, [userId, businessName, businessDescription])
+    .query(query, [
+      userId,
+      businessName,
+      businessDescription,
+      options.businessEmail || null,
+      options.businessPhoneNumber || null,
+      options.contactFirstName || null,
+      options.contactLastName || null
+    ])
     .then((result) => {
       return result.rows[0];
     })
@@ -396,16 +417,19 @@ const getUserById = async (id) => {
 const getConversationPartners = async (userId) => {
   try {
     const query = `
-      SELECT DISTINCT
+      SELECT
         CASE
           WHEN m.sender_id = $1 THEN m.receiver_id
           WHEN m.receiver_id = $1 THEN m.sender_id
         END AS partner_id,
         m.job_id,
-        jp.jobtitle AS job_title
+        jp.jobtitle AS job_title,
+        MAX(m.timestamp) AS latest_message_at
       FROM messages m
       LEFT JOIN jobPostings jp ON m.job_id = jp.job_id
-      WHERE m.sender_id = $1 OR m.receiver_id = $1;
+      WHERE m.sender_id = $1 OR m.receiver_id = $1
+      GROUP BY partner_id, m.job_id, jp.jobtitle
+      ORDER BY latest_message_at DESC;
     `;
 
     const result = await db.query(query, [userId]);
