@@ -72,6 +72,7 @@
   min-height: 203px;
   box-sizing: border-box;
   justify-content: space-between;
+  background-color: #ffffff;
 }
 
 .job-board-container ul li .left .job-business-name {

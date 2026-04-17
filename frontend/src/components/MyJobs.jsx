@@ -132,7 +132,9 @@ const MyJobs = () => {
                   <h3>Address:</h3>
                   <p>{job.streetaddress}, {job.city}, {job.province}, {job.postalcode}</p>
                 </div>
-                <button onClick={() => handleDelete(job.job_id)}>Delete</button>
+                <div className="job-actions">
+                  <button onClick={() => handleDelete(job.job_id)}>Delete</button>
+                </div>
               </li>
             ))}
           </ul>
