@@ -3,8 +3,6 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/JobsApplied.css";
 import { useUser } from "./UserContext";
-import CalendarIcon from "../assets/images/CalendarIcon.png";
-import DollarSign from "../assets/images/DollarSign.png";
 import DefaultAvatar from "../assets/images/DefaultAvatar.png";
 
 
@@ -129,56 +127,36 @@ const JobsApplied = () => {
         value={searchInput}
         onChange={(e) => { setSearchInput(e.target.value); setCurrentPage(1); }}
       />
-      <ul className="jobs-list">
+      <ul className="ja-list">
         {visibleJobs.map(job => (
-          <li key={job.job_id} className="job-item">
-            <div className="top">
-              <div className="top-left">
-                <div className="title-row">
-                  <h1>{job.jobtitle}</h1>
-                  {getStatusDisplay(job.application_status)}
-                </div>
-                <p className="applied-by">Applied by: <span>{job.profile_name}</span></p>
-                <div className="action-buttons">
-                  <button
-                    onClick={handleWithdraw}
-                    value={job.job_id}
-                    disabled={job.application_status === 'WITHDRAWN'}
-                  >
-                    Withdraw
-                  </button>
-                </div>
+          <li key={job.job_id} className="ja-card">
+            <div className="ja-card-left">
+              <div className="ja-title-row">
+                <span className="ja-title">{job.jobtitle}</span>
+                {getStatusDisplay(job.application_status)}
               </div>
-              <div className="top-right">
-                <button onClick={handleEmployer}>
-                  <img src={employerPhotoUrls[job.employer_user_id] || DefaultAvatar} alt="employer-avatar" width="32px" height="auto" />
-                  {job.business_name}
-                </button>
+              <div className="ja-meta-row">
+                <span className="ja-business">{job.business_name}</span>
+                {job.hourlyrate && <><span className="ja-sep">·</span><span className="ja-rate">${job.hourlyrate}/hr</span></>}
+                {job.jobstart && <><span className="ja-sep">·</span><span className="ja-date">{formatDateForDisplay(job.jobstart)}</span></>}
               </div>
+              {job.profile_name && (
+                <p className="ja-applied-by">Applied with: <span>{job.profile_name}</span></p>
+              )}
             </div>
-            <div className="bottom">
-              <div className="bottom-left">
-                <div className="details-div">
-                  <h1>Job Details</h1>
-                  <div>
-                    <img src={DollarSign} alt="dollar-sign" width="22px" height="auto" />
-                    {job.hourlyrate}/hr
-                  </div>
-                  <div>
-                    <img id="calendar-icon" src={CalendarIcon} alt="calendar-icon" width="22px" height="auto" />
-                    {formatDateForDisplay(job.jobstart)}
-                  </div>
-                </div>
-                <div className="location-div">
-                  <h1>Location</h1>
-                  <p>{job.streetaddress}, {job.city},</p>
-                  <p>{job.province} {job.postalcode}</p>
-                </div>
-              </div>
-              <div className="bottom-right">
-                <h1>Job Description</h1>
-                <div>{job.jobdescription}</div>
-              </div>
+            <div className="ja-card-right">
+              <button className="ja-employer-btn" onClick={handleEmployer}>
+                <img src={employerPhotoUrls[job.employer_user_id] || DefaultAvatar} alt="employer" className="ja-avatar" />
+                <span>{job.business_name}</span>
+              </button>
+              <button
+                className="ja-withdraw-btn"
+                onClick={handleWithdraw}
+                value={job.job_id}
+                disabled={job.application_status === 'WITHDRAWN'}
+              >
+                Withdraw
+              </button>
             </div>
           </li>
         ))}

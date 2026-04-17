@@ -15,7 +15,7 @@
 
 .template-modal {
   background-color: white;
-  border-radius: 19px;
+  border-radius: 16px;
   padding: 32px 36px;
   max-width: 460px;
   width: 90%;
@@ -31,7 +31,7 @@
     margin: 0 0 4px;
     font-size: 18px;
     font-weight: 600;
-    color: #0340BE;
+    color: #1a1a2e;
 }
 
 .template-modal p {
@@ -60,7 +60,7 @@
 }
 
 .template-modal input[type="text"]:focus {
-    border-color: #4EBBC2;
+    border-color: #1D9E75;
     box-shadow: 0 0 0 2px rgba(78, 187, 194, 0.2);
 }
 
@@ -99,12 +99,12 @@
 }
 
 .template-modal-save {
-    background-color: #4EBBC2;
+    background-color: #1D9E75;
     color: white;
 }
 
 .template-modal-save:hover {
-    background-color: #3aa3aa;
+    background-color: #0F6E56;
 }
 
 .template-modal-save:disabled,

@@ -2,6 +2,11 @@
 .job-board-container {
   display: flex;
   flex-direction: column;
+  padding: 24px 28px 40px;
+  min-height: 100%;
+  background: #f5f7fa;
+  box-sizing: border-box;
+  font-family: 'Quicksand', 'Poppins', sans-serif;
 }
 
 .jb-search-row {
@@ -13,7 +18,7 @@
   padding: 8px 10px;
   font-size: 14px;
   font-family: "Poppins", sans-serif;
-  border: 1px solid #D0D5DD;
+  border: 1px solid #e8ecf0;
   border-radius: 8px;
   outline: none;
   cursor: pointer;
@@ -25,22 +30,22 @@
   padding: 9px 14px;
   font-size: 14px;
   font-family: "Poppins";
-  border: 1px solid #D0D5DD;
+  border: 1px solid #e8ecf0;
   border-radius: 8px;
   box-sizing: border-box;
   outline: none;
 }
 
 .jb-search-input:focus {
-  border-color: #0340BE;
+  border-color: #1D9E75;
 }
 
 .job-board-container h1 {
   margin: 0;
-  color: #0340BE;
-  font-size: 24px;
-  font-family: "Poppins";
-  font-weight: 400;
+  color: #1a1a2e;
+  font-size: 1.35rem;
+  font-family: 'Quicksand', 'Poppins', sans-serif;
+  font-weight: 700;
 }
 
 .job-board-container h2 {
@@ -57,15 +62,23 @@
 }
 
 .job-board-container ul li {
-  padding: 31px 28px 28px;
-  border-radius: 19px;
-  box-shadow: 0 4px 4px rgb(0, 0, 0, 0.25);
-  margin-bottom: 17px;
+  padding: 20px 24px;
+  border-radius: 16px;
+  border: 1px solid #e8ecf0;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.07);
+  margin-bottom: 14px;
   display: flex;
   width: 1114px;
-  min-height: 203px;
   box-sizing: border-box;
   justify-content: space-between;
+  align-items: center;
+  background-color: #ffffff;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.job-board-container ul li:hover {
+  box-shadow: 0 10px 24px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
 }
 
 .job-board-container ul li .left .job-business-name {
@@ -103,7 +116,7 @@
   height: 10px;
   min-width: 10px;
   border-radius: 50%;
-  background-color: #4EBBC2;
+  background-color: #1D9E75;
   margin-right: 12px;
 }
 
@@ -120,18 +133,25 @@
 }
 
 .job-board-container ul li .right #apply-btn {
-  background-color: #4EBBC2;
-  color: white;
-  width: 103px;
-  height: 30px;
-  display: flex;
+  background: #1D9E75;
+  color: #fff;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  font-weight: 500;
-  border-radius: 5px;
+  padding: 10px 20px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-family: 'Quicksand', 'Poppins', sans-serif;
+  border-radius: 10px;
   border: none;
   cursor: pointer;
+  transition: background 0.18s, transform 0.12s;
+  white-space: nowrap;
+}
+
+.job-board-container ul li .right #apply-btn:hover {
+  background: #0F6E56;
+  transform: translateY(-1px);
 }
 
 .job-board-container #calendar-icon {
@@ -170,8 +190,9 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-radius: 19px;
-  padding: 10px;
+  border-radius: 16px;
+  padding: 28px 32px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
 }
 
 .job-board-container .comfirm-application-container .prompt-text {
@@ -187,23 +208,29 @@
 }
 
 .job-board-container .comfirm-application-container .prompt-buttons button {
-  margin: 0 10px 0;
-  background-color: #C2554E;
-  color: white;
-  width: 103px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 500;
-  border-radius: 5px;
-  border: none;
+  margin: 0 8px;
+  background: #ffffff;
+  color: #1D9E75;
+  border: 1.5px solid #1D9E75;
+  padding: 10px 20px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-family: 'Quicksand', 'Poppins', sans-serif;
+  border-radius: 10px;
   cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+}
+
+.job-board-container .comfirm-application-container .prompt-buttons button:hover {
+  background: #e1f5ee;
 }
 
 .job-board-container .comfirm-application-container .prompt-buttons .apply-btn {
-  background-color: #4EBBC2;
+  background: #1D9E75;
+}
+
+.job-board-container .comfirm-application-container .prompt-buttons .apply-btn:hover {
+  background: #0F6E56;
 }
 
 /* ── Filter Bar ──────────────────────────────────────────────────────────────── */
@@ -224,7 +251,7 @@
 .filter-btn {
   background-color: white;
   color: black;
-  border: 0.5px solid #4EBBC2;
+  border: 0.5px solid #1D9E75;
   padding: 0;
   border-radius: 5px;
   width: 103px;
@@ -238,19 +265,19 @@
 }
 
 .filter-btn:hover {
-  background-color: #4EBBC2;
+  background-color: #1D9E75;
   color: white;
 }
 
 .filter-btn.active {
-  background-color: #4EBBC2;
+  background-color: #1D9E75;
   color: white;
 }
 
 .filter-btn.has-value {
-  background-color: #2a9d9d;
+  background-color: #0F6E56;
   color: white;
-  border-color: #2a9d9d;
+  border-color: #0F6E56;
 }
 
 /* ── Filter Dropdown ─────────────────────────────────────────────────────────── */
@@ -259,9 +286,9 @@
   top: calc(100% + 4px);
   left: 0;
   background: #fff;
-  border: 1.5px solid #d4eeee;
+  border: 1px solid #e8ecf0;
   border-radius: 14px;
-  box-shadow: 0 8px 32px rgba(74, 191, 191, 0.13);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.07);
   padding: 20px;
   z-index: 200;
   min-width: 420px;
@@ -281,7 +308,7 @@
 
 .filter-dropdown h4 {
   margin: 0 0 14px 0;
-  color: #2a9d9d;
+  color: #0F6E56;
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -301,14 +328,14 @@
 .filter-dropdown input[type="text"],
 .filter-dropdown input[type="number"] {
   width: 100%;
-  border: 1.5px solid #cce9e9;
+  border: 1.5px solid #e8ecf0;
   border-radius: 8px;
   padding: 7px 10px;
   font-size: 14px;
   color: #333;
   outline: none;
   box-sizing: border-box;
-  background: #f7fdfd;
+  background: #f5f7fa;
   transition: border-color 0.15s, background-color 0.15s, opacity 0.15s;
 }
 
@@ -316,7 +343,7 @@
 .filter-dropdown select:focus,
 .filter-dropdown input[type="text"]:focus,
 .filter-dropdown input[type="number"]:focus {
-  border-color: #4abfbf;
+  border-color: #1D9E75;
 }
 
 .filter-dropdown input[type="number"] {
@@ -343,7 +370,7 @@
   width: 16px;
   height: 16px;
   margin: 0;
-  accent-color: #4EBBC2;
+  accent-color: #1D9E75;
   cursor: pointer;
 }
 
@@ -393,7 +420,7 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #4EBBC2;
+  background: #1D9E75;
   border: 2px solid #fff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
   pointer-events: all;
@@ -406,7 +433,7 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #4EBBC2;
+  background: #1D9E75;
   border: 2px solid #fff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
   pointer-events: all;
@@ -420,14 +447,14 @@
   height: 4px;
   width: 100%;
   border-radius: 4px;
-  background: #ddf0f0;
+  background: #e8ecf0;
   z-index: 0;
 }
 
 .dual-range-fill {
   position: absolute;
   height: 100%;
-  background: #4EBBC2;
+  background: #1D9E75;
   border-radius: 4px;
 }
 
@@ -441,13 +468,13 @@
 
 .pay-number-row input[type="number"] {
   flex: 1;
-  border: 1.5px solid #cce9e9;
+  border: 1.5px solid #e8ecf0;
   border-radius: 8px;
   padding: 6px 10px;
   font-size: 14px;
   color: #333;
   outline: none;
-  background: #f7fdfd;
+  background: #f5f7fa;
   transition: border-color 0.15s;
   -moz-appearance: textfield;
 }
@@ -458,7 +485,7 @@
 }
 
 .pay-number-row input[type="number"]:focus {
-  border-color: #4EBBC2;
+  border-color: #1D9E75;
 }
 
 .pay-number-sep {
@@ -468,7 +495,7 @@
 
 .pay-number-unit {
   font-size: 13px;
-  color: #2a9d9d;
+  color: #0F6E56;
   white-space: nowrap;
 }
 
@@ -481,9 +508,9 @@
 }
 
 .job-type-pill {
-  border: 1.5px solid #cce9e9;
-  background: #f7fdfd;
-  color: #2a9d9d;
+  border: 1.5px solid #e8ecf0;
+  background: #f5f7fa;
+  color: #0F6E56;
   border-radius: 16px;
   padding: 5px 14px;
   font-size: 13px;
@@ -493,13 +520,13 @@
 }
 
 .job-type-pill:hover {
-  border-color: #4EBBC2;
-  background: #e8f8f8;
+  border-color: #1D9E75;
+  background: #e1f5ee;
 }
 
 .job-type-pill.selected {
-  background: #4EBBC2;
-  border-color: #4EBBC2;
+  background: #1D9E75;
+  border-color: #1D9E75;
   color: #fff;
 }
 
@@ -526,7 +553,7 @@
 
 .filter-apply-btn {
   flex: 1;
-  background: #4EBBC2;
+  background: #1D9E75;
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -538,13 +565,13 @@
 }
 
 .filter-apply-btn:hover {
-  background: #2a9d9d;
+  background: #0F6E56;
 }
 
 .filter-clear-btn {
-  background: #f0fafa;
-  color: #2a9d9d;
-  border: 1.5px solid #cce9e9;
+  background: #f5f7fa;
+  color: #0F6E56;
+  border: 1.5px solid #e8ecf0;
   border-radius: 8px;
   padding: 9px 14px;
   font-size: 14px;
@@ -553,7 +580,7 @@
 }
 
 .filter-clear-btn:hover {
-  background: #e0f4f4;
+  background: #e1f5ee;
 }
 
 /* ── Active Filter Tags ──────────────────────────────────────────────────────── */
@@ -568,19 +595,19 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  background: #e8f8f8;
-  border: 1.5px solid #4EBBC2;
+  background: #e1f5ee;
+  border: 1.5px solid #1D9E75;
   border-radius: 14px;
   padding: 3px 10px;
   font-size: 12px;
-  color: #2a9d9d;
+  color: #0F6E56;
   font-weight: 500;
 }
 
 .active-filter-tag button {
   background: none;
   border: none;
-  color: #2a9d9d;
+  color: #0F6E56;
   cursor: pointer;
   font-size: 14px;
   line-height: 1;

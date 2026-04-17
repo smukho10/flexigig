@@ -14,7 +14,7 @@
 .notifications-title {
     font-size: 1.75rem;
     font-weight: 700;
-    color: #1F384C;
+    color: #1a1a2e;
     margin: 0 0 6px 0;
 }
 
@@ -37,7 +37,7 @@
     gap: 14px;
     padding: 16px 18px;
     background: #ffffff;
-    border: 1px solid #eef1f6;
+    border: 1px solid #e8ecf0;
     border-radius: 14px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
@@ -85,7 +85,7 @@
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background-color: #31e1c7;
+    background-color: #1D9E75;
     border: 2px solid #ffffff;
 }
 
@@ -105,7 +105,7 @@
 .notification-sender {
     font-weight: 600;
     font-size: 0.95rem;
-    color: #1F384C;
+    color: #1a1a2e;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -143,17 +143,19 @@
     font-weight: 600;
     font-family: 'Poppins', sans-serif;
     color: #ffffff;
-    background: linear-gradient(135deg, #31e1c7 0%, #2bb5a0 100%);
+    background: #1D9E75;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
+    font-weight: 700;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
     transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
 }
 
 .notification-reply-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(49, 225, 199, 0.35);
-    background: linear-gradient(135deg, #2dd4b8 0%, #249b89 100%);
+    box-shadow: 0 4px 12px rgba(29, 158, 117, 0.3);
+    background: #0F6E56;
 }
 
 .notification-reply-btn:active {
@@ -197,7 +199,7 @@
     width: 36px;
     height: 36px;
     border: 3px solid #eef1f6;
-    border-top-color: #31e1c7;
+    border-top-color: #1D9E75;
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
     margin: 0 auto 16px auto;

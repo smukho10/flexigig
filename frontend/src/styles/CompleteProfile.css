@@ -84,7 +84,7 @@
 
 .complete-profile-next,
 .complete-profile-continue {
-  background: #007bff;
+  background: #1D9E75;
   border: none;
   color: white;
   padding: 12px 24px;
@@ -97,7 +97,7 @@
 
 .complete-profile-next:hover,
 .complete-profile-continue:hover:not(:disabled) {
-  background: #0056b3;
+  background: #0F6E56;
 }
 
 .complete-profile-continue:disabled {

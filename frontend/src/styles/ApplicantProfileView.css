@@ -1,7 +1,10 @@
 .apv-container {
-    font-family: "Poppins";
-    max-width: 800px;
-    padding: 0;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
+    max-width: 100%;
+    padding: 24px 28px 40px;
+    min-height: 100%;
+    background: #f5f7fa;
+    box-sizing: border-box;
 }
 
 /* Header */
@@ -22,8 +25,8 @@
 .apv-title {
     margin: 0;
     font-size: 24px;
-    font-weight: 400;
-    color: #0340BE;
+    font-weight: 700;
+    color: #1a1a2e;
 }
 
 /* Cards */
@@ -38,8 +41,8 @@
 
 /* Main card — name/avatar row */
 .apv-card-main {
-    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-    border: 1px solid #BAE6FD;
+    background: #fff;
+    border: 1px solid #e8ecf0;
 }
 
 .apv-name-row {
@@ -52,7 +55,7 @@
     width: 64px;
     height: 64px;
     border-radius: 50%;
-    background-color: #4EBBC2;
+    background-color: #1D9E75;
     color: white;
     font-size: 22px;
     font-weight: 600;
@@ -92,7 +95,7 @@
     margin: 0 0 16px;
     font-size: 15px;
     font-weight: 600;
-    color: #0340BE;
+    color: #1a1a2e;
     border-bottom: 1px solid #E5E7EB;
     padding-bottom: 10px;
 }

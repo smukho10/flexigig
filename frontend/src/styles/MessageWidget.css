@@ -1,21 +1,22 @@
 .message h1 {
   margin-bottom: 0px;
-  color: #0340BE;
-  font-size: 24pt;
-  font-weight: normal;
+  color: #1a1a2e;
+  font-size: 0.95rem;
+  font-weight: 700;
 }
 
 .message-container {
   margin: 0px;
   display: flex;
   flex-direction: column;
-  padding: 20px;
-  border-radius: 20px;
+  padding: 16px 18px;
+  border-radius: 16px;
   background: #ffffff;
-  width: 450px;
-  height: 450px;
+  width: 100%;
+  height: 100%;
   box-sizing: border-box;
-  box-shadow: 0 6px 4px 0 #00000025, 0 8px 20px 0 #0000002a;
+  border: 1px solid #e8ecf0;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.07);
 }
 
 .message-list {
@@ -64,8 +65,8 @@
 }
 
 .message-name {
-  font-size: 12pt;
-  font-weight: normal;
+  font-size: 0.825rem;
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
@@ -73,8 +74,10 @@
 }
 
 .message-text {
-  font-size: 10pt;
-  font-weight: normal;
+  font-size: 0.775rem;
+  font-weight: 400;
+  color: #9ca3af;
+  font-style: italic;
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
@@ -82,7 +85,7 @@
 }
 
 .message-time {
-  font-size: 10pt;
+  font-size: 0.72rem;
   color: #273240bf;
   white-space: nowrap;
   flex-shrink: 0;

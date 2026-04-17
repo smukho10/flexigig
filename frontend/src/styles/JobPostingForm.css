@@ -3,11 +3,11 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  border-radius: 19px;
-  box-shadow: 0 4px 4px rgb(0, 0, 0, .25);
+  border-radius: 16px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.07);
   font-family: "Poppins";
   overflow: hidden;
-  width: 1114px;
+  width: 100%;
 }
 
 .job-posting-form-container form {
@@ -66,17 +66,24 @@ select {
 }
 
 .job-posting-form-container button {
-  padding: 0;
-  margin: 0;
-  width: 103px;
-  height: 30px;
-  font-family: "Poppins";
-  font-size: 12px;
-  font-weight: 400;
-  color: white;
-  background-color: #4EBBC2;
-  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  font-family: 'Quicksand', 'Poppins', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #fff;
+  background: #1D9E75;
+  border-radius: 10px;
   border: none;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.12s;
+}
+
+.job-posting-form-container button:hover {
+  background: #0F6E56;
+  transform: translateY(-1px);
 }
 
 .job-posting-form-container .bottom {
@@ -144,15 +151,15 @@ select {
 }
 
 .job-posting-form-container .template-btn {
-  width: auto;
-  padding: 0 14px;
-  background-color: white;
-  color: #4EBBC2;
-  border: 1.5px solid #4EBBC2 !important;
+  background: #fff !important;
+  color: #1D9E75 !important;
+  border: 1.5px solid #1D9E75 !important;
+  transform: none !important;
 }
 
 .job-posting-form-container .template-btn:hover {
-  background-color: #f0fbfc;
+  background: #e8f5f0 !important;
+  transform: none !important;
 }
 
 .template-saved-msg {
@@ -202,12 +209,12 @@ select {
 }
  
 .msd-trigger:hover {
-  border-color: #4EBBC2 !important;
+  border-color: #1D9E75 !important;
 }
  
 /* When open — square off bottom corners so it flows into the list */
 .msd-trigger--open {
-  border-color: #4EBBC2 !important;
+  border-color: #1D9E75 !important;
   border-bottom-left-radius: 0 !important;
   border-bottom-right-radius: 0 !important;
   border-bottom-color: transparent !important;
@@ -233,9 +240,9 @@ select {
   align-items: center !important;
   width: fit-content !important;
   gap: 5px !important;
-  background-color: #e0f5f5 !important;
-  color: #2a9d9d !important;
-  border: 1px solid #4EBBC2 !important;
+  background-color: #e8f5f0 !important;
+  color: #0F6E56 !important;
+  border: 1px solid #1D9E75 !important;
   border-radius: 14px !important;
   padding: 3px 10px 3px 12px !important;
   font-size: 12px !important;
@@ -248,7 +255,7 @@ select {
 .msd-tag-remove {
   background: none !important;
   border: none !important;
-  color: #2a9d9d !important;
+  color: #0F6E56 !important;
   cursor: pointer !important;
   font-size: 15px !important;
   line-height: 1 !important;
@@ -278,7 +285,7 @@ select {
 /* Dropdown list — INLINE, not absolute */
 .msd-dropdown {
   background: #fff;
-  border: 1.5px solid #4EBBC2;
+  border: 1.5px solid #1D9E75;
   border-top: none;
   border-radius: 0 0 8px 8px;
   max-height: 220px;
@@ -304,8 +311,8 @@ select {
 }
  
 .msd-option--selected {
-  background-color: #e0f5f5;
-  color: #2a9d9d;
+  background-color: #e8f5f0;
+  color: #0F6E56;
   font-weight: 500;
 }
  
@@ -316,7 +323,7 @@ select {
 .msd-check {
   width: 16px;
   font-size: 13px;
-  color: #4EBBC2;
+  color: #1D9E75;
   font-weight: 700;
   flex-shrink: 0;
 }

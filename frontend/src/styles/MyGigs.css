@@ -1,3 +1,4 @@
+/* ── Container ── */
 .my-gigs-container .pagination {
     display: flex;
     align-items: center;
@@ -42,13 +43,14 @@
     display: flex;
     flex-direction: column;
     max-width: 100%;
-    border: none;
-    margin: 0;
-    padding: 0;
-    box-shadow: none;
-    font-family: "Poppins";
+    padding: 24px 28px 40px;
+    min-height: 100%;
+    background: #f5f7fa;
+    box-sizing: border-box;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
 }
 
+/* ── Header row ── */
 .my-gigs-container .header-container {
     display: flex;
     justify-content: space-between;
@@ -56,12 +58,20 @@
     margin-bottom: 16px;
 }
 
+.my-gigs-container .header-container h1 {
+    margin: 0;
+    color: #1a1a2e;
+    font-size: 1.35rem;
+    font-weight: 700;
+}
+
+/* ── Search ── */
 .mg-search-input {
     width: 400px;
     margin-bottom: 20px;
     padding: 9px 14px;
     font-size: 14px;
-    font-family: "Poppins";
+    font-family: 'Poppins', sans-serif;
     border: 1px solid #D0D5DD;
     border-radius: 8px;
     box-sizing: border-box;
@@ -69,252 +79,332 @@
 }
 
 .mg-search-input:focus {
-    border-color: #0340BE;
+    border-color: #1D9E75;
 }
 
-.my-gigs-container .header-container h1 {
-    margin: 0;
-    color: #0340BE;
-    font-size: 24px;
-    font-weight: 400;
-}
-
-.gigs-list {
-    padding: 0;
-    list-style: none;
-}
-
+/* ── "Find a New Job" button ── */
 .my-gigs-container .add-job-button {
-    padding: 0;
-    margin: 0;
-    width: 120px;
-    height: 35px;
-    font-family: "Poppins";
-    font-size: 12px;
-    font-weight: 400;
-    color: black;
-    background-color: white;
-    border-radius: 5px;
-    border: 1px solid #4EBBC2;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #fff;
+    background: #1D9E75;
+    border-radius: 10px;
+    border: none;
     cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.18s, transform 0.12s;
 }
 
 .my-gigs-container .add-job-button:hover {
-    background-color: #4EBBC2;
-    color: white;
+    background: #0F6E56;
+    transform: translateY(-1px);
 }
 
-.gig-item {
+/* ── Card list ── */
+.mg-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    gap: 14px;
+}
+
+/* ── Compact card ── */
+.mg-card {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #e8ecf0;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.07);
+    padding: 20px 24px;
+    box-sizing: border-box;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.mg-card:hover {
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+}
+
+/* ── Card left ── */
+.mg-card-left {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
+    flex: 1;
+}
+
+.mg-title-row {
+    display: flex;
     align-items: center;
-    border-radius: 19px;
-    box-shadow: 0 4px 4px rgb(0, 0, 0, .25);
-    font-family: "Poppins";
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.mg-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    white-space: nowrap;
     overflow: hidden;
-    width: 1114px;
-    margin-bottom: 20px;
-    background-color: white;
+    text-overflow: ellipsis;
 }
 
-.gig-item .top {
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-    border-bottom: 0.5px solid #C8CBD9;
-}
-
-.gig-item .top .top-left {
-    padding: 40px 30px;
-    display: flex;
-    flex-direction: column;
-    justify-content: left;
-}
-
-.gig-item .title-row {
+.mg-meta-row {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 6px;
+    flex-wrap: wrap;
+    font-size: 0.825rem;
 }
 
-.gig-item .top .top-right {
-    padding: 40px 50px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-
-.gig-item h1 {
-    color: black;
-    margin: 0;
+.mg-business {
+    color: #6b7280;
     font-weight: 500;
-    font-size: 18px;
-    letter-spacing: 0.5px;
 }
 
-.gig-item .status-badges {
-    margin-top: 15px;
+.mg-sep {
+    color: #d1d5db;
+}
+
+.mg-rate {
+    color: #1D9E75;
+    font-weight: 700;
+}
+
+.mg-date {
+    color: #9ca3af;
+    font-weight: 400;
+}
+
+/* ── Rating rows (compact) ── */
+.mg-ratings {
     display: flex;
-    gap: 10px;
-    align-items: center;
+    flex-direction: column;
+    gap: 3px;
+    padding: 7px 10px;
+    margin-top: 4px;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
 }
 
-.gig-item .approved-badge {
-    display: inline-block;
-    padding: 5px 15px;
-    background-color: #4EBBC2;
-    color: white;
-    border-radius: 5px;
-    font-size: 12px;
-    font-weight: 400;
-}
-
-.gig-item .in-progress-badge {
-    display: inline-block;
-    padding: 5px 15px;
-    background-color: #FFA500;
-    color: white;
-    border-radius: 5px;
-    font-size: 12px;
-    font-weight: 400;
-}
-
-.gig-item .completed-badge {
-    display: inline-block;
-    padding: 5px 15px;
-    background-color: #4CAF50;
-    color: white;
-    border-radius: 5px;
-    font-size: 12px;
-    font-weight: 400;
-}
-
-.gig-item .action-buttons {
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
-}
-
-.gig-item .remove-btn {
-    padding: 0;
-    margin: 0;
-    width: 103px;
-    height: 30px;
-    font-family: "Poppins";
-    font-size: 12px;
-    font-weight: 400;
-    color: white;
-    background-color: #C2554E;
-    border-radius: 5px;
-    border: none;
-    cursor: pointer;
-}
-
-.gig-item .status-dropdown {
-    padding: 0;
-    margin: 0;
-    width: 120px;
-    height: 30px;
-    font-family: "Poppins";
-    font-size: 12px;
-    font-weight: 400;
-    color: black;
-    background-color: white;
-    border-radius: 5px;
-    border: 1px solid #4EBBC2;
-    cursor: pointer;
-    outline: none;
-}
-
-.gig-item .status-dropdown:hover {
-    background-color: #f0f9fa;
-}
-
-.gig-item .status-dropdown:focus {
-    border-color: #4EBBC2;
-    box-shadow: 0 0 0 2px rgba(78, 187, 194, 0.1);
-}
-
-.gig-item .top-right button {
-    margin: 0;
-    gap: 10px;
-    background-color: transparent;
-    color: black;
+.mg-rating-row {
     display: flex;
     align-items: center;
-    width: 104px;
-    padding: 0;
-    font-size: 12px;
-    letter-spacing: 0.5px;
-    border: none;
-    cursor: pointer;
+    gap: 8px;
+    font-size: 0.775rem;
 }
 
-.employer-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    object-fit: cover;
+.mg-rating-label {
+    color: #6b7280;
+    min-width: 170px;
+}
+
+.mg-rating-stars {
+    display: flex;
+    gap: 2px;
+}
+
+.gig-star {
+    font-size: 0.95rem;
+    color: #d1d5db;
+}
+
+.gig-star--filled {
+    color: #f59e0b;
+}
+
+.mg-rating-pending {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    font-style: italic;
+}
+
+/* ── Action buttons row ── */
+.mg-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+/* Withdraw — secondary destructive */
+.mg-withdraw-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 16px;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #C2554E;
+    background: #ffffff;
+    border: 1.5px solid #C2554E;
+    border-radius: 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.18s, color 0.18s;
+}
+
+.mg-withdraw-btn:hover {
+    background: #C2554E;
+    color: #fff;
+}
+
+/* Rate Employer */
+.mg-rate-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 16px;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #fff;
+    background: #1D9E75;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.18s;
+}
+
+.mg-rate-btn:hover {
+    background: #0F6E56;
+}
+
+/* Already rated */
+.mg-rated-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 7px 16px;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #065F46;
+    background: #D1FAE5;
+    border: none;
+    border-radius: 10px;
+    cursor: not-allowed;
+    white-space: nowrap;
+}
+
+/* ── Card right ── */
+.mg-card-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
     flex-shrink: 0;
 }
 
-.gig-item .bottom {
-    display: flex;
-    min-width: 100%;
-}
-
-.gig-item .bottom .bottom-left {
-    box-sizing: border-box;
-    min-width: 50%;
-    padding: 30px;
-    border-right: 0.5px solid #C8CBD9;
-}
-
-.gig-item .bottom .bottom-left .details-div {
-    display: flex;
-    flex-direction: column;
-    height: 100px;
-    justify-content: space-between;
-    margin-bottom: 50px;
-}
-
-.gig-item .bottom .bottom-left .details-div img {
-    margin-right: 15px;
-}
-
-.gig-item .bottom .bottom-left .details-div div {
+/* Employer ghost button */
+.mg-employer-btn {
     display: flex;
     align-items: center;
-    font-size: 16px;
-    letter-spacing: 0.5px;
+    gap: 8px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 0.825rem;
+    color: #374151;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
+    font-weight: 600;
+    padding: 0;
+    white-space: nowrap;
 }
 
-.gig-item .bottom .bottom-left .details-div #calendar-icon {
-    filter: brightness(0) saturate(100%) invert(74%) sepia(32%) saturate(495%) hue-rotate(150deg) brightness(92%) contrast(91%);
+.mg-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: #e5e7eb;
 }
 
-.gig-item .bottom .bottom-left .location-div {
-    display: flex;
-    flex-direction: column;
+/* Message — teal outline */
+.mg-message-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 16px;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #1D9E75;
+    background: #ffffff;
+    border: 1.5px solid #1D9E75;
+    border-radius: 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.18s, color 0.18s;
 }
 
-.gig-item .bottom .bottom-left .location-div h1 {
-    margin-bottom: 20px;
+.mg-message-btn:hover {
+    background: #1D9E75;
+    color: #fff;
 }
 
-.gig-item .bottom .bottom-left .location-div p {
-    margin: 0;
+/* ── Status badges (matched to dashboard palette) ── */
+.mg-card .status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+    letter-spacing: 0.2px;
 }
 
-.gig-item .bottom .bottom-right {
-    max-height: 500px;
-    box-sizing: border-box;
-    min-width: 50%;
-    padding: 40px 40px 0 50px;
-    overflow-y: scroll;
+.mg-card .status-badge.status-in-review  { background: #fdf3dc; color: #854F0B; }
+.mg-card .status-badge.status-accepted   { background: #e1f5ee; color: #0F6E56; }
+.mg-card .status-badge.status-rejected   { background: #fde8e8; color: #9B2727; }
+.mg-card .status-badge.status-withdrawn  { background: #f3f4f6; color: #4b5563; }
+
+/* Named status badges (from getGigStatusBadge helper) */
+.mg-card .approved-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    background: #e1f5ee;
+    color: #0F6E56;
+    white-space: nowrap;
+    letter-spacing: 0.2px;
 }
 
+.mg-card .completed-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    background: #d1fae5;
+    color: #065F46;
+    white-space: nowrap;
+    letter-spacing: 0.2px;
+}
+
+/* ── Empty state ── */
 .no-gigs-message {
     display: flex;
     flex-direction: column;
@@ -330,32 +420,89 @@
     margin: 10px 0;
 }
 
-/* Review Modal Styles */
-.review-modal-overlay {
-    background-color: rgba(0, 0, 0, 0.5);
+/* ── Withdraw confirmation modal ── */
+.my-gigs-container .comfirm-removal-container {
+    background: rgba(0, 0, 0, 0.2);
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
     position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
+    inset: 0;
+    z-index: 500;
+}
+
+.my-gigs-container .comfirm-removal-container .prompt {
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-radius: 16px;
+    padding: 28px 32px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+    font-family: 'Quicksand', 'Poppins', sans-serif;
+}
+
+.my-gigs-container .comfirm-removal-container .prompt-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0 0 20px;
+    font-size: 0.9rem;
+    color: #1a1a2e;
+    text-align: center;
+}
+
+.my-gigs-container .comfirm-removal-container .prompt-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.my-gigs-container .comfirm-removal-container .prompt-buttons button {
+    padding: 10px 20px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
+    transition: background 0.18s;
+    background: #1D9E75;
+    color: #fff;
+}
+
+.my-gigs-container .comfirm-removal-container .prompt-buttons .remove-btn {
+    background: #ffffff;
+    color: #C2554E;
+    border: 1.5px solid #C2554E;
+}
+
+.my-gigs-container .comfirm-removal-container .prompt-buttons .remove-btn:hover {
+    background: #C2554E;
+    color: #fff;
+}
+
+/* ── Rate Employer Modal ── */
+.review-modal-overlay {
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    inset: 0;
     z-index: 1000;
 }
 
 .review-modal {
-    background-color: white;
+    background: #fff;
     display: flex;
     flex-direction: column;
     align-items: center;
     padding: 40px;
-    border-radius: 19px;
+    border-radius: 16px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
     min-width: 450px;
     max-width: 500px;
-    font-family: "Poppins";
+    font-family: 'Poppins', sans-serif;
     position: relative;
 }
 
@@ -378,19 +525,19 @@
 }
 
 .close-modal-btn:hover {
-    background-color: #f0f0f0;
+    background: #f0f0f0;
     color: #333;
 }
 
 .review-modal h2 {
-    margin: 0 0 10px 0;
-    color: #0340BE;
-    font-size: 24px;
-    font-weight: 500;
+    margin: 0 0 10px;
+    color: #1a1a2e;
+    font-size: 1.35rem;
+    font-weight: 700;
 }
 
 .review-modal .employer-name {
-    margin: 0 0 30px 0;
+    margin: 0 0 30px;
     color: #5c6471;
     font-size: 16px;
     font-weight: 400;
@@ -425,16 +572,17 @@
     padding: 15px;
     border: 1px solid #C8CBD9;
     border-radius: 8px;
-    font-family: "Poppins";
+    font-family: 'Poppins', sans-serif;
     font-size: 14px;
     resize: vertical;
     margin-bottom: 30px;
     outline: none;
+    box-sizing: border-box;
 }
 
 .review-comment:focus {
-    border-color: #4EBBC2;
-    box-shadow: 0 0 0 2px rgba(78, 187, 194, 0.1);
+    border-color: #1D9E75;
+    box-shadow: 0 0 0 2px rgba(29, 158, 117, 0.1);
 }
 
 .review-comment::placeholder {
@@ -451,7 +599,7 @@
 
 .modal-buttons button {
     padding: 12px 30px;
-    font-family: "Poppins";
+    font-family: 'Poppins', sans-serif;
     font-size: 14px;
     font-weight: 500;
     border-radius: 5px;
@@ -461,21 +609,21 @@
 }
 
 .modal-buttons .cancel-btn {
-    background-color: #e0e0e0;
+    background: #e0e0e0;
     color: #333;
 }
 
 .modal-buttons .cancel-btn:hover {
-    background-color: #d0d0d0;
+    background: #d0d0d0;
 }
 
 .modal-buttons .submit-btn {
-    background-color: #4EBBC2;
-    color: white;
+    background: #1D9E75;
+    color: #fff;
 }
 
 .modal-buttons .submit-btn:hover {
-    background-color: #3da9af;
+    background: #0F6E56;
 }
 
 /* Success Message */
@@ -490,8 +638,8 @@
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    background-color: #4CAF50;
-    color: white;
+    background: #4CAF50;
+    color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -508,233 +656,35 @@
 }
 
 @keyframes scaleIn {
-    from {
-        transform: scale(0);
-    }
-    to {
-        transform: scale(1);
-    }
+    from { transform: scale(0); }
+    to   { transform: scale(1); }
 }
 
-.rate-employer-btn {
-    background-color: #4EBBC2;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 5px;
-    font-family: "Poppins";
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-}
-
-.rate-employer-btn:hover { background-color: #3da9af; }
-
-.rated-employer-btn {
-    background-color: #D1FAE5;
-    color: #065F46;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 5px;
-    font-family: "Poppins";
-    font-size: 13px;
-    font-weight: 500;
-    cursor: not-allowed;
-}
-
-.my-gigs-container .comfirm-removal-container {
-    background-color: #00000033;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-}
-
-.my-gigs-container .comfirm-removal-container .prompt {
-    background-color: white;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    border-radius: 19px;
-    padding: 10px;
-}
-
-.my-gigs-container .comfirm-removal-container .prompt-text {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    margin: 0 0 20px 0;
-}
-
-.my-gigs-container .comfirm-removal-container .prompt-buttons {
-    display: flex;
-}
-
-.my-gigs-container .comfirm-removal-container .prompt-buttons button {
-    margin: 0 10px 0;
-    background-color: #4EBBC2;
-    color: white;
-    width: 103px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: 500;
-    border-radius: 5px;
-    border: none;
-    cursor: pointer;
-}
-
-.my-gigs-container .comfirm-removal-container .prompt-buttons .remove-btn {
-    background-color: #C2554E;
-}
-
-.gig-item .status-badge {
-    display: inline-block;
-    padding: 2px 12px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.4px;
-}
-
-.gig-item .status-badge.status-in-review {
-    background-color: #FFF5E0;
-    color: #B07800;
-}
-
-.gig-item .status-badge.status-accepted {
-    background-color: #E6F9F0;
-    color: #1E8A4C;
-}
-
-.gig-item .status-badge.status-withdrawn {
-    background-color: #F0F0F0;
-    color: #6B6B6B;
-}
-
-.gig-item .status-badge.status-rejected {
-    background-color: #FDECEA;
-    color: #C2554E;
-}
-
-/* Task 7 — Rating display rows */
-.gig-ratings {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 8px 12px;
-    margin-top: 6px;
-    background-color: #f9fafb;
-    border-radius: 8px;
-    border: 1px solid #e5e7eb;
-}
-.gig-rating-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.8rem;
-}
-.gig-rating-label {
-    color: #6b7280;
-    min-width: 180px;
-}
-.gig-rating-stars {
-    display: flex;
-    gap: 2px;
-}
-.gig-star {
-    font-size: 1rem;
-    color: #d1d5db;
-}
-.gig-star--filled {
-    color: #f59e0b;
-}
-.gig-rating-pending {
-    font-size: 0.78rem;
-    color: #9ca3af;
-    font-style: italic;
-}
-
-
-/* ════════════════════════════════════════════
-   RESPONSIVE — Tablet (≤ 900px)
-════════════════════════════════════════════ */
-@media (max-width: 900px) {
-    .gig-item {
-        width: 100%;
-    }
-}
-
-/* ════════════════════════════════════════════
-   RESPONSIVE — Mobile (≤ 768px)
-════════════════════════════════════════════ */
+/* ── Responsive ── */
 @media (max-width: 768px) {
-    .gig-item {
-        width: 100%;
+    .mg-card {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .mg-card-right {
+        align-items: flex-start;
+        flex-direction: row;
+        flex-wrap: wrap;
     }
 
     .mg-search-input {
         width: 100%;
     }
 
-    /* Gig card top section stacks */
-    .gig-item .top {
-        flex-direction: column;
+    .mg-rating-label {
+        min-width: 130px;
     }
 
-    .gig-item .top .top-left {
-        padding: 20px 20px 12px;
-    }
-
-    .gig-item .top .top-right {
-        padding: 12px 20px 20px;
-        border-top: 0.5px solid #C8CBD9;
-        justify-content: flex-start;
-        gap: 12px;
-    }
-
-    /* Gig card bottom section stacks */
-    .gig-item .bottom {
-        flex-direction: column;
-    }
-
-    .gig-item .bottom .bottom-left {
-        min-width: 100%;
-        border-right: none;
-        border-bottom: 0.5px solid #C8CBD9;
-        padding: 20px;
-    }
-
-    .gig-item .bottom .bottom-right {
-        min-width: 100%;
-        max-height: none;
-        padding: 20px;
-        overflow-y: visible;
-    }
-
-    .gig-item .bottom .bottom-left .details-div {
-        height: auto;
-        margin-bottom: 24px;
-    }
-
-    /* Review modal */
     .review-modal {
         min-width: auto;
         width: 92vw;
         max-width: 92vw;
         padding: 24px 20px;
-    }
-
-    .gig-rating-label {
-        min-width: 120px;
     }
 }

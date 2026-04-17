@@ -3,10 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/MyGigs.css";
 import { useUser } from "./UserContext";
-import CalendarIcon from "../assets/images/CalendarIcon.png";
-import DollarSign from "../assets/images/DollarSign.png";
 import DefaultAvatar from "../assets/images/DefaultAvatar.png";
-import MessageBubbles from "../assets/images/MessageBubbles.png";
 
 const MyGigs = () => {
   const { user } = useUser();
@@ -203,99 +200,68 @@ const MyGigs = () => {
             const isCompleted = job.status === 'completed';
             const isWithdrawn = job.application_status === 'WITHDRAWN';
             const myRatingForEmployer = job.my_rating_for_employer;
-                        const employerRatingForMe = job.employer_rating_for_me;
-                        const alreadyRated = !!job.has_reviewed_employer;
-                        const renderStars = (r) =>
-                          [1, 2, 3, 4, 5].map((s) => (
-                            <span key={s} className={`gig-star ${s <= r ? 'gig-star--filled' : ''}`}>★</span>
-                          ));
+            const employerRatingForMe = job.employer_rating_for_me;
+            const alreadyRated = !!job.has_reviewed_employer;
+            const renderStars = (r) =>
+              [1, 2, 3, 4, 5].map((s) => (
+                <span key={s} className={`gig-star ${s <= r ? 'gig-star--filled' : ''}`}>★</span>
+              ));
 
             return (
-              <li key={job.job_id} className="gig-item">
-                <div className="top">
-                  <div className="top-left">
-                    <div className="title-row">
-                      <h1>{job.jobtitle}</h1>
-                    </div>
-                    <div className="status-badges">
-                      {getGigStatusBadge(job)}
-                    </div>
-                    <div className="action-buttons">
-                      {/* Withdraw button — hidden when already withdrawn or job completed */}
-                      {!isWithdrawn && !isCompleted && (
-                        <button
-                          onClick={handleWithdraw}
-                          value={job.job_id}
-                          className="remove-btn"
-                        >
-                          Withdraw
-                        </button>
-                      )}
-
-                      {/* Rate Employer — only for ACCEPTED + completed jobs */}
-                      {isAccepted && isCompleted && (
-                        alreadyRated ? (
-                          <button className="rated-employer-btn" disabled>✓ Rated</button>
-                        ) : (
-                          <button className="rate-employer-btn" onClick={() => openReviewModal(job)}>
-                            Rate Employer
-                          </button>
-                        )
-                      )}
-                    </div>
+              <li key={job.job_id} className="mg-card">
+                <div className="mg-card-left">
+                  <div className="mg-title-row">
+                    <span className="mg-title">{job.jobtitle}</span>
+                    {getGigStatusBadge(job)}
                   </div>
-                  <div className="top-right">
-                    <button onClick={handleEmployer}>
-                      <img src={employerPhotoUrls[job.employer_user_id] || DefaultAvatar} alt="employer-avatar" className="employer-avatar" />
-                      {job.business_name}
-                    </button>
-                    <button onClick={() => handleMessage(job)}>
-                      <img src={MessageBubbles} alt="message-bubbles" width="35px" height="auto" />
-                      Message
-                    </button>
+                  <div className="mg-meta-row">
+                    <span className="mg-business">{job.business_name}</span>
+                    {job.hourlyrate && <><span className="mg-sep">·</span><span className="mg-rate">${job.hourlyrate}/hr</span></>}
+                    {job.jobstart && <><span className="mg-sep">·</span><span className="mg-date">{formatDateForDisplay(job.jobstart)}</span></>}
+                  </div>
+                  {isAccepted && isCompleted && (
+                    <div className="mg-ratings">
+                      <div className="mg-rating-row">
+                        <span className="mg-rating-label">Your rating for employer:</span>
+                        {myRatingForEmployer != null
+                          ? <span className="mg-rating-stars">{renderStars(myRatingForEmployer)}</span>
+                          : <span className="mg-rating-pending">Not rated yet</span>}
+                      </div>
+                      <div className="mg-rating-row">
+                        <span className="mg-rating-label">Employer's rating for you:</span>
+                        {employerRatingForMe != null
+                          ? <span className="mg-rating-stars">{renderStars(employerRatingForMe)}</span>
+                          : <span className="mg-rating-pending">Not rated yet</span>}
+                      </div>
+                    </div>
+                  )}
+                  <div className="mg-actions">
+                    {/* Withdraw button — hidden when already withdrawn or job completed */}
+                    {!isWithdrawn && !isCompleted && (
+                      <button className="mg-withdraw-btn" onClick={handleWithdraw} value={job.job_id}>
+                        Withdraw
+                      </button>
+                    )}
+                    {/* Rate Employer — only for ACCEPTED + completed jobs */}
+                    {isAccepted && isCompleted && (
+                      alreadyRated ? (
+                        <button className="mg-rated-btn" disabled>✓ Rated</button>
+                      ) : (
+                        <button className="mg-rate-btn" onClick={() => openReviewModal(job)}>
+                          Rate Employer
+                        </button>
+                      )
+                    )}
                   </div>
                 </div>
-
-                {isAccepted && isCompleted && (
-                  <div className="gig-ratings">
-                    <div className="gig-rating-row">
-                      <span className="gig-rating-label">Your rating for employer:</span>
-                      {myRatingForEmployer != null
-                        ? <span className="gig-rating-stars">{renderStars(myRatingForEmployer)}</span>
-                        : <span className="gig-rating-pending">Not rated yet</span>}
-                    </div>
-                    <div className="gig-rating-row">
-                      <span className="gig-rating-label">Employer's rating for you:</span>
-                      {employerRatingForMe != null
-                        ? <span className="gig-rating-stars">{renderStars(employerRatingForMe)}</span>
-                        : <span className="gig-rating-pending">Not rated yet</span>}
-                    </div>
-                  </div>
-                )}
-
-                <div className="bottom">
-                  <div className="bottom-left">
-                    <div className="details-div">
-                      <h1>Job Details</h1>
-                      <div>
-                        <img src={DollarSign} alt="dollar-sign" width="22px" height="auto" />
-                        {job.hourlyrate}/hr
-                      </div>
-                      <div>
-                        <img id="calendar-icon" src={CalendarIcon} alt="calendar-icon" width="22px" height="auto" />
-                        {formatDateForDisplay(job.jobstart)}
-                      </div>
-                    </div>
-                    <div className="location-div">
-                      <h1>Location</h1>
-                      <p>{job.streetaddress}, {job.city},</p>
-                      <p>{job.province} {job.postalcode}</p>
-                    </div>
-                  </div>
-                  <div className="bottom-right">
-                    <h1>Job Description</h1>
-                    <div>{job.jobdescription}</div>
-                  </div>
+                <div className="mg-card-right">
+                  <button className="mg-employer-btn" onClick={handleEmployer}>
+                    <img src={employerPhotoUrls[job.employer_user_id] || DefaultAvatar} alt="employer" className="mg-avatar" />
+                    <span>{job.business_name}</span>
+                  </button>
+                  <button className="mg-message-btn" onClick={() => handleMessage(job)}>
+                    Message
+                  </button>
                 </div>
               </li>
             );

@@ -11,9 +11,12 @@
     max-width: 100%;
     border: none;
     margin: 0;
-    padding: 0;
+    padding: 24px 28px 40px;
+    min-height: 100%;
     box-shadow: none;
-    font-family: "Poppins";
+    background: #f5f7fa;
+    box-sizing: border-box;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
 }
 
 .jp-search-row {
@@ -25,28 +28,31 @@
     padding: 9px 14px;
     font-size: 14px;
     font-family: "Poppins";
-    border: 1px solid #D0D5DD;
+    border: 1px solid #e8ecf0;
     border-radius: 8px;
     box-sizing: border-box;
     outline: none;
 }
 
 .jp-search-input:focus {
-    border-color: #0340BE;
+    border-color: #1D9E75;
 }
 
 .job-posting-container .page-header {
     margin: 0;
-    color: #0340BE;
-    font-size: 24px;
-    font-weight: 400;
+    color: #1a1a2e;
+    font-size: 1.35rem;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
+    font-weight: 700;
 }
 
 .job-posting-container .posting-header {
-    font-size: 18px;
-    font-weight: 500;
-    margin: 0 0 35px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 0 0 10px;
     text-align: left;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
 }
 
 .job-posting-container ul {
@@ -55,81 +61,105 @@
 }
 
 .job-posting-container ul li {
-    padding: 31px 28px 35px;
-    border-radius: 19px;
-    box-shadow: 0 4px 4px rgb(0, 0, 0, .25);
-    margin-bottom: 17px;
+    padding: 20px 24px;
+    border-radius: 16px;
+    border: 1px solid #e8ecf0;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.07);
+    background-color: #ffffff;
+    margin-bottom: 14px;
     display: flex;
-    width: 1114px;
-    min-height: 250px;
+    width: 100%;
     height: auto;
     box-sizing: border-box;
     justify-content: space-between;
+    align-items: center;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.job-posting-container ul li:hover {
+    box-shadow: 0 10px 24px rgba(0,0,0,0.08);
+    transform: translateY(-1px);
 }
 
 .job-posting-container ul li .left div {
-    margin: 0 0 25px 0;
+    margin: 0 0 8px 0;
     display: flex;
     justify-content: left;
     align-items: center;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 400;
+    color: #273240;
 }
 
 .job-posting-container ul li .left div img {
     margin: 0 10px 0 0;
 }
 
-.job-posting-container ul li .right {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: flex-end;
-}
-
-.job-posting-container ul li .right button {
-    background-color: #4EBBC2;
+.job-posting-container ul li .card-actions button {
+    background-color: #1D9E75;
     color: white;
-    width: 140px;
-    height: 30px;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
-    font-weight: 500;
-    border-radius: 5px;
+    gap: 6px;
+    padding: 9px 16px;
+    width: auto;
+    font-size: 0.875rem;
+    font-weight: 700;
+    border-radius: 10px;
     border: none;
     cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.18s, transform 0.12s;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
 }
 
-.job-posting-container ul li .right #remove-btn {
-    background-color: #C2554E;
+.job-posting-container ul li .card-actions button:hover:not(#remove-btn) {
+    background-color: #0F6E56;
+    transform: translateY(-1px);
+}
+
+.job-posting-container #remove-btn {
+    background: #ffffff;
+    color: #dc2626;
+    border: 1px solid #dc2626;
+    padding: 10px 20px;
+    border-radius: 10px;
+}
+
+.job-posting-container #remove-btn:hover {
+    background: #dc2626;
+    color: #fff;
+    transform: translateY(-1px);
 }
 
 .job-posting-container #calendar-icon {
     filter: brightness(0) saturate(100%) invert(74%) sepia(32%) saturate(495%) hue-rotate(150deg) brightness(92%) contrast(91%);
 }
 
+/* Exact copy of Job Board #apply-btn */
 .job-posting-container .create-new-btn {
-    display: flex;
-    background-color: white;
-    color: black;
-    border: 0.5px solid #4EBBC2;
-    justify-content: space-between;
+    background: #1D9E75;
+    color: #fff;
+    display: inline-flex;
     align-items: center;
-    padding: 0 17px;
-    margin: 20px 0 24px;
-    border-radius: 5px;
-    width: 142px;
-    height: 30px;
-    font-size: 12px;
-    font-weight: 500;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 20px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
+    border-radius: 10px;
+    border: none;
     cursor: pointer;
+    transition: background 0.18s, transform 0.12s;
+    white-space: nowrap;
+    margin: 12px 0 18px;
 }
 
 .job-posting-container .create-new-btn:hover {
-    background-color: #4EBBC2;
-    color: white;
+    background: #0F6E56;
+    transform: translateY(-1px);
 }
 
 .job-posting-container #back-btn {
@@ -155,8 +185,9 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    border-radius: 19px;
-    padding: 10px;
+    border-radius: 16px;
+    padding: 28px 32px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
 }
 
 .job-posting-container .remove-job-container .prompt-text {
@@ -172,23 +203,32 @@
 }
 
 .job-posting-container .remove-job-container .prompt-buttons button {
-    margin: 0 10px 0;
-    background-color: #4EBBC2;
+    margin: 0 6px;
+    background-color: #1D9E75;
     color: white;
-    width: 103px;
-    height: 30px;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
-    font-weight: 500;
-    border-radius: 5px;
+    padding: 10px 20px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    border-radius: 10px;
     border: none;
     cursor: pointer;
+    white-space: nowrap;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
+    transition: background 0.18s;
 }
 
 .job-posting-container .remove-job-container .prompt-buttons .remove-btn {
+    background-color: #ffffff;
+    color: #C2554E;
+    border: 1.5px solid #C2554E;
+}
+
+.job-posting-container .remove-job-container .prompt-buttons .remove-btn:hover {
     background-color: #C2554E;
+    color: #fff;
 }
 
 
@@ -196,58 +236,69 @@
 
 .status-tabs {
     display: flex;
-    gap: 8px;
-    margin-bottom: 28px;
+    gap: 0;
+    margin: 15px 0 28px;
     flex-wrap: wrap;
+    align-items: center;
 }
 
+/* Chip style — identical to Job Board .filter-btn */
 .status-tab {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 7px;
-    padding: 6px 18px;
-    border-radius: 20px;
-    border: 1.5px solid var(--tab-color, #4EBBC2);
-    background-color: white;
-    color: var(--tab-color, #4EBBC2);
-    font-family: "Poppins";
-    font-size: 13px;
+    justify-content: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 14px;
+    border-radius: 5px;
+    border: 0.5px solid #d1d5db;
+    background-color: #ffffff;
+    color: #273240;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
+    font-size: 12px;
     font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.18s ease, color 0.18s ease;
     white-space: nowrap;
+    margin: 0 20px 0 0;
+    transition: background-color 0.18s, color 0.18s;
 }
 
 .status-tab:hover {
-    background-color: var(--tab-color, #4EBBC2);
-    color: white;
+    background-color: #1D9E75;
+    color: #ffffff;
+    border-color: #1D9E75;
 }
 
 .status-tab.active {
-    background-color: var(--tab-color, #4EBBC2);
-    color: white;
+    background-color: #1D9E75;
+    color: #ffffff;
+    border-color: #1D9E75;
 }
 
-/* Count bubble on tab */
+/* Count bubble inside tab chip */
 .tab-badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 20px;
-    height: 20px;
-    padding: 0 5px;
-    border-radius: 10px;
-    background-color: white;
-    color: var(--tab-color, #4EBBC2);
-    font-size: 11px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background-color: #e8ecf0;
+    color: #273240;
+    font-size: 10px;
     font-weight: 700;
     line-height: 1;
-    transition: color 0.18s ease, background-color 0.18s ease;
 }
 
-.status-tab:not(.active) .tab-badge {
-    background-color: var(--tab-color, #4EBBC2);
-    color: white;
+.status-tab.active .tab-badge {
+    background-color: rgba(255,255,255,0.25);
+    color: #ffffff;
+}
+
+.status-tab:hover .tab-badge {
+    background-color: rgba(255,255,255,0.25);
+    color: #ffffff;
 }
 
 
@@ -266,7 +317,7 @@
     bottom: 0;
     width: 6px;
     border-radius: 19px 0 0 19px;
-    background-color: var(--status-color, #4EBBC2);
+    background-color: var(--status-color, #1D9E75);
 }
 
 /* Status badge top-right of card */
@@ -283,27 +334,34 @@
     white-space: nowrap;
 }
 
-/* Card action buttons group */
+/* Card action buttons group — flex ROW */
 .card-actions {
     display: flex;
-    flex-direction: column;
-    gap: 7px;
-    align-items: flex-end;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end;
+    width: auto;
 }
 
 /* Advance-status button (Publish / Mark In Review / etc.) */
 .advance-btn {
     color: white;
-    width: 140px !important;
-    height: 30px;
-    padding: 0 14px;
-    font-size: 12px;
-    font-weight: 500;
-    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 16px;
+    width: auto;
+    font-size: 0.875rem;
+    font-weight: 700;
+    border-radius: 10px;
     border: none;
     cursor: pointer;
-    font-family: "Poppins";
-    transition: opacity 0.15s ease;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
+    white-space: nowrap;
+    transition: background 0.18s, transform 0.12s;
 }
 
 .advance-btn:disabled {
@@ -319,11 +377,11 @@
     align-items: center;
     justify-content: center;
     height: 120px;
-    border-radius: 19px;
+    border-radius: 16px;
     border: 1.5px dashed #D0D5DD;
     color: #9CA3AF;
     font-size: 15px;
-    width: 1114px;
+    width: 100%;
     box-sizing: border-box;
 }
 
@@ -342,11 +400,12 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    border-radius: 19px;
-    box-shadow: 0 4px 4px rgb(0, 0, 0, .25);
-    font-family: "Poppins";
+    border-radius: 16px;
+    border: 1px solid #e8ecf0;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.07);
+    font-family: 'Quicksand', 'Poppins', sans-serif;
     overflow: hidden;
-    width: 1114px;
+    width: 100%;
 }
 
 .job-posting-form-container form {
@@ -420,12 +479,12 @@
 /* Post Job — primary teal */
 .job-posting-form-container .post-btn {
     width: 103px;
-    background-color: #4EBBC2;
+    background-color: #1D9E75;
     transition: background-color 0.15s ease;
 }
 
 .job-posting-form-container .post-btn:hover {
-    background-color: #3aa3aa;
+    background-color: #0F6E56;
 }
 
 .job-posting-form-container .post-btn:disabled {
@@ -544,7 +603,7 @@
 
 .draft-prompt {
     background-color: white;
-    border-radius: 19px;
+    border-radius: 16px;
     padding: 32px 36px;
     max-width: 460px;
     width: 90%;
@@ -558,7 +617,7 @@
     margin: 0 0 12px;
     font-size: 18px;
     font-weight: 600;
-    color: #0340BE;
+    color: #1a1a2e;
 }
 
 .draft-prompt p {
@@ -575,14 +634,14 @@
 }
 
 .draft-prompt-buttons button {
-    height: 34px;
-    padding: 0 18px;
-    border-radius: 5px;
+    padding: 10px 20px;
+    border-radius: 10px;
     border: none;
-    font-family: "Poppins";
-    font-size: 13px;
-    font-weight: 500;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 700;
     cursor: pointer;
+    white-space: nowrap;
 }
 
 .draft-prompt-cancel {
@@ -605,12 +664,12 @@
 }
 
 .draft-prompt-save {
-    background-color: #4EBBC2 !important;
+    background-color: #1D9E75 !important;
     color: white !important;
 }
 
 .draft-prompt-save:hover {
-    background-color: #3aa3aa !important;
+    background-color: #0F6E56 !important;
 }
 
 .draft-prompt-save:disabled {
@@ -640,22 +699,27 @@
 /* ── View Applicants button ─────────────────── */
 
 .view-applicants-btn {
-    background-color: rgba(59, 130, 246, 0.12) !important;
-    color: #1D4ED8 !important;
-    border: 1.5px solid #3B82F6 !important;
-    width: 140px !important;
-    height: 30px;
-    padding: 0 14px;
-    font-size: 12px;
-    font-weight: 500;
-    border-radius: 5px;
+    background-color: #ffffff;
+    color: #1D9E75;
+    border: 1.5px solid #1D9E75;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 16px;
+    width: auto;
+    font-size: 0.875rem;
+    font-weight: 700;
+    border-radius: 10px;
     cursor: pointer;
-    font-family: "Poppins";
-    transition: background-color 0.15s ease;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
+    white-space: nowrap;
+    transition: background 0.18s, transform 0.12s;
 }
 
 .view-applicants-btn:hover {
-    background-color: rgba(59, 130, 246, 0.22) !important;
+    background-color: #e8f5f0 !important;
+    transform: translateY(-1px);
 }
 
 /* ── Applicant Count display ─────────────────── */
@@ -673,9 +737,9 @@
     gap: 8px;
     padding: 6px 16px;
     border-radius: 20px;
-    border: 1.5px solid var(--status-color, #4EBBC2); /* Match border to job status */
+    border: 1.5px solid var(--status-color, #1D9E75); /* Match border to job status */
     background-color: white;
-    color: var(--status-color, #4EBBC2);
+    color: var(--status-color, #1D9E75);
     font-family: "Poppins";
     font-size: 14px;
     font-weight: 500;
@@ -689,7 +753,7 @@
     height: 20px;
     padding: 2px 8px;
     border-radius: 10px; /* Pill shape */
-    background-color: var(--status-color, #4EBBC2);
+    background-color: var(--status-color, #1D9E75);
     color: white;
     font-size: 12px;
     font-weight: 700;
@@ -698,7 +762,7 @@
 
 .job-posting-container .count-label {
     font-size: 14px;
-    color: var(--status-color, #4EBBC2);
+    color: var(--status-color, #1D9E75);
     font-weight: 500;
 }
 
@@ -726,26 +790,9 @@
         padding: 20px 16px;
     }
 
-    .job-posting-container ul li .right {
-        align-items: flex-start;
-        flex-direction: row;
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-
     .card-actions {
-        flex-direction: row;
-        flex-wrap: wrap;
-        align-items: flex-start;
-        gap: 6px;
-    }
-
-    .view-applicants-btn,
-    .advance-btn,
-    .job-posting-container ul li .right button {
-        width: auto !important;
-        min-width: 100px !important;
-        flex: 1 1 auto;
+        width: 100%;
+        justify-content: flex-start;
     }
 
     /* Search input full width */

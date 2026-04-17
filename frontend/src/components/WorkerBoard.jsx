@@ -475,7 +475,7 @@ const WorkerBoard = () => {
                         height: "40px",
                         padding: "8px",
                         borderRadius: "8px",
-                        border: "1px solid #7ad7df",
+                        border: "1px solid #e8ecf0",
                         boxSizing: "border-box",
                         marginBottom: "10px"
                       }}
@@ -490,7 +490,7 @@ const WorkerBoard = () => {
                         height: "40px",
                         padding: "8px",
                         borderRadius: "8px",
-                        border: "1px solid #7ad7df",
+                        border: "1px solid #e8ecf0",
                         boxSizing: "border-box",
                         marginBottom: "10px"
                       }}
@@ -505,7 +505,7 @@ const WorkerBoard = () => {
                         height: "40px",
                         padding: "8px",
                         borderRadius: "8px",
-                        border: "1px solid #7ad7df",
+                        border: "1px solid #e8ecf0",
                         boxSizing: "border-box",
                         marginBottom: "10px"
                       }}
@@ -520,7 +520,7 @@ const WorkerBoard = () => {
                         height: "40px",
                         padding: "8px",
                         borderRadius: "8px",
-                        border: "1px solid #7ad7df",
+                        border: "1px solid #e8ecf0",
                         boxSizing: "border-box"
                       }}
                     />
@@ -596,7 +596,7 @@ const WorkerBoard = () => {
                         height: "40px",
                         padding: "8px",
                         borderRadius: "8px",
-                        border: "1px solid #7ad7df",
+                        border: "1px solid #e8ecf0",
                         boxSizing: "border-box"
                       }}
                     />
