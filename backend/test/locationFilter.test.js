@@ -5,10 +5,10 @@ const app = express();
 app.use(express.json());
 
 jest.mock("../src/database/queries/job_queries", () => ({
-  getAllJobs: jest.fn(),
+  fetchAllJobs: jest.fn(),
 }));
 
-const { getAllJobs } = require("../src/database/queries/job_queries");
+const { fetchAllJobs } = require("../src/database/queries/job_queries");
 
 const jobRoutes = require("../src/database/routes/job_routes");
 
@@ -20,19 +20,17 @@ describe("Location Filter API Tests", () => {
   });
 
   test("should filter jobs by city", async () => {
-    getAllJobs.mockResolvedValue([
-      { jobtitle: "Cleaner", city: "Toronto" },
-    ]);
+    fetchAllJobs.mockResolvedValue({ jobs: [{ jobtitle: "Cleaner", city: "Toronto" }], total: 1 });
 
     const res = await request(app)
-      .get("/api/all-jobs") // adjust if needed
+      .get("/api/all-jobs")
       .query({ city: "Toronto" });
 
     expect(res.statusCode).toBe(200);
   });
 
   test("should return empty array", async () => {
-    getAllJobs.mockResolvedValue([]);
+    fetchAllJobs.mockResolvedValue({ jobs: [], total: 0 });
 
     const res = await request(app)
       .get("/api/all-jobs")
@@ -42,7 +40,7 @@ describe("Location Filter API Tests", () => {
   });
 
   test("should handle invalid input safely", async () => {
-    getAllJobs.mockResolvedValue([]);
+    fetchAllJobs.mockResolvedValue({ jobs: [], total: 0 });
 
     const res = await request(app)
       .get("/api/all-jobs")
@@ -52,7 +50,7 @@ describe("Location Filter API Tests", () => {
   });
 
   test("should return 500 on server error", async () => {
-    getAllJobs.mockRejectedValue(new Error("DB error"));
+    fetchAllJobs.mockRejectedValue(new Error("DB error"));
 
     const res = await request(app).get("/api/all-jobs");
 
