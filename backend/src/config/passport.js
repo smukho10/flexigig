@@ -47,6 +47,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
         const picture = profile.photos?.[0]?.value || null;
         const firstName = profile.name?.givenName || '';
         const lastName = profile.name?.familyName || '';
+        const phoneNumber = null;
 
         // Check if user exists by google_id
         let user = await user_queries.getUserByGoogleId(googleId);
@@ -61,7 +62,10 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 
         if (user) {
           // Link Google to existing local account
-          await user_queries.linkGoogleAccount(user.id, googleId);
+          await user_queries.linkGoogleAccount(user.id, googleId, {
+            userImage: picture,
+            phoneNumber
+          });
           user = await user_queries.getUserById(user.id);
           return done(null, user);
         }
@@ -84,6 +88,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           picture,
           firstName,
           lastName,
+          phoneNumber,
           needsAccountType: true
         };
 
