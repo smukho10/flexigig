@@ -46,10 +46,12 @@
 }
 
 .job-posting-container .posting-header {
-    font-size: 18px;
-    font-weight: 500;
-    margin: 0 0 35px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 0 0 10px;
     text-align: left;
+    font-family: 'Quicksand', 'Poppins', sans-serif;
 }
 
 .job-posting-container ul {
@@ -58,27 +60,34 @@
 }
 
 .job-posting-container ul li {
-    padding: 31px 28px 35px;
+    padding: 20px 22px;
     border-radius: 16px;
     border: 1px solid #e8ecf0;
     box-shadow: 0 4px 18px rgba(0,0,0,0.07);
     background-color: #ffffff;
-    margin-bottom: 17px;
+    margin-bottom: 14px;
     display: flex;
     width: 100%;
-    min-height: 250px;
     height: auto;
     box-sizing: border-box;
     justify-content: space-between;
+    align-items: center;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.job-posting-container ul li:hover {
+    box-shadow: 0 10px 24px rgba(0,0,0,0.08);
+    transform: translateY(-1px);
 }
 
 .job-posting-container ul li .left div {
-    margin: 0 0 25px 0;
+    margin: 0 0 8px 0;
     display: flex;
     justify-content: left;
     align-items: center;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 400;
+    color: #273240;
 }
 
 .job-posting-container ul li .left div img {
@@ -88,7 +97,7 @@
 .job-posting-container ul li .right {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: center;
     align-items: flex-end;
 }
 
@@ -127,7 +136,7 @@
     color: white;
     border: none;
     padding: 10px 20px;
-    margin: 20px 0 24px;
+    margin: 12px 0 18px;
     border-radius: 10px;
     font-size: 0.875rem;
     font-weight: 700;
@@ -300,9 +309,9 @@
 .card-actions {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     align-items: stretch;
-    width: 140px;
+    width: 148px;
 }
 
 /* Advance-status button (Publish / Mark In Review / etc.) */
